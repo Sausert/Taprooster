@@ -1,0 +1,64 @@
+// app/api/shifts/[id]/assign/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { sendOpenShiftEmail } from "@/lib/email";
+
+export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id: shiftId } = await context.params;
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await req.json();
+  const { action } = body;
+
+  if (action === "claim") {
+    const { data: shift } = await supabase.from("shift_occupancy").select("*").eq("id", shiftId).single();
+    if (!shift) return NextResponse.json({ error: "Shift niet gevonden" }, { status: 404 });
+    if ((shift.open_spots || 0) <= 0) return NextResponse.json({ error: "Geen open plekken meer" }, { status: 409 });
+    const { data, error } = await supabase.from("shift_assignments")
+      .insert({ shift_id: shiftId, user_id: user.id, status: "assigned" }).select().single();
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ data });
+  }
+
+  if (action === "confirm") {
+    const { data, error } = await supabase.from("shift_assignments")
+      .update({ status: "confirmed", confirmed_at: new Date().toISOString() })
+      .eq("shift_id", shiftId).eq("user_id", user.id).select().single();
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ data });
+  }
+
+  if (action === "decline") {
+    await supabase.from("shift_assignments")
+      .update({ status: "declined", declined_at: new Date().toISOString() })
+      .eq("shift_id", shiftId).eq("user_id", user.id);
+
+    const { data: shift } = await supabase.from("shifts")
+      .select("*, assignments:shift_assignments(user_id, status)").eq("id", shiftId).single();
+
+    if (shift) {
+      const { data: allProfiles } = await supabase.from("profiles").select("id, email, full_name").neq("id", user.id);
+      const shiftDate = new Date(shift.date).toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long" });
+      const shiftTime = `${shift.start_time}–${shift.end_time}`;
+
+      if (allProfiles) {
+        await supabase.from("notifications").insert(
+          allProfiles.map((p) => ({
+            user_id: p.id, type: "open_shift",
+            title: "🔓 Open dienst!",
+            message: `Er is een open plek voor ${shift.title} op ${shiftDate}.`,
+            shift_id: shiftId, read: false,
+          }))
+        );
+        Promise.allSettled(allProfiles.map((p) =>
+          sendOpenShiftEmail(p.email, p.full_name, shift.title, shiftDate, shiftTime, shiftId)
+        ));
+      }
+    }
+    return NextResponse.json({ data: { declined: true } });
+  }
+
+  return NextResponse.json({ error: "Onbekende actie" }, { status: 400 });
+}

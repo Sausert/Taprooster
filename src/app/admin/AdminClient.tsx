@@ -1,0 +1,520 @@
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+const PERIOD_OPTIONS = [
+  { value:1, label:"Maand" },
+  { value:3, label:"Kwartaal" },
+  { value:6, label:"Half jaar" },
+  { value:12, label:"Heel jaar" },
+];
+const MONTH_NAMES = ["Jan","Feb","Mrt","Apr","Mei","Jun","Jul","Aug","Sep","Okt","Nov","Dec"];
+const emptyShift = () => ({ role:"tapper" as "tapper"|"bonnenkassa", start_time:"20:00", end_time:"02:00", max_tappers:2 });
+
+function parseLocalDate(d: string): Date { const [y,m,day]=d.split("-").map(Number); return new Date(y,m-1,day); }
+function formatDate(d: string) { return parseLocalDate(d).toLocaleDateString("nl-NL",{weekday:"short",day:"numeric",month:"short"}); }
+
+export default function AdminClient({ shifts: initialShifts, profiles: initialProfiles, leaderboard, publishedShifts: initialPublished }: {
+  shifts: any[]; profiles: any[]; leaderboard: any[]; publishedShifts: any[];
+}) {
+  const router = useRouter();
+  const [tab, setTab] = useState<"health"|"tappers"|"rooster"|"publiceer"|"uitnodiging">("health");
+  const [shifts, setShifts] = useState(initialShifts);
+  const [profiles, setProfiles] = useState(initialProfiles);
+  const [published, setPublished] = useState(initialPublished);
+
+  // Rooster view (concept vs gepubliceerd)
+  const [rosterView, setRosterView] = useState<"concept"|"published">("published");
+  const [period, setPeriod] = useState(1);
+  const [generating, setGenerating] = useState(false);
+  const [conceptShifts, setConceptShifts] = useState<any[]>([]);
+  const [editingShiftId, setEditingShiftId] = useState<string|null>(null);
+
+  // Feestje
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [eventForm, setEventForm] = useState({ title:"", date:"", shifts:[emptyShift()] });
+  const [savingEvent, setSavingEvent] = useState(false);
+  const [eventSaved, setEventSaved] = useState(false);
+
+  // Tapper toevoegen aan dienst
+  const [addTapperModal, setAddTapperModal] = useState<any|null>(null); // shift
+  const [tapperSearchModal, setTapperSearchModal] = useState("");
+  const [addingTapper, setAddingTapper] = useState<string|null>(null);
+
+  // Tapper bewerken
+  const [editingTapper, setEditingTapper] = useState<any|null>(null);
+  const [editForm, setEditForm] = useState({ full_name:"", email:"", phone:"", role:"tapper" });
+  const [savingTapper, setSavingTapper] = useState(false);
+  const [tapperSearch, setTapperSearch] = useState("");
+
+  // Publiceren
+  const [publishMsg, setPublishMsg] = useState("");
+  const [publishing, setPublishing] = useState(false);
+
+  // Uitnodiging
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteUrl, setInviteUrl] = useState("");
+  const [qrCode, setQrCode] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const now = new Date();
+
+  // Health
+  const underfilled = shifts.filter(s=>(s.assignments||[]).filter((a:any)=>a.status!=="declined").length<s.max_tappers);
+  const unconfirmed = shifts.filter(s=>(s.assignments||[]).some((a:any)=>a.status==="assigned"));
+  function getHealthColor(shift:any){const n=(shift.assignments||[]).filter((a:any)=>a.status!=="declined").length;if(n>=shift.max_tappers)return"#00e5c3";if(n>=shift.max_tappers/2)return"#ffb547";return"#ff4f6d";}
+
+  // Tapper bewerken
+  function openEditTapper(p:any){setEditingTapper(p);setEditForm({full_name:p.full_name||"",email:p.email||"",phone:p.phone||"",role:p.role||"tapper"});}
+  async function saveTapper(){if(!editingTapper)return;setSavingTapper(true);const res=await fetch(`/api/admin/tappers/${editingTapper.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(editForm)});if(res.ok)setProfiles(ps=>ps.map(p=>p.id===editingTapper.id?{...p,...editForm}:p));setSavingTapper(false);setEditingTapper(null);}
+
+  // Tapper handmatig toevoegen aan dienst
+  async function handleAddTapper(shiftId: string, userId: string) {
+    setAddingTapper(userId);
+    const res = await fetch(`/api/shifts/${shiftId}/assign`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ action:"claim", userId }), // admin kan voor iemand claimen
+    });
+    if (res.ok) {
+      const tapper = profiles.find(p => p.id === userId);
+      // Update published shifts lokaal
+      setPublished(ps => ps.map(s => s.id === shiftId ? {
+        ...s,
+        assignments: [...(s.assignments||[]), { user_id: userId, status:"assigned", profile: tapper }]
+      } : s));
+      setConceptShifts(cs => cs.map(s => s.id === shiftId ? {
+        ...s,
+        assignments: [...(s.assignments||[]), { user_id: userId, status:"assigned", profile: tapper }]
+      } : s));
+    }
+    setAddingTapper(null);
+    setAddTapperModal(null);
+    setTapperSearchModal("");
+  }
+
+  // Tapper verwijderen van dienst
+  async function handleRemoveTapper(shiftId: string, userId: string) {
+    await fetch(`/api/admin/shifts/${shiftId}/remove-tapper`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ userId }),
+    });
+    setPublished(ps => ps.map(s => s.id === shiftId ? {
+      ...s, assignments: (s.assignments||[]).filter((a:any)=>a.user_id!==userId)
+    } : s));
+    setConceptShifts(cs => cs.map(s => s.id === shiftId ? {
+      ...s, assignments: (s.assignments||[]).filter((a:any)=>a.user_id!==userId)
+    } : s));
+  }
+
+  // Feestje
+  function addShiftToEvent(){setEventForm(f=>({...f,shifts:[...f.shifts,emptyShift()]}));}
+  function removeShiftFromEvent(idx:number){setEventForm(f=>({...f,shifts:f.shifts.filter((_,i)=>i!==idx)}));}
+  function updateEventShift(idx:number,field:string,value:any){setEventForm(f=>({...f,shifts:f.shifts.map((s,i)=>i===idx?{...s,[field]:value}:s)}));}
+  async function handleCreateEvent(e:React.FormEvent){e.preventDefault();setSavingEvent(true);const res=await fetch("/api/events",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(eventForm)});const data=await res.json();if(res.ok){setEventSaved(true);setShowEventForm(false);setEventForm({title:"",date:"",shifts:[emptyShift()]});if(data.data?.shifts)setConceptShifts(cs=>[...cs,...data.data.shifts]);setTimeout(()=>setEventSaved(false),3000);}setSavingEvent(false);}
+
+  // Rooster genereren
+  function getMonths():string[]{const months=[];for(let i=0;i<period;i++){const d=new Date(now.getFullYear(),now.getMonth()+i,1);months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`);}return months;}
+  async function handleGenerate(){setGenerating(true);const res=await fetch("/api/schedule",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({months:getMonths()})});const data=await res.json();if(data.data?.shifts){setConceptShifts(data.data.shifts);setRosterView("concept");}setGenerating(false);}
+
+  function updateConceptShift(id:string,field:string,value:any){setConceptShifts(cs=>cs.map(s=>s.id===id?{...s,[field]:value}:s));}
+  function updatePublishedShift(id:string,field:string,value:any){setPublished(ps=>ps.map(s=>s.id===id?{...s,[field]:value}:s));}
+  async function saveShiftEdit(shift:any){await fetch(`/api/shifts/${shift.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:shift.title,start_time:shift.start_time,end_time:shift.end_time,max_tappers:shift.max_tappers,admin_note:shift.admin_note})});setEditingShiftId(null);}
+
+  // Publiceren
+  async function handlePublish(){setPublishing(true);await fetch("/api/schedule/publish",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({months:getMonths(),message:publishMsg})});setPublishing(false);alert("🚀 Rooster gepubliceerd!");setConceptShifts([]);setPublishMsg("");}
+
+  // Uitnodiging
+  async function handleCreateInvite(){setInviteLoading(true);const res=await fetch("/api/invite",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:inviteEmail||undefined})});const data=await res.json();if(data.data){setInviteUrl(data.data.url);setQrCode(data.data.qrCode);}setInviteLoading(false);}
+
+  const filteredProfiles = profiles.filter(p=>p.full_name?.toLowerCase().includes(tapperSearch.toLowerCase())||p.email?.toLowerCase().includes(tapperSearch.toLowerCase()));
+  const filteredModalProfiles = profiles.filter(p=>p.full_name?.toLowerCase().includes(tapperSearchModal.toLowerCase()));
+
+  // Huidige roosterlijst (concept of gepubliceerd)
+  const activeRosterShifts = rosterView === "concept" ? conceptShifts : published;
+
+  const ShiftCard = ({ shift, source }: { shift: any; source: "concept"|"published" }) => {
+    const isEditing = editingShiftId === shift.id;
+    const updateFn = source === "concept" ? updateConceptShift : updatePublishedShift;
+    const assigned = (shift.assignments||[]).filter((a:any)=>a.status!=="declined");
+    const open = shift.max_tappers - assigned.length;
+
+    return (
+      <div style={{ ...s.card, borderLeft:`3px solid ${shift.type==="feestje"?"#ffb547":"#00e5c3"}`, marginBottom:10 }}>
+        {isEditing ? (
+          <div>
+            <label style={s.label}>Naam dienst</label>
+            <input style={s.input} value={shift.title} onChange={e=>updateFn(shift.id,"title",e.target.value)}/>
+            <div style={{display:"flex",gap:8,marginBottom:12}}>
+              <div style={{flex:1}}><label style={s.label}>Start</label><input style={{...s.input,marginBottom:0}} value={shift.start_time} onChange={e=>updateFn(shift.id,"start_time",e.target.value)} placeholder="19:00"/></div>
+              <div style={{flex:1}}><label style={s.label}>Eind</label><input style={{...s.input,marginBottom:0}} value={shift.end_time} onChange={e=>updateFn(shift.id,"end_time",e.target.value)} placeholder="23:00"/></div>
+            </div>
+            <label style={s.label}>Max tappers</label>
+            <input style={{...s.input,width:80}} type="number" min={1} max={20} value={shift.max_tappers} onChange={e=>updateFn(shift.id,"max_tappers",Number(e.target.value))}/>
+            <label style={s.label}>Notitie</label>
+            <input style={s.input} value={shift.admin_note||""} onChange={e=>updateFn(shift.id,"admin_note",e.target.value)} placeholder="Optionele notitie..."/>
+            <div style={{display:"flex",gap:8}}>
+              <button style={{...s.btnPrimary,flex:1,padding:"10px"}} onClick={()=>saveShiftEdit(shift)}>💾 Opslaan</button>
+              <button style={{...s.btnSecondary,flex:1,padding:"10px"}} onClick={()=>setEditingShiftId(null)}>Annuleer</button>
+            </div>
+          </div>
+        ) : (
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+            <div style={{flex:1}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                <p style={{fontSize:14,fontWeight:700,color:"#f0eeff"}}>{shift.title}</p>
+                {shift.type==="feestje"&&<span style={s.warnBadge}>Feestje</span>}
+                {shift.role==="bonnenkassa"&&<span style={s.purpleBadge}>Kassa</span>}
+              </div>
+              <p style={{fontSize:12,color:"#8b80b0"}}>{formatDate(shift.date)} · {shift.start_time}–{shift.end_time}</p>
+              <p style={{fontSize:11,color:open>0?"#ffb547":"#00e5c3",marginTop:2}}>{assigned.length}/{shift.max_tappers} tappers {open>0?`· ${open} open`:""}</p>
+              {shift.admin_note&&<p style={{fontSize:11,color:"#ffb547",marginTop:4}}>📌 {shift.admin_note}</p>}
+              {/* Toegewezen tappers met verwijder knop */}
+              <div style={{display:"flex",gap:4,marginTop:8,flexWrap:"wrap"}}>
+                {assigned.map((a:any)=>(
+                  <div key={a.user_id} style={{display:"flex",alignItems:"center",gap:4,background:"#221f38",border:"1px solid #2e2a4a",borderRadius:20,padding:"3px 8px 3px 10px"}}>
+                    <span style={{fontSize:12,color:"#e8e0ff"}}>{a.profile?.full_name?.split(" ")[0]||"?"}</span>
+                    <button style={{background:"none",border:"none",color:"#ff4f6d",cursor:"pointer",fontSize:13,padding:"0 2px",lineHeight:1}} onClick={()=>handleRemoveTapper(shift.id,a.user_id)}>✕</button>
+                  </div>
+                ))}
+                {open > 0 && (
+                  <button style={{...s.addTapperBtn}} onClick={()=>setAddTapperModal(shift)}>+ Tapper</button>
+                )}
+              </div>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:6,marginLeft:10}}>
+              <button style={s.iconBtn} onClick={()=>setEditingShiftId(shift.id)}>✏️</button>
+              {source==="concept"&&<button style={{...s.iconBtn,color:"#ff4f6d"}} onClick={()=>setConceptShifts(cs=>cs.filter(s=>s.id!==shift.id))}>🗑</button>}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const TABS = [
+    {id:"health",label:"📊 Status"},
+    {id:"tappers",label:"👥 Tappers"},
+    {id:"rooster",label:"📅 Rooster"},
+    {id:"publiceer",label:"🚀 Publiceer"},
+    {id:"uitnodiging",label:"🔗 Uitnodiging"},
+  ];
+
+  return (
+    <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",background:"#0f0d1a"}}>
+      <div style={s.header}>
+        <button onClick={()=>router.push("/account")} style={s.back}>←</button>
+        <span style={s.headerTitle}>Admin Dashboard</span>
+        <div style={{width:28}}/>
+      </div>
+
+      <div style={s.tabBar}>
+        {TABS.map(t=>(
+          <button key={t.id} onClick={()=>setTab(t.id as any)} style={{...s.tabBtn,color:tab===t.id?"#00e5c3":"#8b80b0",borderBottom:`2px solid ${tab===t.id?"#00e5c3":"transparent"}`}}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <div style={s.content}>
+
+        {/* ── STATUS ── */}
+        {tab==="health"&&(
+          <>
+            <div style={s.statGrid}>
+              <div style={s.statCard}><p style={{...s.statVal,color:"#ff4f6d"}}>{underfilled.length}</p><p style={s.statLabel}>Onderbezet</p></div>
+              <div style={s.statCard}><p style={{...s.statVal,color:"#ffb547"}}>{unconfirmed.length}</p><p style={s.statLabel}>Onbevestigd</p></div>
+            </div>
+            <p style={s.sectionTitle}>Dienststatus</p>
+            <div style={s.card}>
+              {shifts.length===0&&<p style={{fontSize:13,color:"#8b80b0",textAlign:"center",padding:"20px 0"}}>Geen diensten gevonden.</p>}
+              {shifts.map(shift=>{
+                const color=getHealthColor(shift);
+                const assigned=(shift.assignments||[]).filter((a:any)=>a.status!=="declined").length;
+                const confirmed=(shift.assignments||[]).filter((a:any)=>a.status==="confirmed").length;
+                return(
+                  <div key={shift.id} style={s.healthRow}>
+                    <div style={{...s.dot,background:color,boxShadow:`0 0 6px ${color}`}}/>
+                    <div style={{flex:1}}>
+                      <p style={{fontSize:13,fontWeight:600,color:"#e8e0ff"}}>{formatDate(shift.date)} — {shift.title}</p>
+                      <p style={{fontSize:11,color}}>{assigned}/{shift.max_tappers} bezet · {confirmed} bevestigd</p>
+                    </div>
+                    {assigned<shift.max_tappers&&<span style={s.dangerBadge}>{shift.max_tappers-assigned} open</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* ── TAPPERS ── */}
+        {tab==="tappers"&&(
+          <>
+            <p style={s.sectionTitle}>Alle tappers ({profiles.length})</p>
+            <input style={s.input} placeholder="🔍 Zoek op naam of e-mail..." value={tapperSearch} onChange={e=>setTapperSearch(e.target.value)}/>
+            {filteredProfiles.map(p=>{
+              const lb=leaderboard.find(l=>l.id===p.id);
+              return(
+                <div key={p.id} style={s.card}>
+                  <div style={{display:"flex",alignItems:"center",gap:12}}>
+                    <div style={s.avatar}>{p.full_name?.split(" ").map((n:string)=>n[0]).join("").slice(0,2)||"?"}</div>
+                    <div style={{flex:1}}>
+                      <p style={{fontSize:14,fontWeight:700,color:"#e8e0ff"}}>{p.full_name}</p>
+                      <p style={{fontSize:11,color:"#8b80b0"}}>{p.email}{p.phone?` · ${p.phone}`:""}</p>
+                      <p style={{fontSize:11,color:"#8b80b0"}}>{lb?.taps_this_year||0}x getapt · doel: {p.preferred_frequency}x/mnd</p>
+                    </div>
+                    <div style={{display:"flex",gap:6,flexDirection:"column",alignItems:"flex-end"}}>
+                      {p.role==="admin"&&<span style={s.mintBadge}>Admin</span>}
+                      <button style={s.editBtn} onClick={()=>openEditTapper(p)}>✏️ Bewerken</button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            {editingTapper&&(
+              <div style={s.overlay} onClick={()=>setEditingTapper(null)}>
+                <div style={s.sheet} onClick={e=>e.stopPropagation()}>
+                  <div style={s.sheetHandle}/>
+                  <p style={s.sheetTitle}>Tapper bewerken</p>
+                  <label style={s.label}>Volledige naam</label>
+                  <input style={s.input} value={editForm.full_name} onChange={e=>setEditForm(f=>({...f,full_name:e.target.value}))}/>
+                  <label style={s.label}>E-mailadres</label>
+                  <input style={s.input} type="email" value={editForm.email} onChange={e=>setEditForm(f=>({...f,email:e.target.value}))}/>
+                  <label style={s.label}>Telefoonnummer</label>
+                  <input style={s.input} type="tel" value={editForm.phone} onChange={e=>setEditForm(f=>({...f,phone:e.target.value}))} placeholder="+31 6 12345678"/>
+                  <label style={s.label}>Rol</label>
+                  <div style={{display:"flex",gap:8,marginBottom:16}}>
+                    {["tapper","admin"].map(r=>(
+                      <div key={r} style={{...s.chip,...(editForm.role===r?s.chipActive:{}),flex:1,textAlign:"center"}} onClick={()=>setEditForm(f=>({...f,role:r}))}>
+                        {r==="admin"?"⚡ Admin":"🍺 Tapper"}
+                      </div>
+                    ))}
+                  </div>
+                  <button style={s.btnPrimary} onClick={saveTapper} disabled={savingTapper}>{savingTapper?"Opslaan...":"💾 Opslaan"}</button>
+                  <button style={{...s.btnSecondary,marginTop:8}} onClick={()=>setEditingTapper(null)}>Annuleren</button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── ROOSTER ── */}
+        {tab==="rooster"&&(
+          <>
+            {eventSaved&&<div style={s.savedBanner}>✅ Feestje aangemaakt!</div>}
+
+            {/* Concept vs Gepubliceerd toggle */}
+            <div style={{display:"flex",gap:8,marginBottom:16}}>
+              {(["published","concept"] as const).map(v=>(
+                <button key={v} style={{...s.toggleBtn,flex:1,background:rosterView===v?"rgba(0,229,195,0.1)":"#221f38",color:rosterView===v?"#00e5c3":"#8b80b0",border:`1px solid ${rosterView===v?"#00e5c3":"#2e2a4a"}`}} onClick={()=>setRosterView(v)}>
+                  {v==="published"?"📋 Gepubliceerd":"🗒 Concept"}
+                </button>
+              ))}
+            </div>
+
+            {/* Gepubliceerd rooster */}
+            {rosterView==="published"&&(
+              <>
+                <p style={s.sectionTitle}>Gepubliceerd rooster — aanpasbaar</p>
+                <p style={{fontSize:12,color:"#8b80b0",marginBottom:12}}>Wijzig tappers of diensten direct. Wijzigingen worden direct opgeslagen.</p>
+                {published.length===0&&<p style={{textAlign:"center",padding:"30px 0",color:"#8b80b0",fontSize:13}}>Geen gepubliceerde diensten gevonden.</p>}
+                {published.map(shift=><ShiftCard key={shift.id} shift={shift} source="published"/>)}
+              </>
+            )}
+
+            {/* Concept rooster */}
+            {rosterView==="concept"&&(
+              <>
+                <button style={{...s.btnPrimary,marginBottom:12}} onClick={()=>setShowEventForm(true)}>🎉 Feestje / evenement aanmaken</button>
+
+                <p style={s.sectionTitle}>Tapavonden genereren</p>
+                <div style={s.card}>
+                  <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+                    {PERIOD_OPTIONS.map(opt=>(
+                      <div key={opt.value} style={{...s.chip,...(period===opt.value?s.chipActive:{}),flex:1,textAlign:"center"}} onClick={()=>setPeriod(opt.value)}>{opt.label}</div>
+                    ))}
+                  </div>
+                  <p style={{fontSize:12,color:"#8b80b0",marginBottom:14}}>
+                    {MONTH_NAMES[now.getMonth()]} {now.getFullYear()}{period>1&&` – ${MONTH_NAMES[(now.getMonth()+period-1)%12]} ${now.getFullYear()+Math.floor((now.getMonth()+period-1)/12)}`}
+                  </p>
+                  <button style={s.btnSecondary} onClick={handleGenerate} disabled={generating}>{generating?"⏳ Genereren...":"🤖 Genereer conceptrooster"}</button>
+                </div>
+
+                {conceptShifts.length>0&&(
+                  <>
+                    <p style={s.sectionTitle}>Conceptrooster ({conceptShifts.length} diensten)</p>
+                    {conceptShifts.map(shift=><ShiftCard key={shift.id} shift={shift} source="concept"/>)}
+                    <div style={{...s.card,borderColor:"#00e5c3",marginTop:8}}>
+                      <p style={{fontSize:13,color:"#8b80b0",marginBottom:12}}>Tevreden? Zet het rooster live via "Publiceer".</p>
+                      <button style={s.btnPrimary} onClick={()=>setTab("publiceer")}>🚀 Ga naar publiceren →</button>
+                    </div>
+                  </>
+                )}
+                {conceptShifts.length===0&&!generating&&(
+                  <div style={{textAlign:"center",padding:"30px 0",color:"#8b80b0",fontSize:13}}>Genereer een conceptrooster om te beginnen.</div>
+                )}
+              </>
+            )}
+
+            {/* Feestje modal */}
+            {showEventForm&&(
+              <div style={s.overlay} onClick={()=>setShowEventForm(false)}>
+                <div style={{...s.sheet,maxHeight:"85vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
+                  <div style={s.sheetHandle}/>
+                  <p style={s.sheetTitle}>🎉 Feestje / evenement aanmaken</p>
+                  <form onSubmit={handleCreateEvent}>
+                    <label style={s.label}>Naam</label>
+                    <input style={s.input} value={eventForm.title} onChange={e=>setEventForm(f=>({...f,title:e.target.value}))} placeholder="Bijv. Oud & Nieuw..." required/>
+                    <label style={s.label}>Datum</label>
+                    <input style={s.input} type="date" value={eventForm.date} onChange={e=>setEventForm(f=>({...f,date:e.target.value}))} required/>
+                    <p style={{...s.sectionTitle,marginTop:16}}>Diensten</p>
+                    {eventForm.shifts.map((shift,idx)=>(
+                      <div key={idx} style={{...s.card,marginBottom:10}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                          <p style={{fontSize:13,fontWeight:700,color:"#e8e0ff"}}>Dienst {idx+1}</p>
+                          {eventForm.shifts.length>1&&<button type="button" style={{...s.iconBtn,color:"#ff4f6d"}} onClick={()=>removeShiftFromEvent(idx)}>🗑</button>}
+                        </div>
+                        <div style={{display:"flex",gap:8,marginBottom:12}}>
+                          {(["tapper","bonnenkassa"] as const).map(r=>(
+                            <div key={r} style={{...s.chip,...(shift.role===r?s.chipActive:{}),flex:1,textAlign:"center"}} onClick={()=>updateEventShift(idx,"role",r)}>
+                              {r==="bonnenkassa"?"🎟 Bonnenkassa":"🍺 Tapper"}
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{display:"flex",gap:8,marginBottom:12}}>
+                          <div style={{flex:1}}><label style={s.label}>Start</label><input style={{...s.input,marginBottom:0}} value={shift.start_time} onChange={e=>updateEventShift(idx,"start_time",e.target.value)} required/></div>
+                          <div style={{flex:1}}><label style={s.label}>Eind</label><input style={{...s.input,marginBottom:0}} value={shift.end_time} onChange={e=>updateEventShift(idx,"end_time",e.target.value)} required/></div>
+                        </div>
+                        <label style={s.label}>Aantal tappers</label>
+                        <div style={{display:"flex",alignItems:"center",gap:12}}>
+                          <button type="button" style={{...s.iconBtn,fontSize:18}} onClick={()=>updateEventShift(idx,"max_tappers",Math.max(1,shift.max_tappers-1))}>−</button>
+                          <span style={{fontFamily:"monospace",fontSize:22,color:"#00e5c3",minWidth:32,textAlign:"center"}}>{shift.max_tappers}</span>
+                          <button type="button" style={{...s.iconBtn,fontSize:18}} onClick={()=>updateEventShift(idx,"max_tappers",Math.min(20,shift.max_tappers+1))}>+</button>
+                        </div>
+                      </div>
+                    ))}
+                    <button type="button" style={{...s.btnSecondary,marginBottom:12}} onClick={addShiftToEvent}>+ Dienst toevoegen</button>
+                    <button type="submit" style={s.btnPrimary} disabled={savingEvent}>{savingEvent?"Aanmaken...":"✅ Feestje aanmaken"}</button>
+                    <button type="button" style={{...s.btnSecondary,marginTop:8}} onClick={()=>setShowEventForm(false)}>Annuleren</button>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* Tapper toevoegen modal */}
+            {addTapperModal&&(
+              <div style={s.overlay} onClick={()=>setAddTapperModal(null)}>
+                <div style={s.sheet} onClick={e=>e.stopPropagation()}>
+                  <div style={s.sheetHandle}/>
+                  <p style={s.sheetTitle}>Tapper toevoegen</p>
+                  <p style={{fontSize:13,color:"#8b80b0",marginBottom:12}}>{addTapperModal.title} · {formatDate(addTapperModal.date)}</p>
+                  <input style={s.input} placeholder="🔍 Zoek tapper..." value={tapperSearchModal} onChange={e=>setTapperSearchModal(e.target.value)} autoFocus/>
+                  <div style={{maxHeight:280,overflowY:"auto"}}>
+                    {filteredModalProfiles
+                      .filter(p=>!(addTapperModal.assignments||[]).some((a:any)=>a.user_id===p.id&&a.status!=="declined"))
+                      .map(p=>(
+                        <div key={p.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:"1px solid #2e2a4a"}}>
+                          <div style={s.avatar}>{p.full_name?.split(" ").map((n:string)=>n[0]).join("").slice(0,2)}</div>
+                          <div style={{flex:1}}>
+                            <p style={{fontSize:14,fontWeight:600,color:"#e8e0ff"}}>{p.full_name}</p>
+                            <p style={{fontSize:11,color:"#8b80b0"}}>{p.email}</p>
+                          </div>
+                          <button style={{...s.btnPrimary,width:"auto",padding:"8px 14px",fontSize:12}} disabled={addingTapper===p.id} onClick={()=>handleAddTapper(addTapperModal.id,p.id)}>
+                            {addingTapper===p.id?"...":"+ Voeg toe"}
+                          </button>
+                        </div>
+                      ))
+                    }
+                  </div>
+                  <button style={{...s.btnSecondary,marginTop:12}} onClick={()=>setAddTapperModal(null)}>Sluiten</button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── PUBLICEER ── */}
+        {tab==="publiceer"&&(
+          <>
+            <p style={s.sectionTitle}>Rooster publiceren</p>
+            <div style={s.card}>
+              <p style={{fontSize:13,color:"#8b80b0",marginBottom:12}}>Alle concept-diensten worden live gezet. Tappers ontvangen notificatie + e-mail.</p>
+              <label style={s.label}>Begeleidend bericht (optioneel)</label>
+              <textarea style={{...s.input,resize:"none",minHeight:80,lineHeight:1.6}} placeholder="Bijv. 'Let op: mei is extra druk!'" value={publishMsg} onChange={e=>setPublishMsg(e.target.value)}/>
+              <button style={s.btnPrimary} onClick={handlePublish} disabled={publishing}>{publishing?"⏳ Publiceren...":"🚀 Rooster live zetten"}</button>
+            </div>
+          </>
+        )}
+
+        {/* ── UITNODIGING ── */}
+        {tab==="uitnodiging"&&(
+          <>
+            <p style={s.sectionTitle}>Nieuwe uitnodiging</p>
+            <div style={s.card}>
+              <label style={s.label}>Stuur direct per e-mail (optioneel)</label>
+              <input style={s.input} type="email" placeholder="e-mailadres" value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)}/>
+              <button style={s.btnPrimary} onClick={handleCreateInvite} disabled={inviteLoading}>{inviteLoading?"Genereren...":"🔗 Genereer uitnodigingslink"}</button>
+            </div>
+            {inviteUrl&&(
+              <>
+                <p style={s.sectionTitle}>Uitnodigingslink</p>
+                <div style={s.card}>
+                  <div style={{background:"#0f0d1a",borderRadius:10,padding:"10px 12px",fontFamily:"monospace",fontSize:11,color:"#00e5c3",wordBreak:"break-all",marginBottom:10}}>{inviteUrl}</div>
+                  <button style={s.btnSecondary} onClick={()=>{navigator.clipboard.writeText(inviteUrl);setCopied(true);setTimeout(()=>setCopied(false),2000);}}>
+                    {copied?"✅ Gekopieerd!":"📋 Kopieer link"}
+                  </button>
+                </div>
+                {qrCode&&(
+                  <>
+                    <p style={s.sectionTitle}>QR Code</p>
+                    <div style={{border:"2px dashed #00e5c3",borderRadius:16,padding:24,display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>
+                      <img src={qrCode} alt="QR Code" style={{width:160,height:160,borderRadius:10}}/>
+                      <a href={qrCode} download="walhalla-invite-qr.png" style={{...s.btnSecondary,padding:"10px 20px",width:"auto"}}>⬇️ Download QR</a>
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const s: Record<string, React.CSSProperties> = {
+  header:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 20px",background:"rgba(15,13,26,0.92)",backdropFilter:"blur(16px)",borderBottom:"1px solid #2e2a4a",position:"sticky",top:0,zIndex:50},
+  back:{background:"none",border:"none",color:"#00e5c3",fontSize:22,cursor:"pointer",padding:0,width:28},
+  headerTitle:{fontSize:14,fontWeight:700,color:"#f0eeff",letterSpacing:1,fontFamily:"'Exo 2', sans-serif"},
+  tabBar:{display:"flex",borderBottom:"1px solid #2e2a4a",background:"#0f0d1a",overflowX:"auto"},
+  tabBtn:{flex:1,minWidth:80,padding:"10px 6px",background:"none",border:"none",fontFamily:"'Exo 2', sans-serif",fontWeight:700,fontSize:11,cursor:"pointer",whiteSpace:"nowrap"},
+  content:{flex:1,overflowY:"auto",padding:"16px 16px 40px"},
+  sectionTitle:{fontSize:11,fontWeight:700,letterSpacing:2,textTransform:"uppercase",color:"#8b80b0",margin:"16px 0 8px"},
+  card:{background:"#1a1730",border:"1px solid #2e2a4a",borderRadius:16,padding:16,marginBottom:10},
+  statGrid:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:4},
+  statCard:{background:"#1a1730",border:"1px solid #2e2a4a",borderRadius:14,padding:16,textAlign:"center"},
+  statVal:{fontFamily:"monospace",fontSize:30,fontWeight:700,margin:0},
+  statLabel:{fontSize:10,color:"#8b80b0",letterSpacing:1,textTransform:"uppercase",marginTop:4,margin:0},
+  healthRow:{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:"1px solid #2e2a4a"},
+  dot:{width:10,height:10,borderRadius:"50%",flexShrink:0},
+  dangerBadge:{fontSize:11,padding:"2px 8px",borderRadius:10,background:"rgba(255,79,109,0.1)",color:"#ff4f6d",border:"1px solid #ff4f6d"},
+  mintBadge:{fontSize:11,padding:"3px 8px",borderRadius:10,background:"rgba(0,229,195,0.1)",color:"#00e5c3",border:"1px solid #00e5c3"},
+  warnBadge:{fontSize:10,padding:"2px 8px",borderRadius:10,background:"rgba(255,181,71,0.1)",color:"#ffb547",border:"1px solid #ffb547"},
+  purpleBadge:{fontSize:10,padding:"2px 8px",borderRadius:10,background:"rgba(90,74,158,0.2)",color:"#a896ff",border:"1px solid #5a4a9e"},
+  savedBanner:{background:"rgba(0,229,195,0.08)",border:"1px solid #00e5c3",borderRadius:10,padding:"10px 14px",fontSize:13,color:"#00e5c3",fontWeight:700,textAlign:"center",marginBottom:12},
+  input:{width:"100%",background:"#221f38",border:"1px solid #2e2a4a",borderRadius:10,padding:"12px 14px",color:"#e8e0ff",fontFamily:"'Exo 2', sans-serif",fontSize:14,outline:"none",display:"block",marginBottom:12},
+  label:{display:"block",fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",color:"#8b80b0",marginBottom:6},
+  avatar:{width:40,height:40,borderRadius:12,background:"linear-gradient(135deg, #3b2f6e, #5a4a9e)",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:15,color:"#00e5c3",flexShrink:0},
+  editBtn:{fontSize:11,padding:"4px 10px",borderRadius:8,background:"#221f38",border:"1px solid #2e2a4a",color:"#e8e0ff",cursor:"pointer",fontFamily:"'Exo 2', sans-serif",fontWeight:700},
+  iconBtn:{background:"#221f38",border:"1px solid #2e2a4a",borderRadius:8,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:14,color:"#e8e0ff"},
+  addTapperBtn:{padding:"4px 10px",borderRadius:20,background:"rgba(0,229,195,0.08)",border:"1px solid #00e5c3",color:"#00e5c3",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Exo 2', sans-serif"},
+  chip:{padding:"8px 10px",borderRadius:20,fontSize:11,fontWeight:700,cursor:"pointer",border:"1px solid #2e2a4a",background:"#221f38",color:"#8b80b0",textTransform:"uppercase",textAlign:"center"},
+  chipActive:{background:"rgba(0,229,195,0.1)",borderColor:"#00e5c3",color:"#00e5c3"},
+  toggleBtn:{padding:"10px",borderRadius:10,fontFamily:"'Exo 2', sans-serif",fontWeight:700,fontSize:13,cursor:"pointer",border:"none"},
+  btnPrimary:{width:"100%",padding:14,borderRadius:12,background:"linear-gradient(135deg, #00e5c3, #00b89c)",color:"#0f0d1a",fontFamily:"'Exo 2', sans-serif",fontSize:14,fontWeight:700,border:"none",cursor:"pointer",textTransform:"uppercase",letterSpacing:1,display:"block",textAlign:"center",textDecoration:"none"},
+  btnSecondary:{width:"100%",padding:"12px 14px",borderRadius:12,background:"#221f38",color:"#e8e0ff",fontFamily:"'Exo 2', sans-serif",fontSize:14,fontWeight:700,border:"1px solid #2e2a4a",cursor:"pointer",textTransform:"uppercase",letterSpacing:1,display:"block",textAlign:"center",textDecoration:"none"},
+  overlay:{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(6px)",zIndex:100,display:"flex",alignItems:"flex-end",justifyContent:"center"},
+  sheet:{background:"#1a1730",border:"1px solid #2e2a4a",borderRadius:"24px 24px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:430},
+  sheetHandle:{width:36,height:4,background:"#2e2a4a",borderRadius:2,margin:"0 auto 20px"},
+  sheetTitle:{fontSize:18,fontWeight:700,color:"#f0eeff",marginBottom:16,fontFamily:"'Exo 2', sans-serif"},
+};
