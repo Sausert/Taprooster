@@ -7,9 +7,9 @@ const DAY_LABELS = ["Ma","Di","Wo","Do","Vr","Za","Zo"];
 // Color constants
 const C = {
   myShift:   "#5a4a9e", // Paars — mijn dienst
-  party:     "#ffb547", // Geel — feestje/evenement
+  party:     "#3b82f6", // Blauw — feestje/evenement
   full:      "#00e5c3", // Groen — alle plaatsen gevuld
-  partial:   "#ffb547", // Oranje — niet alle plaatsen gevuld (same as party, context differs)
+  partial:   "#ffb547", // Oranje — niet alle plaatsen gevuld
   empty:     "#ff4f6d", // Rood — nog geen plaatsen gevuld
 };
 
@@ -28,7 +28,7 @@ function getDayColor(dayShifts: any[], myShiftIds: string[]): { bg: string; colo
   const isParty = dayShifts.every(s => s.type === "feestje");
 
   if (isMe) return { bg: `rgba(90,74,158,0.25)`, color: C.myShift, borderColor: C.myShift };
-  if (isParty) return { bg: `rgba(255,181,71,0.12)`, color: C.party, borderColor: C.party };
+  if (isParty) return { bg: `rgba(59,130,246,0.12)`, color: C.party, borderColor: C.party };
 
   // Occupancy-based color for tapavonden
   const totalMax = dayShifts.reduce((sum, s) => sum + (s.max_tappers || 2), 0);
@@ -179,9 +179,9 @@ export default function RoosterClient({
             {[
               { color: C.myShift, bg: "rgba(90,74,158,0.2)", label: "Mijn dienst" },
               { color: C.full,    bg: "rgba(0,229,195,0.1)", label: "Vol" },
-              { color: C.partial, bg: "rgba(255,181,71,0.1)", label: "Niet vol" },
+              { color: C.partial, bg: "rgba(59,130,246,0.1)", label: "Niet vol" },
               { color: C.empty,   bg: "rgba(255,79,109,0.1)", label: "Leeg" },
-              { color: C.party,   bg: "rgba(255,181,71,0.15)", label: "Feestje" },
+              { color: C.party,   bg: "rgba(59,130,246,0.12)", label: "Feestje" },
             ].map(({ color, bg, label }) => (
               <div key={label} style={{ display:"flex", alignItems:"center", gap:5, fontSize:10, color:"#8b80b0" }}>
                 <div style={{ width:10, height:10, borderRadius:2, background:bg, borderWidth:1, borderStyle:"solid", borderColor:color }} />
@@ -253,7 +253,7 @@ export default function RoosterClient({
                         </div>
                         <p style={{ fontSize:13, color:"#8b80b0" }}>{formatDate(shift.date)} · {shift.start_time}–{shift.end_time}</p>
                         <p style={{ fontSize:11, color: accentColor, marginTop:2 }}>{assigned.length}/{totalSpots} tappers</p>
-                        {shift.admin_note && <p style={{ fontSize:11, color:"#ffb547", marginTop:4 }}>📌 {shift.admin_note}</p>}
+                        {shift.admin_note && <p style={{ fontSize:11, color:"#3b82f6", marginTop:4 }}>📌 {shift.admin_note}</p>}
                       </div>
                       <button onClick={() => setSelectedShifts([])} style={s.closeBtn}>✕</button>
                     </div>
@@ -376,7 +376,7 @@ const s: Record<string, React.CSSProperties> = {
   calGrid: { display:"grid", gridTemplateColumns:"repeat(7, 1fr)", gap:4, marginBottom:16 },
   dayHeader: { textAlign:"center", fontSize:10, fontWeight:700, color:"#8b80b0", padding:"4px 0" },
   closeBtn: { background:"none", border:"none", color:"#8b80b0", fontSize:16, cursor:"pointer", padding:4, flexShrink:0 },
-  warnBadge: { background:"rgba(255,181,71,0.1)", borderWidth:1, borderStyle:"solid", borderColor:"#ffb547", color:"#ffb547", fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:20 },
+  warnBadge: { background:"rgba(59,130,246,0.1)", borderWidth:1, borderStyle:"solid", borderColor:"#3b82f6", color:"#3b82f6", fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:20 },
   myBadge: { background:"rgba(90,74,158,0.2)", borderWidth:1, borderStyle:"solid", borderColor:"#5a4a9e", color:"#5a4a9e", fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:20 },
   claimBtn: { padding:"10px 14px", borderRadius:10, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", border:"none", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", textTransform:"uppercase" },
   claimBtnSm: { padding:"5px 10px", borderRadius:8, background:"rgba(0,229,195,0.1)", borderWidth:1, borderStyle:"solid", borderColor:"#00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer" },

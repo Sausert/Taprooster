@@ -61,17 +61,6 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
   const [conceptShifts, setConceptShifts] = useState<any[]>([]);
   const [editingShiftId, setEditingShiftId] = useState<string|null>(null);
 
-  // Dienst verwijderen
-  async function handleDeleteShift(shiftId: string, source: "concept"|"published") {
-    if (!confirm("Weet je zeker dat je deze dienst wilt verwijderen?")) return;
-    const res = await fetch(`/api/admin/shifts/${shiftId}/delete`, { method:"DELETE" });
-    if (res.ok) {
-      if (source === "published") setPublished(ps => ps.filter(s => s.id !== shiftId));
-      else setConceptShifts(cs => cs.filter(s => s.id !== shiftId));
-      setShifts(ss => ss.filter(s => s.id !== shiftId));
-    }
-  }
-
   // Feestje
   const [showEventForm, setShowEventForm] = useState(false);
   const [eventForm, setEventForm] = useState({ title:"", date:"", shifts:[emptyShift()] });
@@ -571,7 +560,7 @@ const s: Record<string, React.CSSProperties> = {
   healthRow:{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:"1px solid #2e2a4a"},
   dangerBadge:{fontSize:11,padding:"2px 8px",borderRadius:10,background:"rgba(255,79,109,0.1)",color:"#ff4f6d",border:"1px solid #ff4f6d"},
   mintBadge:{fontSize:11,padding:"3px 8px",borderRadius:10,background:"rgba(0,229,195,0.1)",color:"#00e5c3",border:"1px solid #00e5c3"},
-  warnBadge:{fontSize:10,padding:"2px 8px",borderRadius:10,background:"rgba(255,181,71,0.1)",color:"#ffb547",border:"1px solid #ffb547"},
+  warnBadge:{fontSize:10,padding:"2px 8px",borderRadius:10,background:"rgba(59,130,246,0.1)",color:"#3b82f6",border:"1px solid #3b82f6"},
   purpleBadge:{fontSize:10,padding:"2px 8px",borderRadius:10,background:"rgba(90,74,158,0.2)",color:"#a896ff",border:"1px solid #5a4a9e"},
   savedBanner:{background:"rgba(0,229,195,0.08)",border:"1px solid #00e5c3",borderRadius:10,padding:"10px 14px",fontSize:13,color:"#00e5c3",fontWeight:700,textAlign:"center",marginBottom:12},
   input:{width:"100%",background:"#221f38",border:"1px solid #2e2a4a",borderRadius:10,padding:"12px 14px",color:"#e8e0ff",fontFamily:"'Exo 2', sans-serif",fontSize:14,outline:"none",display:"block",marginBottom:12},
