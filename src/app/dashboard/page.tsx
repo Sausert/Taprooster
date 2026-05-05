@@ -14,21 +14,38 @@ export default async function DashboardPage() {
   const in30days = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
   const thisYear = new Date().getFullYear();
 
-  // Mijn diensten komende 30 dagen
-  const { data: myUpcomingRaw } = await supabase
-    .from("shift_assignments")
-    .select("*, shift:shifts(*)")
-    .eq("user_id", user.id)
-    .neq("status", "declined")
-    .gte("shift.date", today)
-    .lte("shift.date", in30days)
-    .order("shift.date", { ascending: true });
+  // Step 1: get published shifts in next 30 days
+  const { data: upcomingShifts } = await supabase
+    .from("shifts")
+    .select("*")
+    .eq("status", "published")
+    .gte("date", today)
+    .lte("date", in30days)
+    .order("date", { ascending: true });
 
-  // Filter null shifts (join kan null opleveren bij filtering)
-  const myUpcoming = (myUpcomingRaw || []).filter((a: any) => a.shift !== null);
+  const upcomingShiftIds = (upcomingShifts || []).map((s: any) => s.id);
 
-  // Open diensten (gepubliceerd, niet vol, ik ben niet al ingeschreven)
+  // Step 2: get my assignments for those shifts
+  let myUpcoming: any[] = [];
+  if (upcomingShiftIds.length > 0) {
+    const { data: myAssignments } = await supabase
+      .from("shift_assignments")
+      .select("*")
+      .eq("user_id", user.id)
+      .neq("status", "declined")
+      .in("shift_id", upcomingShiftIds);
+
+    // Join manually
+    myUpcoming = (myAssignments || []).map((a: any) => ({
+      ...a,
+      shift: (upcomingShifts || []).find((s: any) => s.id === a.shift_id) || null,
+    })).filter((a: any) => a.shift !== null)
+      .sort((a: any, b: any) => a.shift.date.localeCompare(b.shift.date));
+  }
+
   const myShiftIds = myUpcoming.map((a: any) => a.shift_id);
+
+  // Open diensten: published, has open spots, user not assigned
   const { data: openShiftsRaw } = await supabase
     .from("shift_occupancy")
     .select("*")
@@ -42,21 +59,28 @@ export default async function DashboardPage() {
     (s: any) => !myShiftIds.includes(s.id)
   );
 
-  // Statistieken dit jaar
-  const { count: tapsThisYear } = await supabase
-    .from("shift_assignments")
-    .select("*, shifts!inner(date)", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .neq("status", "declined")
-    .gte("shifts.date", `${thisYear}-01-01`)
-    .lte("shifts.date", `${thisYear}-12-31`);
+  // Stats this year - two-step query
+  const { data: yearShifts } = await supabase
+    .from("shifts").select("id")
+    .gte("date", `${thisYear}-01-01`)
+    .lte("date", `${thisYear}-12-31`);
 
-  // Leaderboard rank
+  const yearShiftIds = (yearShifts || []).map((s: any) => s.id);
+  let tapsThisYear = 0;
+  if (yearShiftIds.length > 0) {
+    const { count } = await supabase
+      .from("shift_assignments")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .neq("status", "declined")
+      .in("shift_id", yearShiftIds);
+    tapsThisYear = count || 0;
+  }
+
   const { data: leaderboard } = await supabase
     .from("leaderboard").select("*").order("rank", { ascending: true });
   const myRank = leaderboard?.find((l: any) => l.id === user.id)?.rank || 0;
 
-  // Admin berichten
   const { data: adminMessages } = await supabase
     .from("admin_messages").select("*")
     .order("created_at", { ascending: false }).limit(3);
@@ -66,7 +90,7 @@ export default async function DashboardPage() {
       profile={profile}
       myUpcoming={myUpcoming}
       claimableShifts={claimableShifts}
-      tapsThisYear={tapsThisYear || 0}
+      tapsThisYear={tapsThisYear}
       myRank={myRank}
       adminMessages={adminMessages || []}
     />

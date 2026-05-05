@@ -1,30 +1,31 @@
-// app/api/schedule/route.ts — Rooster genereren
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { generateSchedule } from "@/lib/scheduler";
 
-// Geeft alle datums in een range terug voor een specifieke dag van de week
-// dag: 3=woensdag, 5=vrijdag, 6=zaterdag
+// Timezone-safe: gebruik altijd lokale datumonderdelen, nooit toISOString()
+function toLocalDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// Parse date string zonder timezone offset
+function parseLocalDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
 function getDatesForDayInRange(dayOfWeek: number, start: Date, end: Date): Date[] {
   const dates: Date[] = [];
-  const current = new Date(start);
-  // Ga naar de eerste gewenste dag
-  while (current.getDay() !== dayOfWeek) {
-    current.setDate(current.getDate() + 1);
-  }
-  while (current <= end) {
-    dates.push(new Date(current));
+  const current = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  while (current.getDay() !== dayOfWeek) current.setDate(current.getDate() + 1);
+  const endTime = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime();
+  while (current.getTime() <= endTime) {
+    dates.push(new Date(current.getFullYear(), current.getMonth(), current.getDate()));
     current.setDate(current.getDate() + 7);
   }
   return dates;
-}
-
-function toDateStr(d: Date): string {
-  return d.toISOString().split("T")[0];
-}
-
-function getDayLabel(dayOfWeek: number): string {
-  return dayOfWeek === 3 ? "Woensdag" : dayOfWeek === 5 ? "Vrijdag" : "Zaterdag";
 }
 
 export async function POST(req: NextRequest) {
@@ -39,125 +40,68 @@ export async function POST(req: NextRequest) {
   const months: string[] = Array.isArray(body.months) ? body.months : body.month ? [body.month] : [];
   if (months.length === 0) return NextResponse.json({ error: "Geen periode opgegeven" }, { status: 400 });
 
-  // Bepaal datumrange
-  const firstMonth = months[0].split("-");
-  const lastMonth = months[months.length - 1].split("-");
-  const rangeStart = new Date(Number(firstMonth[0]), Number(firstMonth[1]) - 1, 1);
-  const rangeEnd = new Date(Number(lastMonth[0]), Number(lastMonth[1]) - 1 + 1, 0); // laatste dag van laatste maand
-  const rangeStartStr = toDateStr(rangeStart);
-  const rangeEndStr = toDateStr(rangeEnd);
+  // Bepaal datumrange — gebruik parseLocalDate voor consistentie
+  const firstParts = months[0].split("-").map(Number);
+  const lastParts = months[months.length - 1].split("-").map(Number);
+  const rangeStart = new Date(firstParts[0], firstParts[1] - 1, 1);
+  const rangeEnd = new Date(lastParts[0], lastParts[1], 0); // laatste dag van laatste maand
+  const rangeStartStr = toLocalDateStr(rangeStart);
+  const rangeEndStr = toLocalDateStr(rangeEnd);
 
-  // ── Stap 1: Genereer automatisch tapavond-shifts voor wo/vr/za ──
-  // Haal bestaande shifts op zodat we geen duplicaten aanmaken
+  // Bestaande shifts ophalen om duplicaten te voorkomen
   const { data: existingShifts } = await supabase
-    .from("shifts")
-    .select("date, type, role")
-    .gte("date", rangeStartStr)
-    .lte("date", rangeEndStr);
+    .from("shifts").select("date, type, role")
+    .gte("date", rangeStartStr).lte("date", rangeEndStr);
 
   const existingDates = new Set((existingShifts || []).map((s: any) => s.date));
 
   const shiftsToCreate: any[] = [];
 
-  // Woensdag: open diensten (niemand ingepland, tappers schrijven zelf in)
-  const woensdagen = getDatesForDayInRange(3, rangeStart, rangeEnd);
-  for (const d of woensdagen) {
-    const dateStr = toDateStr(d);
+  // Woensdag: open tapavonden (geen automatische inplanning)
+  for (const d of getDatesForDayInRange(3, rangeStart, rangeEnd)) {
+    const dateStr = toLocalDateStr(d);
     if (!existingDates.has(dateStr)) {
-      shiftsToCreate.push({
-        title: "Tapavond Woensdag",
-        date: dateStr,
-        start_time: "19:00",
-        end_time: "23:00",
-        type: "tapavond",
-        role: "tapper",
-        max_tappers: 2,
-        status: "concept",
-        created_by: user.id,
-        // Woensdag: geen automatische inplanning — tappers schrijven zelf in
-        auto_assign: false,
-      });
+      shiftsToCreate.push({ title:"Tapavond Woensdag", date:dateStr, start_time:"19:00", end_time:"23:00", type:"tapavond", role:"tapper", max_tappers:2, status:"concept", created_by:user.id });
     }
   }
 
   // Vrijdag: 2 tappers automatisch inplannen
-  const vrijdagen = getDatesForDayInRange(5, rangeStart, rangeEnd);
-  for (const d of vrijdagen) {
-    const dateStr = toDateStr(d);
+  for (const d of getDatesForDayInRange(5, rangeStart, rangeEnd)) {
+    const dateStr = toLocalDateStr(d);
     if (!existingDates.has(dateStr)) {
-      shiftsToCreate.push({
-        title: "Tapavond Vrijdag",
-        date: dateStr,
-        start_time: "20:00",
-        end_time: "00:00",
-        type: "tapavond",
-        role: "tapper",
-        max_tappers: 2,
-        status: "concept",
-        created_by: user.id,
-        auto_assign: true,
-      });
+      shiftsToCreate.push({ title:"Tapavond Vrijdag", date:dateStr, start_time:"20:00", end_time:"00:00", type:"tapavond", role:"tapper", max_tappers:2, status:"concept", created_by:user.id });
     }
   }
 
   // Zaterdag: 2 tappers automatisch inplannen
-  const zaterdagen = getDatesForDayInRange(6, rangeStart, rangeEnd);
-  for (const d of zaterdagen) {
-    const dateStr = toDateStr(d);
+  for (const d of getDatesForDayInRange(6, rangeStart, rangeEnd)) {
+    const dateStr = toLocalDateStr(d);
     if (!existingDates.has(dateStr)) {
-      shiftsToCreate.push({
-        title: "Tapavond Zaterdag",
-        date: dateStr,
-        start_time: "20:00",
-        end_time: "00:00",
-        type: "tapavond",
-        role: "tapper",
-        max_tappers: 2,
-        status: "concept",
-        created_by: user.id,
-        auto_assign: true,
-      });
+      shiftsToCreate.push({ title:"Tapavond Zaterdag", date:dateStr, start_time:"20:00", end_time:"00:00", type:"tapavond", role:"tapper", max_tappers:2, status:"concept", created_by:user.id });
     }
   }
 
-  // Sla nieuwe shifts op (zonder auto_assign veld — dat is alleen voor logica hier)
-  let createdShiftIds: string[] = [];
+  // Sla nieuwe shifts op
   if (shiftsToCreate.length > 0) {
-    const insertsClean = shiftsToCreate.map(({ auto_assign, ...rest }) => rest);
-    const { data: newShifts, error: insertError } = await supabase
-      .from("shifts")
-      .insert(insertsClean)
-      .select("id, date, type, role");
-
-    if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
-    createdShiftIds = (newShifts || []).map((s: any) => s.id);
+    const { error } = await supabase.from("shifts").insert(shiftsToCreate);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // ── Stap 2: Haal alle concept shifts op voor de periode ──
-  const { data: allConceptShifts, error: shiftsError } = await supabase
-    .from("shifts")
-    .select("*")
+  // Alle concept shifts voor de periode ophalen
+  const { data: allConceptShifts } = await supabase
+    .from("shifts").select("*")
     .eq("status", "concept")
-    .gte("date", rangeStartStr)
-    .lte("date", rangeEndStr);
+    .gte("date", rangeStartStr).lte("date", rangeEndStr);
 
-  if (shiftsError) return NextResponse.json({ error: shiftsError.message }, { status: 500 });
-
-  // ── Stap 3: Bepaal welke shifts automatisch ingevuld moeten worden ──
-  // Vrijdag en zaterdag tapavonden => auto assign
-  // Woensdag tapavonden => NIET auto assign
-  // Feestjes => auto assign (op basis van wants_parties voorkeur)
+  // Woensdag NIET automatisch inplannen — tappers schrijven zelf in
   const shiftsForAutoAssign = (allConceptShifts || []).filter((s: any) => {
-    const dow = new Date(s.date).getDay();
-    if (s.type === "tapavond" && dow === 3) return false; // Woensdag: open, niet automatisch
-    return true;
+    const d = parseLocalDate(s.date);
+    return !(s.type === "tapavond" && d.getDay() === 3);
   });
 
-  // ── Stap 4: Haal profielen en bestaande assignments op ──
   const { data: profiles } = await supabase.from("profiles").select("*");
   const { data: existingAssignments } = await supabase.from("shift_assignments").select("*");
 
-  // ── Stap 5: Genereer toewijzingen ──
   const suggestions = generateSchedule({
     profiles: profiles || [],
     shifts: shiftsForAutoAssign,
@@ -166,25 +110,17 @@ export async function POST(req: NextRequest) {
 
   if (suggestions.length > 0) {
     await supabase.from("shift_assignments").upsert(
-      suggestions.map((s) => ({ shift_id: s.shiftId, user_id: s.userId, status: "assigned" })),
+      suggestions.map(s => ({ shift_id: s.shiftId, user_id: s.userId, status: "assigned" })),
       { onConflict: "shift_id,user_id" }
     );
   }
 
-  // ── Stap 6: Geef bijgewerkt conceptrooster terug ──
   const { data: updatedShifts } = await supabase
     .from("shifts")
     .select("*, assignments:shift_assignments(user_id, status, profile:profiles(id, full_name))")
     .eq("status", "concept")
-    .gte("date", rangeStartStr)
-    .lte("date", rangeEndStr)
+    .gte("date", rangeStartStr).lte("date", rangeEndStr)
     .order("date", { ascending: true });
 
-  return NextResponse.json({
-    data: {
-      suggestions: suggestions.length,
-      shiftsCreated: shiftsToCreate.length,
-      shifts: updatedShifts || [],
-    },
-  });
+  return NextResponse.json({ data: { suggestions: suggestions.length, shiftsCreated: shiftsToCreate.length, shifts: updatedShifts || [] } });
 }

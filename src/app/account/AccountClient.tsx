@@ -57,7 +57,6 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
       preferred_days: profile.preferred_days,
       preferred_roles: profile.preferred_roles,
       wants_parties: profile.wants_parties,
-      language: profile.language,
       unavailable_months: unavailableMonths,
     }).eq("id", profile.id);
     setSaving(false);
@@ -220,15 +219,6 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
                 Niet beschikbaar: {unavailableMonths.map(m => MONTH_NAMES[m]).join(", ")}
               </p>
             )}
-          </div>
-
-          <p style={s.sectionTitle}>Taal / Language</p>
-          <div style={s.card}>
-            <div style={s.chipRow}>
-              {[["nl","🇳🇱 Nederlands"],["en","🇬🇧 English"]].map(([v,l]) => (
-                <div key={v} style={{ ...s.chip, ...(profile.language===v?s.chipActive:{}) }} onClick={() => setProfile(p => ({ ...p, language: v as any }))}>{l}</div>
-              ))}
-            </div>
           </div>
 
           <button style={s.btnPrimary} onClick={handleSavePreferences} disabled={saving}>

@@ -11,24 +11,27 @@ export default async function AdminPage() {
   if (profile?.role !== "admin") redirect("/dashboard");
 
   const now = new Date();
-  const start = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-01`;
-  const end = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-31`;
+  const thisYear = now.getFullYear();
+  // Huidige maand voor healthcheck
+  const monthStart = `${thisYear}-${String(now.getMonth()+1).padStart(2,"0")}-01`;
+  const monthEnd = `${thisYear}-${String(now.getMonth()+1).padStart(2,"0")}-31`;
 
-  // Shifts voor healthcheck (published, deze maand)
+  // Shifts voor healthcheck (published, huidige maand)
   const { data: shifts } = await supabase
     .from("shifts")
     .select("*, assignments:shift_assignments(user_id, status, profile:profiles(full_name))")
     .eq("status", "published")
-    .gte("date", start).lte("date", end)
+    .gte("date", monthStart).lte("date", monthEnd)
     .order("date", { ascending: true });
 
-  // Gepubliceerde shifts (komende 3 maanden) voor rooster bewerken
-  const in3months = new Date(now.getFullYear(), now.getMonth() + 3, 0).toISOString().split("T")[0];
+  // Gepubliceerde shifts voor HEEL het jaar (zodat admin altijd het volledige gepubliceerde rooster ziet)
+  const yearStart = `${thisYear}-01-01`;
+  const yearEnd = `${thisYear}-12-31`;
   const { data: publishedShifts } = await supabase
     .from("shifts")
     .select("*, assignments:shift_assignments(user_id, status, profile:profiles(id, full_name))")
     .eq("status", "published")
-    .gte("date", start).lte("date", in3months)
+    .gte("date", yearStart).lte("date", yearEnd)
     .order("date", { ascending: true });
 
   const { data: profiles } = await supabase
