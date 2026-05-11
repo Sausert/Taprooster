@@ -46,10 +46,12 @@ export async function POST(req: NextRequest) {
   // Haal alle tappers op
   const { data: allProfiles } = await supabase.from("profiles").select("id, email, full_name");
 
-  // Maak periode label
-  const periodLabel = months.length === 1
-    ? `${getMonthName(months[0].split("-")[1])} ${months[0].split("-")[0]}`
-    : `${getMonthName(months[0].split("-")[1])} t/m ${getMonthName(months[months.length-1].split("-")[1])} ${months[months.length-1].split("-")[0]}`;
+  // Maak periode label van rangeStart/rangeEnd
+  const startParts = rangeStart.split("-");
+  const endParts = rangeEnd.split("-");
+  const periodLabel = (startParts[0] === endParts[0] && startParts[1] === endParts[1])
+    ? `${getMonthName(startParts[1])} ${startParts[0]}`
+    : `${getMonthName(startParts[1])} ${startParts[0]} t/m ${getMonthName(endParts[1])} ${endParts[0]}`;
 
   const notifMessage = message || `Het rooster voor ${periodLabel} staat live. Bekijk jouw ingeplande diensten.`;
 
