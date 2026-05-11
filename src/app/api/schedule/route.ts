@@ -1,31 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
-import { generateSchedule } from "@/lib/scheduler";
+import { sendRosterPublishedEmail } from "@/lib/email";
 
-// Timezone-safe: gebruik altijd lokale datumonderdelen, nooit toISOString()
-function toLocalDateStr(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-// Parse date string zonder timezone offset
-function parseLocalDate(dateStr: string): Date {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
-
-function getDatesForDayInRange(dayOfWeek: number, start: Date, end: Date): Date[] {
-  const dates: Date[] = [];
-  const current = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-  while (current.getDay() !== dayOfWeek) current.setDate(current.getDate() + 1);
-  const endTime = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime();
-  while (current.getTime() <= endTime) {
-    dates.push(new Date(current.getFullYear(), current.getMonth(), current.getDate()));
-    current.setDate(current.getDate() + 7);
-  }
-  return dates;
+function getMonthName(m: string): string {
+  const months = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
+  return months[parseInt(m, 10) - 1] || m;
 }
 
 export async function POST(req: NextRequest) {
@@ -33,94 +12,86 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const { data: adminProfile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  if (adminProfile?.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
   const months: string[] = Array.isArray(body.months) ? body.months : body.month ? [body.month] : [];
+  const { message } = body;
   if (months.length === 0) return NextResponse.json({ error: "Geen periode opgegeven" }, { status: 400 });
 
-  // Bepaal datumrange — gebruik parseLocalDate voor consistentie
-  const firstParts = months[0].split("-").map(Number);
-  const lastParts = months[months.length - 1].split("-").map(Number);
-  const rangeStart = new Date(firstParts[0], firstParts[1] - 1, 1);
-  const rangeEnd = new Date(lastParts[0], lastParts[1], 0); // laatste dag van laatste maand
-  const rangeStartStr = toLocalDateStr(rangeStart);
-  const rangeEndStr = toLocalDateStr(rangeEnd);
+  const allDates = months.map(m => {
+    const [year, mo] = m.split("-");
+    return { start: `${year}-${mo}-01`, end: `${year}-${mo}-31` };
+  });
+  const rangeStart = allDates[0].start;
+  const rangeEnd = allDates[allDates.length - 1].end;
 
-  // Bestaande shifts ophalen om duplicaten te voorkomen
-  const { data: existingShifts } = await supabase
-    .from("shifts").select("date, type, role")
-    .gte("date", rangeStartStr).lte("date", rangeEndStr);
-
-  const existingDates = new Set((existingShifts || []).map((s: any) => s.date));
-
-  const shiftsToCreate: any[] = [];
-
-  // Woensdag: open tapavonden (geen automatische inplanning)
-  for (const d of getDatesForDayInRange(3, rangeStart, rangeEnd)) {
-    const dateStr = toLocalDateStr(d);
-    if (!existingDates.has(dateStr)) {
-      shiftsToCreate.push({ title:"Tapavond Woensdag", date:dateStr, start_time:"19:00", end_time:"23:00", type:"tapavond", role:"tapper", max_tappers:2, status:"concept", created_by:user.id });
-    }
-  }
-
-  // Vrijdag: 2 tappers automatisch inplannen
-  for (const d of getDatesForDayInRange(5, rangeStart, rangeEnd)) {
-    const dateStr = toLocalDateStr(d);
-    if (!existingDates.has(dateStr)) {
-      shiftsToCreate.push({ title:"Tapavond Vrijdag", date:dateStr, start_time:"20:00", end_time:"00:00", type:"tapavond", role:"tapper", max_tappers:2, status:"concept", created_by:user.id });
-    }
-  }
-
-  // Zaterdag: 2 tappers automatisch inplannen
-  for (const d of getDatesForDayInRange(6, rangeStart, rangeEnd)) {
-    const dateStr = toLocalDateStr(d);
-    if (!existingDates.has(dateStr)) {
-      shiftsToCreate.push({ title:"Tapavond Zaterdag", date:dateStr, start_time:"20:00", end_time:"00:00", type:"tapavond", role:"tapper", max_tappers:2, status:"concept", created_by:user.id });
-    }
-  }
-
-  // Sla nieuwe shifts op
-  if (shiftsToCreate.length > 0) {
-    const { error } = await supabase.from("shifts").insert(shiftsToCreate);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  // Alle concept shifts voor de periode ophalen
-  const { data: allConceptShifts } = await supabase
-    .from("shifts").select("*")
+  // Publiceer alle concept shifts in de periode
+  const { error: publishError } = await supabase.from("shifts")
+    .update({ status: "published" })
     .eq("status", "concept")
-    .gte("date", rangeStartStr).lte("date", rangeEndStr);
+    .gte("date", rangeStart).lte("date", rangeEnd);
 
-  // Woensdag NIET automatisch inplannen — tappers schrijven zelf in
-  const shiftsForAutoAssign = (allConceptShifts || []).filter((s: any) => {
-    const d = parseLocalDate(s.date);
-    return !(s.type === "tapavond" && d.getDay() === 3);
-  });
+  if (publishError) return NextResponse.json({ error: publishError.message }, { status: 500 });
 
-  const { data: profiles } = await supabase.from("profiles").select("*");
-  const { data: existingAssignments } = await supabase.from("shift_assignments").select("*");
+  // Haal alle tappers op
+  const { data: allProfiles } = await supabase.from("profiles").select("id, email, full_name");
 
-  const suggestions = generateSchedule({
-    profiles: profiles || [],
-    shifts: shiftsForAutoAssign,
-    existingAssignments: existingAssignments || [],
-  });
+  // Maak periode label
+  const periodLabel = months.length === 1
+    ? `${getMonthName(months[0].split("-")[1])} ${months[0].split("-")[0]}`
+    : `${getMonthName(months[0].split("-")[1])} t/m ${getMonthName(months[months.length-1].split("-")[1])} ${months[months.length-1].split("-")[0]}`;
 
-  if (suggestions.length > 0) {
-    await supabase.from("shift_assignments").upsert(
-      suggestions.map(s => ({ shift_id: s.shiftId, user_id: s.userId, status: "assigned" })),
-      { onConflict: "shift_id,user_id" }
+  const notifMessage = message || `Het rooster voor ${periodLabel} staat live. Bekijk jouw ingeplande diensten.`;
+
+  // Maak in-app notificaties voor ALLE tappers
+  if (allProfiles && allProfiles.length > 0) {
+    const { error: notifError } = await supabase.from("notifications").insert(
+      allProfiles.map(p => ({
+        user_id: p.id,
+        type: "roster_published",
+        title: "📅 Rooster gepubliceerd!",
+        message: notifMessage,
+        read: false,
+      }))
     );
+    if (notifError) console.error("Notif insert error:", notifError.message);
   }
 
-  const { data: updatedShifts } = await supabase
+  // Haal gepubliceerde shifts op voor de periode om per-persoon notificaties te sturen
+  const { data: publishedShifts } = await supabase
     .from("shifts")
-    .select("*, assignments:shift_assignments(user_id, status, profile:profiles(id, full_name))")
-    .eq("status", "concept")
-    .gte("date", rangeStartStr).lte("date", rangeEndStr)
-    .order("date", { ascending: true });
+    .select("*, assignments:shift_assignments(user_id, profile:profiles(email, full_name))")
+    .eq("status", "published")
+    .gte("date", rangeStart).lte("date", rangeEnd);
 
-  return NextResponse.json({ data: { suggestions: suggestions.length, shiftsCreated: shiftsToCreate.length, shifts: updatedShifts || [] } });
+  // Stuur ook notificaties per dienst aan de ingeplande tappers
+  if (publishedShifts && publishedShifts.length > 0) {
+    const shiftNotifs: any[] = [];
+    for (const shift of publishedShifts) {
+      for (const assignment of (shift.assignments || [])) {
+        shiftNotifs.push({
+          user_id: assignment.user_id,
+          type: "shift_assigned",
+          title: "🍺 Jij staat ingepland!",
+          message: `${shift.title} op ${new Date(shift.date).toLocaleDateString("nl-NL", { weekday:"long", day:"numeric", month:"long" })} · ${shift.start_time}–${shift.end_time}`,
+          shift_id: shift.id,
+          read: false,
+        });
+      }
+    }
+    if (shiftNotifs.length > 0) {
+      await supabase.from("notifications").insert(shiftNotifs);
+    }
+  }
+
+  // Verstuur e-mails (fire-and-forget)
+  if (allProfiles) {
+    Promise.allSettled(allProfiles.map(p =>
+      sendRosterPublishedEmail(p.email, p.full_name, message)
+    ));
+  }
+
+  return NextResponse.json({ data: { published: true, notified: allProfiles?.length || 0 } });
 }

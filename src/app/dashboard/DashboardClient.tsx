@@ -169,7 +169,7 @@ export default function DashboardClient({ profile, myUpcoming, claimableShifts, 
                   <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
                     {isConfirmed
                       ? <span style={s.mintBadge}>✓ Bevestigd</span>
-                      : <span style={s.warnBadge}>? Onbevestigd</span>
+                      : <button style={s.btnYesSmall} disabled={loading === a.shift_id} onClick={() => handleConfirm(a.shift_id)}>✅ Bevestigen</button>
                     }
                     <button
                       style={s.declineBtn}
@@ -303,6 +303,7 @@ const s: Record<string, React.CSSProperties> = {
   progressFill: { height: "100%", borderRadius: 4, background: "linear-gradient(90deg, #00e5c3, #00b89c)", transition: "width 0.6s ease" },
   mintBadge: { fontSize: 10, fontWeight: 700, background: "rgba(0,229,195,0.1)", border: "1px solid #00e5c3", color: "#00e5c3", borderRadius: 20, padding: "2px 8px" },
   warnBadge: { fontSize: 10, fontWeight: 700, background: "rgba(255,181,71,0.1)", border: "1px solid #ffb547", color: "#ffb547", borderRadius: 20, padding: "2px 8px" },
+  btnYesSmall: { fontSize: 11, fontWeight: 700, padding: '5px 10px', borderRadius: 8, background: 'rgba(0,229,195,0.1)', border: '1px solid #00e5c3', color: '#00e5c3', fontFamily: "'Exo 2', sans-serif", cursor: 'pointer' },
   declineBtn: { fontSize: 11, fontWeight: 700, padding: "5px 10px", borderRadius: 8, background: "rgba(255,79,109,0.08)", border: "1px solid #ff4f6d", color: "#ff4f6d", cursor: "pointer", fontFamily: "'Exo 2', sans-serif" },
   claimBtn: { padding: "9px 14px", borderRadius: 10, background: "linear-gradient(135deg, #00e5c3, #00b89c)", color: "#0f0d1a", border: "none", fontFamily: "'Exo 2', sans-serif", fontWeight: 700, fontSize: 12, letterSpacing: 1, cursor: "pointer", textTransform: "uppercase", flexShrink: 0 },
   overlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)", zIndex: 100, display: "flex", alignItems: "flex-end", justifyContent: "center" },
