@@ -45,7 +45,13 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
 
   // Rooster
   const [rosterView, setRosterView] = useState<"concept"|"published">("published");
-  const [period, setPeriod] = useState(1);
+  const [dateFrom, setDateFrom] = useState(() => {
+    const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  });
+  const [dateTo, setDateTo] = useState(() => {
+    const d = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  });
   const [generating, setGenerating] = useState(false);
   const [conceptShifts, setConceptShifts] = useState<any[]>([]);
   const [editingShiftId, setEditingShiftId] = useState<string|null>(null);
@@ -192,12 +198,19 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
   }
 
   // Rooster genereren
-  function getMonths():string[]{const m=[];for(let i=0;i<period;i++){const d=new Date(now.getFullYear(),now.getMonth()+i,1);m.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`);}return m;}
   async function handleGenerate(){
+    if (!dateFrom || !dateTo) { alert("Selecteer een van- en tot-datum."); return; }
+    if (dateFrom > dateTo) { alert("De startdatum moet voor de einddatum liggen."); return; }
     setGenerating(true);
-    const res = await fetch("/api/schedule",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({months:getMonths()})});
+    const res = await fetch("/api/schedule",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({dateFrom,dateTo})});
     const data = await res.json();
-    if(data.data?.shifts){setConceptShifts(data.data.shifts);setRosterView("concept");}
+    if (data.error) { alert("❌ " + data.error); setGenerating(false); return; }
+    if(data.data?.shifts){
+      setConceptShifts(data.data.shifts);
+      setRosterView("concept");
+    } else {
+      alert("Geen nieuwe diensten aangemaakt (mogelijk al bestaande concepten in deze periode).");
+    }
     setGenerating(false);
   }
 
@@ -210,7 +223,7 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
   // Publiceren
   async function handlePublish(){
     setPublishing(true);
-    const res = await fetch("/api/schedule/publish",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({months:getMonths(),message:publishMsg})});
+    const res = await fetch("/api/schedule/publish",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({dateFrom,dateTo,message:publishMsg})});
     if(res.ok){
       const data = await res.json();
       alert(`🚀 Rooster gepubliceerd! ${data.data?.notified||0} tappers genotificeerd.`);
@@ -471,14 +484,16 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
                 <button style={{...s.btnPrimary,marginBottom:12}} onClick={()=>setShowEventForm(true)}>🎉 Feestje / evenement aanmaken</button>
                 <p style={s.sectionTitle}>Tapavonden genereren</p>
                 <div style={s.card}>
-                  <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
-                    {PERIOD_OPTIONS.map(opt=>(
-                      <div key={opt.value} onClick={()=>setPeriod(opt.value)} style={{flex:1,textAlign:"center",padding:"8px 6px",borderRadius:20,fontSize:11,fontWeight:700,cursor:"pointer",textTransform:"uppercase",background:period===opt.value?"rgba(0,229,195,0.1)":"#221f38",color:period===opt.value?"#00e5c3":"#8b80b0",borderWidth:1,borderStyle:"solid",borderColor:period===opt.value?"#00e5c3":"#2e2a4a"}}>{opt.label}</div>
-                    ))}
+                  <div style={{display:"flex",gap:10,marginBottom:14}}>
+                    <div style={{flex:1}}>
+                      <label style={s.label}>Van</label>
+                      <input type="date" style={s.input} value={dateFrom} onChange={e=>setDateFrom(e.target.value)}/>
+                    </div>
+                    <div style={{flex:1}}>
+                      <label style={s.label}>Tot en met</label>
+                      <input type="date" style={s.input} value={dateTo} onChange={e=>setDateTo(e.target.value)}/>
+                    </div>
                   </div>
-                  <p style={{fontSize:12,color:"#8b80b0",marginBottom:14}}>
-                    {MONTH_NAMES_SHORT[now.getMonth()]} {now.getFullYear()}{period>1&&` – ${MONTH_NAMES_SHORT[(now.getMonth()+period-1)%12]} ${now.getFullYear()+Math.floor((now.getMonth()+period-1)/12)}`}
-                  </p>
                   <button style={s.btnSecondary} onClick={handleGenerate} disabled={generating}>{generating?"⏳ Genereren...":"🤖 Genereer conceptrooster"}</button>
                 </div>
                 {conceptShifts.length>0&&(

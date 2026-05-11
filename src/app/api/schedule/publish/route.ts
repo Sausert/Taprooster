@@ -16,16 +16,24 @@ export async function POST(req: NextRequest) {
   if (adminProfile?.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
-  const months: string[] = Array.isArray(body.months) ? body.months : body.month ? [body.month] : [];
-  const { message } = body;
-  if (months.length === 0) return NextResponse.json({ error: "Geen periode opgegeven" }, { status: 400 });
+  const { message, dateFrom, dateTo } = body;
 
-  const allDates = months.map(m => {
-    const [year, mo] = m.split("-");
-    return { start: `${year}-${mo}-01`, end: `${year}-${mo}-31` };
-  });
-  const rangeStart = allDates[0].start;
-  const rangeEnd = allDates[allDates.length - 1].end;
+  let rangeStart: string;
+  let rangeEnd: string;
+
+  if (dateFrom && dateTo) {
+    rangeStart = dateFrom;
+    rangeEnd = dateTo;
+  } else {
+    const months: string[] = Array.isArray(body.months) ? body.months : body.month ? [body.month] : [];
+    if (months.length === 0) return NextResponse.json({ error: "Geen periode opgegeven" }, { status: 400 });
+    const allDates = months.map((m: string) => {
+      const [year, mo] = m.split("-");
+      return { start: `${year}-${mo}-01`, end: `${year}-${mo}-31` };
+    });
+    rangeStart = allDates[0].start;
+    rangeEnd = allDates[allDates.length - 1].end;
+  }
 
   // Publiceer alle concept shifts in de periode
   const { error: publishError } = await supabase.from("shifts")
