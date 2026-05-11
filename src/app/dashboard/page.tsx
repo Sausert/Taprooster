@@ -11,41 +11,58 @@ export default async function DashboardPage() {
     .from("profiles").select("*").eq("id", user.id).single();
 
   const today = new Date().toISOString().split("T")[0];
-  const in30days = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
   const thisYear = new Date().getFullYear();
 
-  // Step 1: get published shifts in next 30 days
-  const { data: upcomingShifts } = await supabase
-    .from("shifts")
-    .select("*")
+  // All published shifts this year
+  const { data: allYearShifts } = await supabase
+    .from("shifts").select("id, date")
     .eq("status", "published")
-    .gte("date", today)
-    .lte("date", in30days)
-    .order("date", { ascending: true });
+    .gte("date", `${thisYear}-01-01`)
+    .lte("date", `${thisYear}-12-31`);
 
-  const upcomingShiftIds = (upcomingShifts || []).map((s: any) => s.id);
+  const pastShiftIds = (allYearShifts || []).filter((s: any) => s.date < today).map((s: any) => s.id);
+  const futureShiftIds = (allYearShifts || []).filter((s: any) => s.date >= today).map((s: any) => s.id);
 
-  // Step 2: get my assignments for those shifts
+  // Past taps (already happened)
+  let tapsThisYear = 0;
+  if (pastShiftIds.length > 0) {
+    const { count } = await supabase
+      .from("shift_assignments")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .neq("status", "declined")
+      .in("shift_id", pastShiftIds);
+    tapsThisYear = count || 0;
+  }
+
+  // Future planned shifts (all upcoming, not just 30 days)
   let myUpcoming: any[] = [];
-  if (upcomingShiftIds.length > 0) {
-    const { data: myAssignments } = await supabase
+  if (futureShiftIds.length > 0) {
+    const { data: myFutureAssignments } = await supabase
       .from("shift_assignments")
       .select("*")
       .eq("user_id", user.id)
       .neq("status", "declined")
-      .in("shift_id", upcomingShiftIds);
+      .in("shift_id", futureShiftIds);
 
-    // Join manually
-    myUpcoming = (myAssignments || []).map((a: any) => ({
-      ...a,
-      shift: (upcomingShifts || []).find((s: any) => s.id === a.shift_id) || null,
-    })).filter((a: any) => a.shift !== null)
-      .sort((a: any, b: any) => a.shift.date.localeCompare(b.shift.date));
+    if ((myFutureAssignments || []).length > 0) {
+      const { data: futureShiftDetails } = await supabase
+        .from("shifts").select("*")
+        .in("id", (myFutureAssignments || []).map((a: any) => a.shift_id))
+        .order("date", { ascending: true });
+
+      myUpcoming = (myFutureAssignments || []).map((a: any) => ({
+        ...a,
+        shift: (futureShiftDetails || []).find((s: any) => s.id === a.shift_id) || null,
+      })).filter((a: any) => a.shift !== null)
+        .sort((a: any, b: any) => a.shift.date.localeCompare(b.shift.date));
+    }
   }
 
   const myShiftIds = myUpcoming.map((a: any) => a.shift_id);
+  const incomingPlanned = myUpcoming.length; // count of future planned shifts
 
-  // Open diensten: published, has open spots, user not assigned
+  // Open diensten
   const { data: openShiftsRaw } = await supabase
     .from("shift_occupancy")
     .select("*")
@@ -58,24 +75,6 @@ export default async function DashboardPage() {
   const claimableShifts = (openShiftsRaw || []).filter(
     (s: any) => !myShiftIds.includes(s.id)
   );
-
-  // Stats this year - two-step query
-  const { data: yearShifts } = await supabase
-    .from("shifts").select("id")
-    .gte("date", `${thisYear}-01-01`)
-    .lte("date", `${thisYear}-12-31`);
-
-  const yearShiftIds = (yearShifts || []).map((s: any) => s.id);
-  let tapsThisYear = 0;
-  if (yearShiftIds.length > 0) {
-    const { count } = await supabase
-      .from("shift_assignments")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .neq("status", "declined")
-      .in("shift_id", yearShiftIds);
-    tapsThisYear = count || 0;
-  }
 
   const { data: leaderboard } = await supabase
     .from("leaderboard").select("*").order("rank", { ascending: true });
@@ -91,6 +90,7 @@ export default async function DashboardPage() {
       myUpcoming={myUpcoming}
       claimableShifts={claimableShifts}
       tapsThisYear={tapsThisYear}
+      incomingPlanned={incomingPlanned}
       myRank={myRank}
       adminMessages={adminMessages || []}
     />

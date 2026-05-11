@@ -13,11 +13,12 @@ const AppContext = createContext<{
 export const useApp = () => useContext(AppContext);
 
 // ── Bottom Nav ──
-const NAV_ITEMS = [
+const NAV_ITEMS_BASE = [
   { path: "/dashboard", icon: "⚡", label: "Home" },
   { path: "/rooster",   icon: "📅", label: "Rooster" },
   { path: "/account",  icon: "👤", label: "Account" },
 ];
+const NAV_ITEM_ADMIN = { path: "/admin", icon: "⚙️", label: "Admin" };
 
 export default function AppShell({
   children,
@@ -32,6 +33,8 @@ export default function AppShell({
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(initialUnread);
 
+  const isAdmin = profile?.role === "admin";
+  const NAV_ITEMS = isAdmin ? [...NAV_ITEMS_BASE, NAV_ITEM_ADMIN] : NAV_ITEMS_BASE;
   const currentLabel = NAV_ITEMS.find(n => pathname.startsWith(n.path))?.label || "";
 
   return (

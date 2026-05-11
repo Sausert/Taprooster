@@ -74,6 +74,13 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
   const [savingTapper, setSavingTapper] = useState(false);
   const [tapperSearch, setTapperSearch] = useState("");
 
+  // Standaard diensten configuratie
+  const [defaultShifts, setDefaultShifts] = useState({
+    wednesday: { enabled:true, start:"19:00", end:"23:00" },
+    friday:    { enabled:true, start:"20:00", end:"00:00" },
+    saturday:  { enabled:true, start:"20:00", end:"00:00" },
+  });
+
   // Publiceren
   const [publishMsg, setPublishMsg] = useState("");
   const [publishing, setPublishing] = useState(false);
@@ -96,7 +103,11 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
   function openEditTapper(p:any){
     setEditingTapper(p);
     setEditTab("info");
+    const nameParts = (p.full_name||"").split(" ");
+    const firstName = nameParts[0] || "";
+    const lastName = nameParts.slice(1).join(" ") || "";
     setEditForm({
+      first_name:firstName, last_name:lastName,
       full_name:p.full_name||"", email:p.email||"", phone:p.phone||"", role:p.role||"tapper",
       preferred_frequency:p.preferred_frequency||4,
       preferred_days:p.preferred_days||[],
@@ -128,7 +139,11 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
   async function saveTapper(){
     if(!editingTapper) return;
     setSavingTapper(true);
-    const res = await fetch(`/api/admin/tappers/${editingTapper.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(editForm)});
+    const saveData = {
+      ...editForm,
+      full_name: `${editForm.first_name} ${editForm.last_name}`.trim(),
+    };
+    const res = await fetch(`/api/admin/tappers/${editingTapper.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(saveData)});
     if(res.ok){
       const data = await res.json();
       setProfiles(ps=>ps.map(p=>p.id===editingTapper.id?{...p,...data.data}:p));
@@ -202,7 +217,7 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
     if (!dateFrom || !dateTo) { alert("Selecteer een van- en tot-datum."); return; }
     if (dateFrom > dateTo) { alert("De startdatum moet voor de einddatum liggen."); return; }
     setGenerating(true);
-    const res = await fetch("/api/schedule",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({dateFrom,dateTo})});
+    const res = await fetch("/api/schedule",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({dateFrom,dateTo,defaultShifts})});
     const data = await res.json();
     if (data.error) { alert("❌ " + data.error); setGenerating(false); return; }
     if(data.data?.shifts){
@@ -242,7 +257,24 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
   }
 
   const filteredProfiles = profiles.filter(p=>p.full_name?.toLowerCase().includes(tapperSearch.toLowerCase())||p.email?.toLowerCase().includes(tapperSearch.toLowerCase()));
-  const filteredModalProfiles = profiles.filter(p=>p.full_name?.toLowerCase().includes(tapperSearchModal.toLowerCase()));
+  const filteredModalProfiles = profiles.filter(p => {
+    if (!p.full_name?.toLowerCase().includes(tapperSearchModal.toLowerCase())) return false;
+    // Only show tappers available for the shift date
+    if (!addTapperModal) return true;
+    const shiftDate = addTapperModal.date;
+    if (!shiftDate) return true;
+    // Check unavailable months
+    const monthIdx = new Date(shiftDate.split("-").map(Number)[0], shiftDate.split("-").map(Number)[1]-1, 1).getMonth();
+    if ((p.unavailable_months||[]).includes(monthIdx)) return false;
+    // Check preferred days
+    const dow = (()=>{const [y,m,d]=shiftDate.split("-").map(Number);return new Date(y,m-1,d).getDay();})();
+    const dayMap:Record<number,string> = {3:"wednesday",5:"friday",6:"saturday"};
+    const shiftDay = dayMap[dow];
+    if (shiftDay && (p.preferred_days||[]).length > 0 && !(p.preferred_days||[]).includes(shiftDay)) return false;
+    // Check party preference
+    if (addTapperModal.type === "feestje" && !p.wants_parties) return false;
+    return true;
+  });
 
   // ShiftCard component
   const ShiftCard = ({ shift, source }: { shift:any; source:"concept"|"published" }) => {
@@ -393,19 +425,35 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
 
                   {editTab==="info"&&(
                     <>
-                      <label style={s.label}>Volledige naam</label>
-                      <input style={s.input} value={editForm.full_name} onChange={e=>setEditForm((f:any)=>({...f,full_name:e.target.value}))}/>
+                      <div style={{display:"flex",gap:10}}>
+                        <div style={{flex:1}}>
+                          <label style={s.label}>Voornaam</label>
+                          <input style={s.input} value={editForm.first_name||""} onChange={e=>setEditForm((f:any)=>({...f,first_name:e.target.value}))} placeholder="Voornaam"/>
+                        </div>
+                        <div style={{flex:1}}>
+                          <label style={s.label}>Achternaam</label>
+                          <input style={s.input} value={editForm.last_name||""} onChange={e=>setEditForm((f:any)=>({...f,last_name:e.target.value}))} placeholder="Achternaam"/>
+                        </div>
+                      </div>
                       <label style={s.label}>E-mailadres</label>
                       <input style={s.input} type="email" value={editForm.email} onChange={e=>setEditForm((f:any)=>({...f,email:e.target.value}))}/>
                       <label style={s.label}>Telefoonnummer</label>
                       <input style={s.input} type="tel" value={editForm.phone} onChange={e=>setEditForm((f:any)=>({...f,phone:e.target.value}))} placeholder="+31 6 12345678"/>
-                      <label style={s.label}>Rol</label>
+                      <label style={s.label}>Rol(len)</label>
+                      <p style={{fontSize:11,color:"#8b80b0",marginBottom:8}}>Meerdere rollen mogelijk</p>
                       <div style={{display:"flex",gap:8,marginBottom:16}}>
-                        {["tapper","admin"].map(r=>(
-                          <div key={r} style={{...s.chip,...(editForm.role===r?s.chipActive:{}),flex:1,textAlign:"center"}} onClick={()=>setEditForm((f:any)=>({...f,role:r}))}>
-                            {r==="admin"?"⚡ Admin":"🍺 Tapper"}
-                          </div>
-                        ))}
+                        {[["tapper","🍺 Tapper"],["admin","⚡ Admin"]].map(([r,l])=>{
+                          const roles = Array.isArray(editForm.roles) ? editForm.roles : [editForm.role||"tapper"];
+                          const active = roles.includes(r);
+                          return (
+                            <div key={r} style={{...s.chip,...(active?s.chipActive:{}),flex:1,textAlign:"center"}} onClick={()=>{
+                              const current = Array.isArray(editForm.roles) ? editForm.roles : [editForm.role||"tapper"];
+                              const newRoles = active ? current.filter((x:string)=>x!==r) : [...current,r];
+                              if(newRoles.length===0) return; // at least one role
+                              setEditForm((f:any)=>({...f,roles:newRoles,role:newRoles.includes("admin")?"admin":"tapper"}));
+                            }}>{l}</div>
+                          );
+                        })}
                       </div>
                       {/* Danger zone */}
                       <div style={{borderTop:"1px solid #2e2a4a",paddingTop:16,marginTop:8}}>
@@ -495,6 +543,41 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
                     </div>
                   </div>
                   <button style={s.btnSecondary} onClick={handleGenerate} disabled={generating}>{generating?"⏳ Genereren...":"🤖 Genereer conceptrooster"}</button>
+                </div>
+
+                <p style={s.sectionTitle}>Standaard tapavonden</p>
+                <div style={s.card}>
+                  <p style={{fontSize:12,color:"#8b80b0",marginBottom:12}}>Pas de standaardinstellingen aan die gebruikt worden bij het genereren.</p>
+                  {(["wednesday","friday","saturday"] as const).map(day => {
+                    const labels:Record<string,string> = {wednesday:"Woensdag",friday:"Vrijdag",saturday:"Zaterdag"};
+                    const cfg = defaultShifts[day];
+                    return (
+                      <div key={day} style={{borderBottom:"1px solid #2e2a4a",paddingBottom:12,marginBottom:12}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:cfg.enabled?10:0}}>
+                          <span style={{fontSize:13,fontWeight:700,color:cfg.enabled?"#e8e0ff":"#8b80b0"}}>{labels[day]}</span>
+                          <div style={{display:"flex",alignItems:"center",gap:8}}>
+                            <span style={{fontSize:11,color:"#8b80b0"}}>{cfg.enabled?"Aan":"Uit"}</span>
+                            <div onClick={()=>setDefaultShifts(d=>({...d,[day]:{...d[day],enabled:!d[day].enabled}}))}
+                              style={{width:40,height:22,borderRadius:11,background:cfg.enabled?"#00e5c3":"#2e2a4a",cursor:"pointer",position:"relative",transition:"background 0.2s"}}>
+                              <div style={{position:"absolute",top:3,left:cfg.enabled?20:3,width:16,height:16,borderRadius:"50%",background:"white",transition:"left 0.2s"}}/>
+                            </div>
+                          </div>
+                        </div>
+                        {cfg.enabled && (
+                          <div style={{display:"flex",gap:8}}>
+                            <div style={{flex:1}}>
+                              <label style={{...s.label,fontSize:10}}>Start</label>
+                              <input style={{...s.input,marginBottom:0,padding:"8px 10px",fontSize:13}} type="time" value={cfg.start} onChange={e=>setDefaultShifts(d=>({...d,[day]:{...d[day],start:e.target.value}}))}/>
+                            </div>
+                            <div style={{flex:1}}>
+                              <label style={{...s.label,fontSize:10}}>Eind</label>
+                              <input style={{...s.input,marginBottom:0,padding:"8px 10px",fontSize:13}} type="time" value={cfg.end} onChange={e=>setDefaultShifts(d=>({...d,[day]:{...d[day],end:e.target.value}}))}/>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
                 {conceptShifts.length>0&&(
                   <>

@@ -42,9 +42,8 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
   async function handleSavePersonal(e: React.FormEvent) {
     e.preventDefault();
     setSavingProfile(true);
-    const full_name = `${firstName} ${lastName}`.trim();
-    await supabase.from("profiles").update({ full_name, phone, email }).eq("id", profile.id);
-    setProfile(p => ({ ...p, full_name, email }));
+    await supabase.from("profiles").update({ phone, email }).eq("id", profile.id);
+    setProfile(p => ({ ...p, email }));
     setSavingProfile(false);
     setSavedProfile(true);
     setTimeout(() => setSavedProfile(false), 2000);
@@ -129,15 +128,10 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
           <p style={s.sectionTitle}>Persoonlijke gegevens</p>
           <form onSubmit={handleSavePersonal}>
             <div style={s.card}>
-              <div style={{ display:"flex", gap:10 }}>
-                <div style={{ flex:1 }}>
-                  <label style={s.label}>Voornaam</label>
-                  <input style={s.input} value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Voornaam" required />
-                </div>
-                <div style={{ flex:1 }}>
-                  <label style={s.label}>Achternaam</label>
-                  <input style={s.input} value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Achternaam" required />
-                </div>
+              <div style={{ background:"#221f38", borderRadius:10, padding:"10px 14px", marginBottom:12 }}>
+                <p style={{ fontSize:11, color:"#8b80b0", marginBottom:4, textTransform:"uppercase", letterSpacing:1, fontWeight:700 }}>Naam</p>
+                <p style={{ fontSize:15, color:"#e8e0ff", fontWeight:600 }}>{profile.full_name}</p>
+                <p style={{ fontSize:11, color:"#8b80b0", marginTop:4 }}>Naam aanpassen? Vraag een admin.</p>
               </div>
               <label style={s.label}>E-mailadres</label>
               <input style={s.input} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="jij@email.nl" required />
