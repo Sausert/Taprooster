@@ -1,18 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { requireAdmin } from "@/lib/api-helpers";
+import { parseLocalDate, toLocalDateStr } from "@/lib/dates";
 import { generateSchedule } from "@/lib/scheduler";
-
-function toLocalDateStr(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-function parseLocalDate(dateStr: string): Date {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
 
 function getDatesForDayInRange(dayOfWeek: number, start: Date, end: Date): Date[] {
   const dates: Date[] = [];
@@ -27,12 +16,9 @@ function getDatesForDayInRange(dayOfWeek: number, start: Date, end: Date): Date[
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const auth = await requireAdmin();
+  if ("error" in auth) return auth.error;
+  const { user, supabase } = auth;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let body: any;

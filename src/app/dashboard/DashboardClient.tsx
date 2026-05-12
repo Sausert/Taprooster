@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import type { Profile, Shift, ShiftAssignment, AdminMessage } from "@/types";
 import { APP_CONFIG } from "@/lib/config";
 import { parseLocalDate, formatDate, formatDateShort } from "@/lib/dates";
+import { useShiftApi } from "@/hooks/useShiftApi";
+import sharedStyles from "@/styles/shared.module.css";
 
 type ClaimableShift = Shift & { open_spots: number };
 
@@ -19,7 +21,6 @@ interface Props {
 
 // Platform detection for agenda link
 function getAgendaLink(shift: Shift): { url: string; type: "ical" | "google" } {
-  const isIOS = typeof navigator !== "undefined" && /iPhone|iPad|iPod/i.test(navigator.userAgent);
   const isAndroid = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
 
   if (isAndroid) {
@@ -56,9 +57,8 @@ export default function DashboardClient({
   const [claimModal, setClaimModal] = useState<ClaimableShift | null>(null);
   const [declineModal, setDeclineModal] = useState<ShiftAssignment | null>(null);
   const [confirmedIds, setConfirmedIds] = useState<string[]>([]);
-  const [loading, setLoading] = useState<string | null>(null);
-  const [fetchError, setFetchError] = useState<string | null>(null);
   const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
+  const { loading, error: fetchError, setError: setFetchError, shiftAction } = useShiftApi();
 
   const firstName = profile?.full_name?.split(" ")[0] || "Tapper";
   const target = (profile?.preferred_frequency || 4) * 12;
@@ -71,27 +71,14 @@ export default function DashboardClient({
     : null;
 
   async function handleConfirm(shiftId: string) {
-    setLoading(shiftId);
     setConfirmedIds(p => [...p, shiftId]); // optimistic
-    const res = await fetch(`/api/shifts/${shiftId}/assign`, {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ action:"confirm" }),
-    });
-    if (!res.ok) {
-      setConfirmedIds(p => p.filter(id => id !== shiftId)); // rollback
-      const err = await res.json().catch(() => ({}));
-      setFetchError(err.error ?? "Bevestigen mislukt. Probeer opnieuw.");
-    }
-    setLoading(null);
+    const ok = await shiftAction(shiftId, "confirm");
+    if (!ok) setConfirmedIds(p => p.filter(id => id !== shiftId)); // rollback
   }
 
   async function handleClaim(shift: ClaimableShift) {
-    setLoading(shift.id);
-    const res = await fetch(`/api/shifts/${shift.id}/assign`, {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ action:"claim" }),
-    });
-    if (res.ok) {
+    const ok = await shiftAction(shift.id, "claim");
+    if (ok) {
       setClaimable(cs => cs.filter(s => s.id !== shift.id));
       setUpcoming(u => [...u, {
         id: "", user_id: "", created_at: "",
@@ -101,28 +88,14 @@ export default function DashboardClient({
       setClaimSuccess(shift.title);
       setTimeout(() => setClaimSuccess(null), 3000);
       setTimeout(() => mijnDienstenRef.current?.scrollIntoView({ behavior:"smooth", block:"start" }), 300);
-    } else {
-      const err = await res.json().catch(() => ({}));
-      setFetchError(err.error ?? "Inschrijven mislukt. Probeer opnieuw.");
     }
     setClaimModal(null);
-    setLoading(null);
   }
 
   async function handleDecline(assignment: ShiftAssignment) {
-    setLoading(assignment.shift_id);
-    const res = await fetch(`/api/shifts/${assignment.shift_id}/assign`, {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ action:"decline" }),
-    });
-    if (res.ok) {
-      setUpcoming(u => u.filter(a => a.shift_id !== assignment.shift_id));
-    } else {
-      const err = await res.json().catch(() => ({}));
-      setFetchError(err.error ?? "Afmelden mislukt. Probeer opnieuw.");
-    }
+    const ok = await shiftAction(assignment.shift_id, "decline");
+    if (ok) setUpcoming(u => u.filter(a => a.shift_id !== assignment.shift_id));
     setDeclineModal(null);
-    setLoading(null);
   }
 
   function handleShare(shift: Shift) {
@@ -167,7 +140,7 @@ export default function DashboardClient({
         <p style={{ fontSize:13, color:"#8b80b0", marginBottom:4 }}>Welkom terug,</p>
         <h1 style={s.greeting}>
           {firstName} 👋
-          {profile?.role === "admin" && <span style={s.adminBadge}>⚡ Admin</span>}
+          {profile?.role === "admin" && <span className={`${sharedStyles.badge} ${sharedStyles.badgeMint}`} style={{ fontSize:11, padding:"2px 10px" }}>⚡ Admin</span>}
         </h1>
       </div>
 
@@ -219,7 +192,7 @@ export default function DashboardClient({
       )}
 
       {/* Stats */}
-      <p style={s.sectionTitle}>Jouw statistieken</p>
+      <p className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px" }}>Jouw statistieken</p>
       <div style={s.statRow}>
         <div style={s.statCard}>
           <p style={s.statVal}>{tapsThisYear}</p>
@@ -230,7 +203,7 @@ export default function DashboardClient({
           <p style={s.statLabel}>Ingeplande diensten</p>
         </div>
       </div>
-      <div style={s.card}>
+      <div className={sharedStyles.card}>
         <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
           <span style={{ fontSize:12, color:"#8b80b0" }}>Voortgang dit jaar ({tapsThisYear}/{target})</span>
           <span style={{ fontFamily:"monospace", fontSize:12, color:"#00e5c3" }}>{pct}%</span>
@@ -249,7 +222,7 @@ export default function DashboardClient({
       {/* All upcoming shifts */}
       {upcoming.length > 0 && (
         <>
-          <p ref={mijnDienstenRef} style={s.sectionTitle}>Mijn diensten</p>
+          <p ref={mijnDienstenRef} className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px" }}>Mijn diensten</p>
           {upcoming.map((a) => {
             const sh = a.shift;
             if (!sh) return null;
@@ -259,14 +232,14 @@ export default function DashboardClient({
             const urgentUnconfirmed = !isConfirmed && daysUntil >= 0 && daysUntil < 3;
             const accentColor = shiftColor(sh.type);
             return (
-              <div key={a.shift_id} style={{ ...s.card, borderLeft:`4px solid ${accentColor}`, background:`linear-gradient(90deg, rgba(${sh.type==="feestje"?"59,130,246":"0,229,195"},0.04) 0%, #1a1730 40%)` }}>
+              <div key={a.shift_id} className={sharedStyles.card} style={{ borderLeft:`4px solid ${accentColor}`, background:`linear-gradient(90deg, rgba(${sh.type==="feestje"?"59,130,246":"0,229,195"},0.04) 0%, #1a1730 40%)` }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                   <div style={{ flex:1 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4, flexWrap:"wrap" }}>
                       <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff" }}>{sh.title}</p>
-                      {sh.type==="feestje" && <span style={s.blueBadge}>Feestje</span>}
-                      {isFirst && <span style={s.mintBadge}>Eerstvolgende</span>}
-                      {urgentUnconfirmed && <span style={s.urgentBadge}>⏰ Bevestig — nog {daysUntil === 0 ? "vandaag" : `${daysUntil} dag${daysUntil !== 1 ? "en" : ""}`}</span>}
+                      {sh.type==="feestje" && <span className={`${sharedStyles.badge} ${sharedStyles.badgeBlue}`}>Feestje</span>}
+                      {isFirst && <span className={`${sharedStyles.badge} ${sharedStyles.badgeMint}`}>Eerstvolgende</span>}
+                      {urgentUnconfirmed && <span className={`${sharedStyles.badge} ${sharedStyles.badgeAmber}`}>⏰ Bevestig — nog {daysUntil === 0 ? "vandaag" : `${daysUntil} dag${daysUntil !== 1 ? "en" : ""}`}</span>}
                     </div>
                     <p style={{ fontSize:13, fontWeight:700, color:"#e8e0ff", marginBottom:2 }}>{formatDateShort(sh.date)}</p>
                     <p style={{ fontSize:12, color:"#8b80b0" }}>{sh.start_time}–{sh.end_time}</p>
@@ -274,7 +247,7 @@ export default function DashboardClient({
                   </div>
                   <div style={{ display:"flex", flexDirection:"column", gap:6, alignItems:"flex-end" }}>
                     {isConfirmed
-                      ? <span style={s.mintBadge}>✓ Bevestigd</span>
+                      ? <span className={`${sharedStyles.badge} ${sharedStyles.badgeMint}`}>✓ Bevestigd</span>
                       : <button style={{ ...s.btnYesSmall, opacity: loading===a.shift_id ? 0.5 : 1 }} disabled={loading===a.shift_id} onClick={() => handleConfirm(a.shift_id)}>✅ Bevestigen</button>
                     }
                     <button style={{ ...s.declineBtn, opacity: loading===a.shift_id ? 0.5 : 1 }} disabled={loading===a.shift_id} onClick={() => setDeclineModal(a)}>Afmelden</button>
@@ -299,9 +272,9 @@ export default function DashboardClient({
       {/* Open diensten */}
       {claimable.length > 0 && (
         <>
-          <p style={s.sectionTitle}>Open diensten</p>
+          <p className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px" }}>Open diensten</p>
           {claimable.map((shift) => (
-            <div key={shift.id} style={{ ...s.card, borderLeft:`4px solid ${shiftColor(shift.type)}`, background:`linear-gradient(90deg, rgba(${shift.type==="feestje"?"59,130,246":"0,229,195"},0.04) 0%, #1a1730 40%)` }}>
+            <div key={shift.id} className={sharedStyles.card} style={{ borderLeft:`4px solid ${shiftColor(shift.type)}`, background:`linear-gradient(90deg, rgba(${shift.type==="feestje"?"59,130,246":"0,229,195"},0.04) 0%, #1a1730 40%)` }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                 <div style={{ flex:1 }}>
                   <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff" }}>{shift.title}</p>
@@ -326,9 +299,9 @@ export default function DashboardClient({
       {/* Admin berichten */}
       {adminMessages.length > 0 && (
         <>
-          <p style={s.sectionTitle}>Berichten van admin</p>
+          <p className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px" }}>Berichten van admin</p>
           {adminMessages.map((msg) => (
-            <div key={msg.id} style={s.card}>
+            <div key={msg.id} className={sharedStyles.card}>
               <div style={{ display:"flex", gap:10 }}>
                 <span style={{ fontSize:20 }}>📢</span>
                 <div>
@@ -346,10 +319,10 @@ export default function DashboardClient({
 
       {/* Claim modal */}
       {claimModal && (
-        <div style={s.overlay} onClick={() => setClaimModal(null)}>
-          <div style={s.sheet} onClick={e => e.stopPropagation()}>
-            <div style={s.sheetHandle}/>
-            <h3 style={s.sheetTitle}>Inschrijven voor dienst</h3>
+        <div className={sharedStyles.overlay} onClick={() => setClaimModal(null)}>
+          <div className={sharedStyles.sheet} onClick={e => e.stopPropagation()}>
+            <div className={sharedStyles.sheetHandle}/>
+            <h3 className={sharedStyles.sheetTitle}>Inschrijven voor dienst</h3>
             <div style={{ background:"#221f38", borderRadius:12, padding:"12px 14px", marginBottom:16 }}>
               <p style={{ fontSize:15, fontWeight:700, color:"#f0eeff" }}>{claimModal.title}</p>
               <p style={{ fontSize:13, color:"#8b80b0", marginTop:4 }}>{formatDate(claimModal.date)} · {claimModal.start_time}–{claimModal.end_time}</p>
@@ -369,20 +342,20 @@ export default function DashboardClient({
             <p style={{ fontSize:12, color:"#8b80b0", marginBottom:20, lineHeight:1.5 }}>
               Je ontvangt een e-mail bevestiging en herinneringen 2 weken en 1 week van tevoren.
             </p>
-            <button style={s.btnPrimary} disabled={loading===claimModal.id} onClick={() => handleClaim(claimModal)}>
+            <button className={sharedStyles.btnPrimary} disabled={loading===claimModal.id} onClick={() => handleClaim(claimModal)}>
               {loading===claimModal.id ? "Bezig..." : "✅ Ja, ik schrijf me in!"}
             </button>
-            <button style={{ ...s.btnSecondary, marginTop:8 }} onClick={() => setClaimModal(null)}>Annuleren</button>
+            <button className={sharedStyles.btnSecondary} style={{ marginTop:8 }} onClick={() => setClaimModal(null)}>Annuleren</button>
           </div>
         </div>
       )}
 
       {/* Decline modal */}
       {declineModal && (
-        <div style={s.overlay} onClick={() => setDeclineModal(null)}>
-          <div style={s.sheet} onClick={e => e.stopPropagation()}>
-            <div style={s.sheetHandle}/>
-            <h3 style={s.sheetTitle}>Afmelden voor dienst</h3>
+        <div className={sharedStyles.overlay} onClick={() => setDeclineModal(null)}>
+          <div className={sharedStyles.sheet} onClick={e => e.stopPropagation()}>
+            <div className={sharedStyles.sheetHandle}/>
+            <h3 className={sharedStyles.sheetTitle}>Afmelden voor dienst</h3>
             <p style={{fontSize:16, fontWeight:700, color:"#f0eeff", marginBottom:4}}>{declineModal.shift?.title}</p>
             <p style={{fontSize:13, color:"#8b80b0", marginBottom:16}}>{declineModal.shift ? formatDate(declineModal.shift.date) : ""}</p>
             <p style={{ fontSize:13, color:"#8b80b0", marginBottom:16 }}>
@@ -394,12 +367,12 @@ export default function DashboardClient({
                 {declineModal.shift ? formatDate(declineModal.shift.date) : ""} · {declineModal.shift?.start_time}–{declineModal.shift?.end_time}
               </p>
             </div>
-            <button style={{ ...s.btnPrimary, background:"linear-gradient(135deg,#ff4f6d,#cc3355)", boxShadow:"0 4px 20px rgba(255,79,109,0.3)" }}
+            <button className={sharedStyles.btnPrimary} style={{ background:"linear-gradient(135deg,#ff4f6d,#cc3355)", boxShadow:"0 4px 20px rgba(255,79,109,0.3)" }}
               disabled={loading===declineModal.shift_id}
               onClick={() => handleDecline(declineModal)}>
               {loading===declineModal.shift_id ? "Bezig..." : "🔴 Ja, ik meld me af"}
             </button>
-            <button style={{ ...s.btnSecondary, marginTop:8 }} onClick={() => setDeclineModal(null)}>Toch niet</button>
+            <button className={sharedStyles.btnSecondary} style={{ marginTop:8 }} onClick={() => setDeclineModal(null)}>Toch niet</button>
           </div>
         </div>
       )}
@@ -411,7 +384,6 @@ const s: Record<string, React.CSSProperties> = {
   page: { padding:"20px 16px 100px" },
   errorBanner: { background:"rgba(255,79,109,0.1)", border:"1px solid #ff4f6d", borderRadius:12, padding:"10px 14px", fontSize:13, color:"#ff4f6d", marginBottom:14, cursor:"pointer" },
   greeting: { fontSize:26, fontWeight:900, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif", display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" },
-  adminBadge: { fontSize:11, fontWeight:700, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", borderRadius:20, padding:"2px 10px" },
   heroCard: { background:"linear-gradient(135deg,#1a1730,#221f38)", border:"1px solid #00e5c3", borderRadius:16, padding:18, marginBottom:12, boxShadow:"0 0 30px rgba(0,229,195,0.08)" },
   heroLabel: { fontSize:11, fontWeight:700, letterSpacing:2, color:"#00e5c3", textTransform:"uppercase", marginBottom:4 },
   heroTitle: { fontSize:20, fontWeight:900, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif", margin:0 },
@@ -421,25 +393,14 @@ const s: Record<string, React.CSSProperties> = {
   confirmedBanner: { background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", borderRadius:16, padding:"10px 14px", fontSize:13, color:"#00e5c3", fontWeight:700, textAlign:"center" },
   btnYes: { flex:1, padding:10, borderRadius:12, background:"rgba(0,229,195,0.1)", color:"#00e5c3", border:"1px solid #00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer" },
   btnNo: { flex:1, padding:10, borderRadius:12, background:"rgba(255,79,109,0.1)", color:"#ff4f6d", border:"1px solid #ff4f6d", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer" },
-  sectionTitle: { fontSize:11, fontWeight:700, letterSpacing:2, textTransform:"uppercase", color:"#8b80b0", margin:"20px 0 8px" },
   statRow: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 },
   statCard: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:16, padding:16, textAlign:"center" },
   statVal: { fontFamily:"monospace", fontSize:30, fontWeight:700, color:"#00e5c3", margin:0 },
   statLabel: { fontSize:10, fontWeight:700, color:"#8b80b0", letterSpacing:1, textTransform:"uppercase", marginTop:4, margin:0 },
-  card: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:16, padding:16, marginBottom:10 },
   progressWrap: { background:"#2e2a4a", borderRadius:4, height:6, overflow:"hidden" },
   progressFill: { height:"100%", borderRadius:4, background:"linear-gradient(90deg,#00e5c3,#00b89c)", transition:"width 0.6s ease" },
-  mintBadge: { fontSize:10, fontWeight:700, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", borderRadius:20, padding:"2px 8px" },
-  blueBadge: { fontSize:10, fontWeight:700, background:"rgba(59,130,246,0.1)", border:"1px solid #3b82f6", color:"#3b82f6", borderRadius:20, padding:"2px 8px" },
   btnYesSmall: { fontSize:11, fontWeight:700, padding:"5px 10px", borderRadius:12, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", cursor:"pointer" },
   agendaBtn: { fontSize:14, padding:"4px 8px", borderRadius:8, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", cursor:"pointer" },
   declineBtn: { fontSize:11, fontWeight:700, padding:"5px 10px", borderRadius:12, background:"rgba(255,79,109,0.08)", border:"1px solid #ff4f6d", color:"#ff4f6d", cursor:"pointer", fontFamily:"'Exo 2',sans-serif" },
   claimBtn: { padding:"9px 14px", borderRadius:12, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", border:"none", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:12, letterSpacing:1, cursor:"pointer", textTransform:"uppercase", flexShrink:0 },
-  overlay: { position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", backdropFilter:"blur(6px)", zIndex:100, display:"flex", alignItems:"flex-end", justifyContent:"center" },
-  sheet: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:"24px 24px 0 0", padding:"24px 20px 40px", width:"100%", maxWidth:430 },
-  sheetHandle: { width:48, height:5, background:"#3b2f6e", borderRadius:3, margin:"0 auto 20px" },
-  urgentBadge: { fontSize:10, fontWeight:700, background:"rgba(255,181,71,0.12)", border:"1px solid #ffb547", color:"#ffb547", borderRadius:20, padding:"2px 8px" },
-  sheetTitle: { fontSize:18, fontWeight:700, color:"#f0eeff", marginBottom:8, fontFamily:"'Exo 2',sans-serif" },
-  btnPrimary: { width:"100%", padding:14, borderRadius:12, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", fontFamily:"'Exo 2',sans-serif", fontSize:14, fontWeight:700, border:"none", cursor:"pointer", textTransform:"uppercase", letterSpacing:1, display:"block" },
-  btnSecondary: { width:"100%", padding:14, borderRadius:12, background:"#221f38", color:"#e8e0ff", fontFamily:"'Exo 2',sans-serif", fontSize:14, fontWeight:700, border:"1px solid #2e2a4a", cursor:"pointer", textTransform:"uppercase", letterSpacing:1, display:"block" },
 };

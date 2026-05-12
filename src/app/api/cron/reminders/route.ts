@@ -3,17 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
 import { sendShiftReminderEmail } from "@/lib/email";
-
-function parseLocalDate(d: string): Date {
-  const [y,m,day] = d.split("-").map(Number);
-  return new Date(y, m-1, day);
-}
-function toLocalDateStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-}
-function addDays(d: Date, n: number): Date {
-  const r = new Date(d); r.setDate(r.getDate()+n); return r;
-}
+import { parseLocalDate, toLocalDateStr, addDays } from "@/lib/dates";
 
 export async function GET(req: NextRequest) {
   const secret = req.headers.get("x-cron-secret");

@@ -1,0 +1,170 @@
+/* Shared design primitives used across all pages.
+   Import: import styles from "@/styles/shared.module.css" */
+
+.card {
+  background: #1a1730;
+  border: 1px solid #2e2a4a;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 10px;
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  border: 1px solid transparent;
+}
+.badgeMint  { background: rgba(0,229,195,0.12);  color: #00e5c3; border-color: #00e5c3; }
+.badgeAmber { background: rgba(255,181,71,0.12); color: #ffb547; border-color: #ffb547; }
+.badgeRed   { background: rgba(255,79,109,0.12); color: #ff4f6d; border-color: #ff4f6d; }
+.badgeBlue  { background: rgba(59,130,246,0.12); color: #3b82f6; border-color: #3b82f6; }
+.badgeViolet{ background: rgba(90,74,158,0.20);  color: #a896ff; border-color: #5a4a9e; }
+
+/* Buttons */
+.btnPrimary {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #00e5c3, #00b89c);
+  color: #0f0d1a;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  display: block;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0,229,195,0.25);
+}
+.btnPrimary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btnSecondary {
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: 12px;
+  background: #221f38;
+  color: #e8e0ff;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: 1px solid #2e2a4a;
+  cursor: pointer;
+  display: block;
+  text-align: center;
+  text-decoration: none;
+}
+.btnSecondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Inputs */
+.input {
+  width: 100%;
+  background: #221f38;
+  border: 1px solid #2e2a4a;
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #e8e0ff;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 14px;
+  outline: none;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #8b80b0;
+  margin-bottom: 6px;
+}
+
+.sectionTitle {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #8b80b0;
+  margin: 16px 0 8px;
+}
+
+/* Sheet / Modal */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(6px);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.sheet {
+  background: #1a1730;
+  border: 1px solid #2e2a4a;
+  border-radius: 24px 24px 0 0;
+  padding: 24px 20px 40px;
+  width: 100%;
+  max-width: 430px;
+}
+
+.sheetHandle {
+  width: 48px;
+  height: 5px;
+  background: #3b2f6e;
+  border-radius: 3px;
+  margin: 0 auto 20px;
+}
+
+.sheetTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #f0eeff;
+  margin-bottom: 16px;
+  font-family: 'Exo 2', sans-serif;
+}
+
+/* Avatar */
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #3b2f6e, #5a4a9e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 15px;
+  color: #00e5c3;
+  flex-shrink: 0;
+}
+
+/* Chip / toggle pill */
+.chip {
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid #2e2a4a;
+  background: #221f38;
+  color: #8b80b0;
+  text-transform: uppercase;
+  text-align: center;
+  user-select: none;
+}
+.chipActive     { background: rgba(0,229,195,0.1);  border-color: #00e5c3; color: #00e5c3; }
+.chipUnavailable{ background: rgba(255,79,109,0.1); border-color: #ff4f6d; color: #ff4f6d; }

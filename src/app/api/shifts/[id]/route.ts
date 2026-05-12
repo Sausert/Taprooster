@@ -1,27 +1,30 @@
 // PATCH /api/shifts/[id] — dienst bewerken (admin only)
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { z } from "zod";
+import { requireAdmin } from "@/lib/api-helpers";
+
+const PatchSchema = z.object({
+  title:      z.string().min(1).optional(),
+  start_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  end_time:   z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  max_tappers:z.number().min(1).max(20).optional(),
+  admin_note: z.string().optional(),
+});
 
 export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAdmin();
+  if ("error" in auth) return auth.error;
+  const { supabase } = auth;
 
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-  let body: Record<string, unknown>;
+  let body: unknown;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Ongeldige request body" }, { status: 400 }); }
-  const title = body.title as string | undefined;
-  const start_time = body.start_time as string | undefined;
-  const end_time = body.end_time as string | undefined;
-  const max_tappers = body.max_tappers as number | undefined;
-  const admin_note = body.admin_note as string | undefined;
+  const parsed = PatchSchema.safeParse(body);
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
   const { data, error } = await supabase
     .from("shifts")
-    .update({ title, start_time, end_time, max_tappers, admin_note, updated_at: new Date().toISOString() })
+    .update({ ...parsed.data, updated_at: new Date().toISOString() })
     .eq("id", id)
     .select()
     .single();

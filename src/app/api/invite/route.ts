@@ -1,6 +1,7 @@
 // app/api/invite/route.ts — Uitnodigingslinks beheren
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase-server";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { requireAdmin } from "@/lib/api-helpers";
 import { sendInviteEmail } from "@/lib/email";
 import QRCode from "qrcode";
 
@@ -8,23 +9,15 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 // POST /api/invite — maak nieuw token aan
 export async function POST(req: NextRequest) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAdmin();
+  if ("error" in auth) return auth.error;
+  const { user, supabase } = auth;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, full_name")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "admin") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
 
   let body: Record<string, unknown> = {};
   try { body = await req.json(); } catch { /* body is optioneel */ }
-  const email = body.email as string | undefined; // optioneel: stuur direct naar e-mailadres
+  const email = body.email as string | undefined;
 
   // Maak token aan
   const { data: invite, error } = await supabase
@@ -46,7 +39,7 @@ export async function POST(req: NextRequest) {
 
   // Stuur e-mail als adres opgegeven
   if (email) {
-    await sendInviteEmail(email, invite.token, profile.full_name);
+    await sendInviteEmail(email, invite.token, profile?.full_name ?? "");
   }
 
   return NextResponse.json({

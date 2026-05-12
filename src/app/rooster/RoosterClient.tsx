@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { APP_CONFIG } from "@/lib/config";
 import { parseLocalDate, formatDate, formatDateShort } from "@/lib/dates";
+import { useShiftApi } from "@/hooks/useShiftApi";
 
 const MONTH_NAMES = ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December"];
 const DAY_LABELS = ["Ma","Di","Wo","Do","Vr","Za","Zo"];
@@ -50,8 +51,8 @@ export default function RoosterClient({
   const [claimModal, setClaimModal] = useState<any | null>(null);
   const [claimedIds, setClaimedIds] = useState<string[]>([]);
   const [declinedIds, setDeclinedIds] = useState<string[]>([]);
-  const [loading, setLoading] = useState<string | null>(null);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const { loading, shiftAction } = useShiftApi();
 
   function prevMonth() {
     if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); }
@@ -90,33 +91,20 @@ export default function RoosterClient({
   const isMyShift = (shift: any) => myShiftIds.includes(shift.id) || claimedIds.includes(shift.id);
 
   async function handleClaim(shift: any) {
-    setLoading(shift.id);
-    const res = await fetch(`/api/shifts/${shift.id}/assign`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "claim" }),
-    });
-    if (res.ok) {
+    const ok = await shiftAction(shift.id, "claim");
+    if (ok) {
       setClaimedIds(p => [...p, shift.id]);
       setClaimModal(null);
-      // Update selectedShifts to reflect new assignment
       setSelectedShifts(prev => prev.map(s => s.id === shift.id ? {
         ...s,
         assignments: [...(s.assignments || []), { user_id: userId, status: "assigned", profile: { full_name: "Jij" } }]
       } : s));
     }
-    setLoading(null);
   }
 
   async function handleDecline(shiftId: string) {
-    setLoading(shiftId);
-    const res = await fetch(`/api/shifts/${shiftId}/assign`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "decline" }),
-    });
-    if (res.ok) setDeclinedIds(p => [...p, shiftId]);
-    setLoading(null);
+    const ok = await shiftAction(shiftId, "decline");
+    if (ok) setDeclinedIds(p => [...p, shiftId]);
   }
 
 

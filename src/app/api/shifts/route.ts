@@ -32,23 +32,14 @@ export async function GET(req: NextRequest) {
     .order("date", { ascending: true });
 
   if (status !== "all") {
-    // Check if admin
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.role !== "admin") {
-      query = query.eq("status", "published");
-    }
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    if (profile?.role !== "admin") query = query.eq("status", "published");
   }
 
   if (month) {
     const [year, m] = month.split("-");
-    const start = `${year}-${m}-01`;
-    const end = `${year}-${m}-31`;
-    query = query.gte("date", start).lte("date", end);
+    const lastDay = new Date(Number(year), Number(m), 0).getDate();
+    query = query.gte("date", `${year}-${m}-01`).lte("date", `${year}-${m}-${String(lastDay).padStart(2, "0")}`);
   }
 
   const { data, error } = await query;
@@ -59,25 +50,15 @@ export async function GET(req: NextRequest) {
 
 // POST /api/shifts — nieuwe shift aanmaken (admin only)
 export async function POST(req: NextRequest) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { requireAdmin } = await import("@/lib/api-helpers");
+  const auth = await requireAdmin();
+  if ("error" in auth) return auth.error;
+  const { user, supabase } = auth;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "admin") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  const body = await req.json();
+  let body: unknown;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "Ongeldige request body" }, { status: 400 }); }
   const parsed = ShiftSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-  }
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
   const { data, error } = await supabase
     .from("shifts")
@@ -86,6 +67,5 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
   return NextResponse.json({ data }, { status: 201 });
 }
