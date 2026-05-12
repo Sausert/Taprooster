@@ -15,7 +15,7 @@ export default function Icon() {
           justifyContent: "center",
           background: "#0f0d1a",
           borderRadius: 7,
-          border: "1px solid #00e5c3",
+          border: "2px solid #00e5c3",
         }}
       >
         <span style={{ fontSize: 18, lineHeight: 1 }}>🍺</span>
