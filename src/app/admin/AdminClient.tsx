@@ -460,11 +460,11 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
                       <p style={{fontSize:11,color:"#8b80b0",marginBottom:8}}>Meerdere rollen mogelijk</p>
                       <div style={{display:"flex",gap:8,marginBottom:16}}>
                         {[["tapper","🍺 Tapper"],["admin","⚡ Admin"]].map(([r,l])=>{
-                          const roles = Array.isArray(editForm.roles) ? editForm.roles : [editForm.role||"tapper"];
+                          const roles = Array.isArray((editForm as any).roles) ? (editForm as any).roles : [editForm.role||"tapper"];
                           const active = roles.includes(r);
                           return (
                             <div key={r} style={{...s.chip,...(active?s.chipActive:{}),flex:1,textAlign:"center"}} onClick={()=>{
-                              const current = Array.isArray(editForm.roles) ? editForm.roles : [editForm.role||"tapper"];
+                              const current = Array.isArray((editForm as any).roles) ? (editForm as any).roles : [editForm.role||"tapper"];
                               const newRoles = active ? current.filter((x:string)=>x!==r) : [...current,r];
                               if(newRoles.length===0) return; // at least one role
                               setEditForm((f:any)=>({...f,roles:newRoles,role:newRoles.includes("admin")?"admin":"tapper"}));
