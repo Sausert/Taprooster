@@ -10,13 +10,13 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Ongeldige request body" }, { status: 400 }); }
-  const { action } = body;
+  const action = body.action as string | undefined;
 
   // Admin can assign on behalf of another user
   const { data: adminProfile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   const isAdmin = adminProfile?.role === "admin";
   // If admin passes targetUserId, use that; otherwise use logged-in user
-  const targetUserId = (isAdmin && body.targetUserId) ? body.targetUserId : user.id;
+  const targetUserId = (isAdmin && body.targetUserId) ? body.targetUserId as string : user.id;
 
   if (action === "claim") {
     // Check capacity

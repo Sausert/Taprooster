@@ -34,7 +34,8 @@ export async function POST(req: NextRequest) {
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   if (profile?.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  let body: Record<string, unknown>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let body: any;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Ongeldige request body" }, { status: 400 }); }
 
   // Default shift config (can be overridden by admin)

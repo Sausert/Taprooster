@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
   let body: Record<string, unknown> = {};
   try { body = await req.json(); } catch { /* body is optioneel */ }
-  const { email } = body; // optioneel: stuur direct naar e-mailadres
+  const email = body.email as string | undefined; // optioneel: stuur direct naar e-mailadres
 
   // Maak token aan
   const { data: invite, error } = await supabase

@@ -17,7 +17,9 @@ export async function POST(req: NextRequest) {
 
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Ongeldige request body" }, { status: 400 }); }
-  const { message, dateFrom, dateTo } = body;
+  const message = body.message as string | undefined;
+  const dateFrom = body.dateFrom as string | undefined;
+  const dateTo = body.dateTo as string | undefined;
 
   let rangeStart: string;
   let rangeEnd: string;

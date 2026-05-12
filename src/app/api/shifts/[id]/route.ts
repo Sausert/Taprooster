@@ -13,7 +13,11 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Ongeldige request body" }, { status: 400 }); }
-  const { title, start_time, end_time, max_tappers, admin_note } = body;
+  const title = body.title as string | undefined;
+  const start_time = body.start_time as string | undefined;
+  const end_time = body.end_time as string | undefined;
+  const max_tappers = body.max_tappers as number | undefined;
+  const admin_note = body.admin_note as string | undefined;
 
   const { data, error } = await supabase
     .from("shifts")

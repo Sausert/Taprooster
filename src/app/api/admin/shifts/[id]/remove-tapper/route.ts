@@ -12,7 +12,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Ongeldige request body" }, { status: 400 }); }
-  const { userId } = body;
+  const userId = body.userId as string;
   const { error } = await supabase.from("shift_assignments")
     .update({ status: "declined", declined_at: new Date().toISOString() })
     .eq("shift_id", shiftId).eq("user_id", userId);
