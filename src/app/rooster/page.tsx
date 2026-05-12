@@ -9,13 +9,14 @@ export default async function RoosterPage() {
 
   const now = new Date();
   const start = now.toISOString().split("T")[0];
-  const in3months = new Date(now.getFullYear(), now.getMonth() + 3, 0).toISOString().split("T")[0];
+  // Toon shifts tot eind volgend jaar zodat het volledige gepubliceerde rooster zichtbaar is
+  const endOfNextYear = `${now.getFullYear() + 1}-12-31`;
 
   const { data: shifts } = await supabase
     .from("shifts")
     .select("*, assignments:shift_assignments(user_id, status, profile:profiles(id, full_name))")
     .eq("status", "published")
-    .gte("date", start).lte("date", in3months)
+    .gte("date", start).lte("date", endOfNextYear)
     .order("date", { ascending: true });
 
   const { data: myAssignments } = await supabase
