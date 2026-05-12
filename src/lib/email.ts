@@ -5,7 +5,7 @@ function getResend() {
   if (!process.env.RESEND_API_KEY) throw new Error("RESEND_API_KEY is not set");
   return new Resend(process.env.RESEND_API_KEY);
 }
-const FROM = process.env.RESEND_FROM_EMAIL || "taprooster@ojcwalhalla.nl";
+const FROM = process.env.RESEND_FROM_EMAIL || "ojcwalhalla@remigommans.nl";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 type Theme = "dark" | "light" | "amber";
