@@ -93,6 +93,7 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
   const [inviteUrl, setInviteUrl] = useState("");
   const [qrCode, setQrCode] = useState("");
   const [copied, setCopied] = useState(false);
+  const [copiedInvite, setCopiedInvite] = useState(false);
 
   const now = new Date();
 
@@ -362,7 +363,7 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
       </div>
       <div style={s.tabBar}>
         {TABS.map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id as AdminTab)} style={{...s.tabBtn,color:tab===t.id?"#00e5c3":"#8b80b0",borderBottom:`2px solid ${tab===t.id?"#00e5c3":"transparent"}`}}>{t.label}</button>
+          <button key={t.id} onClick={()=>setTab(t.id as AdminTab)} style={{...s.tabBtn,color:tab===t.id?"#00e5c3":"#8b80b0",borderBottom:`2px solid ${tab===t.id?"#00e5c3":"transparent"}`,fontWeight:tab===t.id?900:600}}>{t.label}</button>
         ))}
       </div>
       <div style={s.content}>
@@ -376,7 +377,13 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
             </div>
             <p style={s.sectionTitle}>Dienststatus</p>
             <div style={s.card}>
-              {shifts.length===0&&<p style={{fontSize:13,color:"#8b80b0",textAlign:"center",padding:"20px 0"}}>Geen diensten gevonden.</p>}
+              {shifts.length===0&&(
+                <div style={{textAlign:"center", padding:"32px 20px"}}>
+                  <div style={{fontSize:36, marginBottom:8}}>📅</div>
+                  <p style={{fontSize:13, fontWeight:700, color:"#f0eeff", margin:0}}>Geen diensten</p>
+                  <p style={{fontSize:12, color:"#8b80b0", marginTop:4}}>Er zijn nog geen diensten aangemaakt.</p>
+                </div>
+              )}
               {shifts.map(shift=>{
                 const color=getHealthColor(shift);
                 const assigned=(shift.assignments||[]).filter((a:any)=>a.status!=="declined").length;
@@ -539,7 +546,13 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
             {rosterView==="published"&&(
               <>
                 <p style={s.sectionTitle}>Gepubliceerd rooster — aanpasbaar</p>
-                {published.length===0&&<p style={{textAlign:"center",padding:"30px 0",color:"#8b80b0",fontSize:13}}>Geen gepubliceerde diensten.</p>}
+                {published.length===0&&(
+                  <div style={{textAlign:"center", padding:"32px 20px"}}>
+                    <div style={{fontSize:36, marginBottom:8}}>📅</div>
+                    <p style={{fontSize:13, fontWeight:700, color:"#f0eeff", margin:0}}>Geen diensten</p>
+                    <p style={{fontSize:12, color:"#8b80b0", marginTop:4}}>Er zijn nog geen diensten aangemaakt.</p>
+                  </div>
+                )}
                 {published.map(shift=><ShiftCard key={shift.id} shift={shift} source="published"/>)}
               </>
             )}
@@ -607,7 +620,11 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
                   </>
                 )}
                 {conceptShifts.length===0&&!generating&&(
-                  <p style={{textAlign:"center",padding:"30px 0",color:"#8b80b0",fontSize:13}}>Genereer een conceptrooster om te beginnen.</p>
+                  <div style={{textAlign:"center", padding:"32px 20px"}}>
+                    <div style={{fontSize:36, marginBottom:8}}>📅</div>
+                    <p style={{fontSize:13, fontWeight:700, color:"#f0eeff", margin:0}}>Geen diensten</p>
+                    <p style={{fontSize:12, color:"#8b80b0", marginTop:4}}>Er zijn nog geen diensten aangemaakt.</p>
+                  </div>
                 )}
               </>
             )}
@@ -715,7 +732,12 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
                 <p style={s.sectionTitle}>Uitnodigingslink</p>
                 <div style={s.card}>
                   <div style={{background:"#0f0d1a",borderRadius:10,padding:"10px 12px",fontFamily:"monospace",fontSize:11,color:"#00e5c3",wordBreak:"break-all",marginBottom:10}}>{inviteUrl}</div>
-                  <button style={s.btnSecondary} onClick={()=>{navigator.clipboard.writeText(inviteUrl);setCopied(true);setTimeout(()=>setCopied(false),2000);}}>{copied?"✅ Gekopieerd!":"📋 Kopieer link"}</button>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(inviteUrl); setCopiedInvite(true); setTimeout(() => setCopiedInvite(false), 2000); }}
+                    style={{ padding:"8px 16px", borderRadius:12, background: copiedInvite ? "rgba(0,229,195,0.15)" : "#221f38", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:13, fontWeight:700, cursor:"pointer", width:"100%", marginTop:8 }}
+                  >
+                    {copiedInvite ? "✅ Gekopieerd!" : "📋 Kopieer link"}
+                  </button>
                 </div>
                 {qrCode&&(
                   <>
@@ -754,13 +776,13 @@ const s: Record<string, React.CSSProperties> = {
   blueBadge:{fontSize:10,padding:"2px 8px",borderRadius:10,background:"rgba(59,130,246,0.1)",color:"#3b82f6",border:"1px solid #3b82f6"},
   purpleBadge:{fontSize:10,padding:"2px 8px",borderRadius:10,background:"rgba(90,74,158,0.2)",color:"#a896ff",border:"1px solid #5a4a9e"},
   savedBanner:{background:"rgba(0,229,195,0.08)",border:"1px solid #00e5c3",borderRadius:10,padding:"10px 14px",fontSize:13,color:"#00e5c3",fontWeight:700,textAlign:"center",marginBottom:12},
-  input:{width:"100%",background:"#221f38",border:"1px solid #2e2a4a",borderRadius:10,padding:"12px 14px",color:"#e8e0ff",fontFamily:"'Exo 2', sans-serif",fontSize:14,outline:"none",display:"block",marginBottom:12},
+  input:{width:"100%",background:"#221f38",border:"1px solid #2e2a4a",borderRadius:12,padding:"12px 14px",color:"#e8e0ff",fontFamily:"'Exo 2', sans-serif",fontSize:14,outline:"none",display:"block",marginBottom:12},
   label:{display:"block",fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",color:"#8b80b0",marginBottom:6},
   avatar:{width:40,height:40,borderRadius:12,background:"linear-gradient(135deg, #3b2f6e, #5a4a9e)",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:15,color:"#00e5c3",flexShrink:0},
   editBtn:{fontSize:11,padding:"4px 10px",borderRadius:8,background:"#221f38",border:"1px solid #2e2a4a",color:"#e8e0ff",cursor:"pointer",fontFamily:"'Exo 2', sans-serif",fontWeight:700},
   iconBtn:{background:"#221f38",border:"1px solid #2e2a4a",borderRadius:8,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:14,color:"#e8e0ff"},
   addTapperBtn:{padding:"4px 10px",borderRadius:20,background:"rgba(0,229,195,0.08)",border:"1px solid #00e5c3",color:"#00e5c3",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Exo 2', sans-serif"},
-  chip:{padding:"8px 10px",borderRadius:20,fontSize:11,fontWeight:700,cursor:"pointer",borderWidth:1,borderStyle:"solid",borderColor:"#2e2a4a",background:"#221f38",color:"#8b80b0",textTransform:"uppercase",textAlign:"center"},
+  chip:{padding:"8px 10px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",borderWidth:1,borderStyle:"solid",borderColor:"#2e2a4a",background:"#221f38",color:"#8b80b0",textTransform:"uppercase",textAlign:"center"},
   chipActive:{background:"rgba(0,229,195,0.1)",borderColor:"#00e5c3",color:"#00e5c3"},
   chipUnavailable:{background:"rgba(255,79,109,0.1)",borderColor:"#ff4f6d",color:"#ff4f6d"},
   btnPrimary:{width:"100%",padding:14,borderRadius:12,background:"linear-gradient(135deg, #00e5c3, #00b89c)",color:"#0f0d1a",fontFamily:"'Exo 2', sans-serif",fontSize:14,fontWeight:700,border:"none",cursor:"pointer",textTransform:"uppercase",letterSpacing:1,display:"block",textAlign:"center",textDecoration:"none"},

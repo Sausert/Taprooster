@@ -57,6 +57,7 @@ export default function DashboardClient({
   const [confirmedIds, setConfirmedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
 
   const firstName = profile?.full_name?.split(" ")[0] || "Tapper";
   const target = (profile?.preferred_frequency || 4) * 12;
@@ -96,6 +97,8 @@ export default function DashboardClient({
         shift_id: shift.id, status: "assigned" as const,
         shift: { ...shift },
       }].sort((a,b) => a.shift!.date.localeCompare(b.shift!.date)));
+      setClaimSuccess(shift.title);
+      setTimeout(() => setClaimSuccess(null), 3000);
     } else {
       const err = await res.json().catch(() => ({}));
       setFetchError(err.error ?? "Inschrijven mislukt. Probeer opnieuw.");
@@ -142,6 +145,11 @@ export default function DashboardClient({
           ⚠️ {fetchError}
         </div>
       )}
+      {claimSuccess && (
+        <div style={{background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", borderRadius:12, padding:"10px 14px", fontSize:13, color:"#00e5c3", fontWeight:700, marginBottom:14, display:"flex", alignItems:"center", gap:8}}>
+          ✅ Ingeschreven voor {claimSuccess}!
+        </div>
+      )}
       {/* Greeting */}
       <div style={{ marginBottom:20 }}>
         <p style={{ fontSize:13, color:"#8b80b0", marginBottom:4 }}>Welkom terug,</p>
@@ -180,9 +188,10 @@ export default function DashboardClient({
           )}
         </div>
       ) : (
-        <div style={{ ...s.card, textAlign:"center", padding:"24px" }}>
-          <p style={{ fontSize:32, marginBottom:8 }}>🍺</p>
-          <p style={{ color:"#8b80b0", fontSize:14 }}>Geen diensten ingepland.</p>
+        <div style={{textAlign:"center", padding:"32px 20px", background:"#1a1730", borderRadius:16, border:"1px solid #2e2a4a"}}>
+          <div style={{fontSize:40, marginBottom:10}}>🍺</div>
+          <p style={{fontSize:14, fontWeight:700, color:"#f0eeff", margin:0}}>Geen geplande diensten</p>
+          <p style={{fontSize:12, color:"#8b80b0", marginTop:4, margin:"4px 0 0"}}>Je staat nog nergens ingepland.</p>
         </div>
       )}
 
@@ -205,6 +214,10 @@ export default function DashboardClient({
         </div>
         <div style={s.progressWrap}><div style={{ ...s.progressFill, width:`${pct}%` }}/></div>
         {myRank > 0 && <p style={{ fontSize:11, color:"#8b80b0", marginTop:6 }}>Je staat op plek <strong style={{ color:"#00e5c3" }}>#{myRank}</strong> dit jaar 🏆</p>}
+        {tapsThisYear >= Math.round((new Date().getMonth() + 1) / 12 * target)
+          ? <p style={{fontSize:11, color:"#00e5c3", textAlign:"center", margin:"4px 0 0"}}>Je ligt op koers ✓</p>
+          : <p style={{fontSize:11, color:"#ffb547", textAlign:"center", margin:"4px 0 0"}}>Je loopt iets achter</p>
+        }
       </div>
 
       {/* All upcoming shifts */}
@@ -265,6 +278,9 @@ export default function DashboardClient({
               </div>
             </div>
           ))}
+          <a href="/rooster" style={{display:"block", textAlign:"center", fontSize:12, color:"#00e5c3", textDecoration:"none", padding:"8px 0", opacity:0.8}}>
+            Bekijk alle diensten op de roosterpagina →
+          </a>
         </>
       )}
 
@@ -316,6 +332,8 @@ export default function DashboardClient({
           <div style={s.sheet} onClick={e => e.stopPropagation()}>
             <div style={s.sheetHandle}/>
             <h3 style={s.sheetTitle}>Afmelden voor dienst</h3>
+            <p style={{fontSize:16, fontWeight:700, color:"#f0eeff", marginBottom:4}}>{declineModal.shift?.title}</p>
+            <p style={{fontSize:13, color:"#8b80b0", marginBottom:16}}>{declineModal.shift ? formatDate(declineModal.shift.date) : ""}</p>
             <p style={{ fontSize:13, color:"#8b80b0", marginBottom:16 }}>
               Alle andere tappers worden genotificeerd dat er een open plek is.
             </p>
@@ -340,21 +358,21 @@ export default function DashboardClient({
 
 const s: Record<string, React.CSSProperties> = {
   page: { padding:"20px 16px 100px" },
-  errorBanner: { background:"rgba(255,79,109,0.1)", border:"1px solid #ff4f6d", borderRadius:10, padding:"10px 14px", fontSize:13, color:"#ff4f6d", marginBottom:14, cursor:"pointer" },
+  errorBanner: { background:"rgba(255,79,109,0.1)", border:"1px solid #ff4f6d", borderRadius:12, padding:"10px 14px", fontSize:13, color:"#ff4f6d", marginBottom:14, cursor:"pointer" },
   greeting: { fontSize:26, fontWeight:900, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif", display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" },
   adminBadge: { fontSize:11, fontWeight:700, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", borderRadius:20, padding:"2px 10px" },
-  heroCard: { background:"linear-gradient(135deg,#1a1730,#221f38)", border:"1px solid #00e5c3", borderRadius:18, padding:18, marginBottom:12, boxShadow:"0 0 30px rgba(0,229,195,0.08)" },
+  heroCard: { background:"linear-gradient(135deg,#1a1730,#221f38)", border:"1px solid #00e5c3", borderRadius:16, padding:18, marginBottom:12, boxShadow:"0 0 30px rgba(0,229,195,0.08)" },
   heroLabel: { fontSize:11, fontWeight:700, letterSpacing:2, color:"#00e5c3", textTransform:"uppercase", marginBottom:4 },
   heroTitle: { fontSize:20, fontWeight:900, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif", margin:0 },
   heroSub: { fontSize:13, color:"#8b80b0", marginTop:2 },
   countdown: { fontFamily:"monospace", fontSize:34, fontWeight:700, color:"#00e5c3", lineHeight:1, margin:0 },
-  confirmBox: { background:"#221f38", borderRadius:10, padding:12 },
-  confirmedBanner: { background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", borderRadius:10, padding:"10px 14px", fontSize:13, color:"#00e5c3", fontWeight:700, textAlign:"center" },
-  btnYes: { flex:1, padding:10, borderRadius:10, background:"rgba(0,229,195,0.1)", color:"#00e5c3", border:"1px solid #00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer" },
-  btnNo: { flex:1, padding:10, borderRadius:10, background:"rgba(255,79,109,0.1)", color:"#ff4f6d", border:"1px solid #ff4f6d", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer" },
-  sectionTitle: { fontSize:11, fontWeight:700, letterSpacing:2, textTransform:"uppercase", color:"#8b80b0", margin:"20px 0 10px" },
+  confirmBox: { background:"#221f38", borderRadius:16, padding:12 },
+  confirmedBanner: { background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", borderRadius:16, padding:"10px 14px", fontSize:13, color:"#00e5c3", fontWeight:700, textAlign:"center" },
+  btnYes: { flex:1, padding:10, borderRadius:12, background:"rgba(0,229,195,0.1)", color:"#00e5c3", border:"1px solid #00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer" },
+  btnNo: { flex:1, padding:10, borderRadius:12, background:"rgba(255,79,109,0.1)", color:"#ff4f6d", border:"1px solid #ff4f6d", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer" },
+  sectionTitle: { fontSize:11, fontWeight:700, letterSpacing:2, textTransform:"uppercase", color:"#8b80b0", margin:"20px 0 8px" },
   statRow: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 },
-  statCard: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:14, padding:16, textAlign:"center" },
+  statCard: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:16, padding:16, textAlign:"center" },
   statVal: { fontFamily:"monospace", fontSize:30, fontWeight:700, color:"#00e5c3", margin:0 },
   statLabel: { fontSize:10, fontWeight:700, color:"#8b80b0", letterSpacing:1, textTransform:"uppercase", marginTop:4, margin:0 },
   card: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:16, padding:16, marginBottom:10 },
@@ -362,10 +380,10 @@ const s: Record<string, React.CSSProperties> = {
   progressFill: { height:"100%", borderRadius:4, background:"linear-gradient(90deg,#00e5c3,#00b89c)", transition:"width 0.6s ease" },
   mintBadge: { fontSize:10, fontWeight:700, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", borderRadius:20, padding:"2px 8px" },
   blueBadge: { fontSize:10, fontWeight:700, background:"rgba(59,130,246,0.1)", border:"1px solid #3b82f6", color:"#3b82f6", borderRadius:20, padding:"2px 8px" },
-  btnYesSmall: { fontSize:11, fontWeight:700, padding:"5px 10px", borderRadius:8, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", cursor:"pointer" },
+  btnYesSmall: { fontSize:11, fontWeight:700, padding:"5px 10px", borderRadius:12, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", cursor:"pointer" },
   agendaBtn: { fontSize:14, padding:"4px 8px", borderRadius:8, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", cursor:"pointer" },
-  declineBtn: { fontSize:11, fontWeight:700, padding:"5px 10px", borderRadius:8, background:"rgba(255,79,109,0.08)", border:"1px solid #ff4f6d", color:"#ff4f6d", cursor:"pointer", fontFamily:"'Exo 2',sans-serif" },
-  claimBtn: { padding:"9px 14px", borderRadius:10, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", border:"none", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:12, letterSpacing:1, cursor:"pointer", textTransform:"uppercase", flexShrink:0 },
+  declineBtn: { fontSize:11, fontWeight:700, padding:"5px 10px", borderRadius:12, background:"rgba(255,79,109,0.08)", border:"1px solid #ff4f6d", color:"#ff4f6d", cursor:"pointer", fontFamily:"'Exo 2',sans-serif" },
+  claimBtn: { padding:"9px 14px", borderRadius:12, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", border:"none", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:12, letterSpacing:1, cursor:"pointer", textTransform:"uppercase", flexShrink:0 },
   overlay: { position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", backdropFilter:"blur(6px)", zIndex:100, display:"flex", alignItems:"flex-end", justifyContent:"center" },
   sheet: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:"24px 24px 0 0", padding:"24px 20px 40px", width:"100%", maxWidth:430 },
   sheetHandle: { width:36, height:4, background:"#2e2a4a", borderRadius:2, margin:"0 auto 20px" },

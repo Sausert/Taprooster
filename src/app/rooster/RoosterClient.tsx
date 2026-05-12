@@ -51,6 +51,7 @@ export default function RoosterClient({
   const [claimedIds, setClaimedIds] = useState<string[]>([]);
   const [declinedIds, setDeclinedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState<string | null>(null);
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
 
   function prevMonth() {
     if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); }
@@ -139,14 +140,51 @@ export default function RoosterClient({
       {/* Maand nav */}
       <div style={s.monthNav}>
         <button style={s.navArrow} onClick={prevMonth}>‹</button>
-        <span style={s.monthLabel}>{MONTH_NAMES[viewMonth]} {viewYear}</span>
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, position:"relative" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <span style={s.monthLabel} onClick={() => setShowMonthPicker(p => !p)}>
+              {MONTH_NAMES[viewMonth]} {viewYear}
+            </span>
+            {(viewYear !== now.getFullYear() || viewMonth !== now.getMonth()) && (
+              <button
+                style={{ fontSize:11, padding:"4px 10px", borderRadius:20, background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", color:"#00e5c3", cursor:"pointer" }}
+                onClick={() => { setViewYear(now.getFullYear()); setViewMonth(now.getMonth()); setShowMonthPicker(false); }}
+              >
+                Vandaag
+              </button>
+            )}
+          </div>
+          {showMonthPicker && (
+            <div style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:12, padding:12, zIndex:100, width:240 }}>
+              {[now.getFullYear(), now.getFullYear() + 1].map(year => (
+                <div key={year}>
+                  <div style={{ fontSize:10, fontWeight:700, color:"#8b80b0", textTransform:"uppercase", letterSpacing:1, marginBottom:6, marginTop: year === now.getFullYear() ? 0 : 10 }}>{year}</div>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:4 }}>
+                    {MONTH_NAMES.map((name, idx) => {
+                      const isActive = viewYear === year && viewMonth === idx;
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => { setViewYear(year); setViewMonth(idx); setShowMonthPicker(false); }}
+                          style={{ padding:"5px 4px", borderRadius:8, fontSize:11, fontWeight:700, cursor:"pointer", background: isActive ? "rgba(0,229,195,0.15)" : "transparent", color: isActive ? "#00e5c3" : "#e8e0ff", border: isActive ? "1px solid #00e5c3" : "1px solid transparent" }}
+                        >
+                          {name.slice(0,3)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         <button style={s.navArrow} onClick={nextMonth}>›</button>
       </div>
 
       {view === "cal" ? (
         <>
           {/* Legenda */}
-          <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
+          <div style={{ display:"flex", gap:10, marginBottom:12, flexWrap:"wrap" }}>
             {[
               { color: C.myShift, bg: "rgba(90,74,158,0.2)", label: "Mijn dienst" },
               { color: C.full,    bg: "rgba(0,229,195,0.1)", label: "Vol" },
@@ -154,7 +192,7 @@ export default function RoosterClient({
               { color: C.empty,   bg: "rgba(255,79,109,0.1)", label: "Leeg" },
               { color: C.party,   bg: "rgba(59,130,246,0.12)", label: "Feestje" },
             ].map(({ color, bg, label }) => (
-              <div key={label} style={{ display:"flex", alignItems:"center", gap:5, fontSize:10, color:"#8b80b0" }}>
+              <div key={label} style={{ display:"flex", alignItems:"center", gap:5, fontSize:10, color:"#8b80b0", padding:"3px 8px", background:"rgba(255,255,255,0.04)", borderRadius:6 }}>
                 <div style={{ width:10, height:10, borderRadius:2, background:bg, borderWidth:1, borderStyle:"solid", borderColor:color }} />
                 {label}
               </div>
@@ -273,7 +311,11 @@ export default function RoosterClient({
         /* List view */
         <>
           {monthShifts.length === 0 ? (
-            <div style={{ textAlign:"center", padding:"40px 0", color:"#8b80b0" }}>Geen diensten deze maand.</div>
+            <div style={{ textAlign:"center", padding:"40px 20px" }}>
+              <div style={{ fontSize:40, marginBottom:12 }}>📅</div>
+              <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff", margin:0 }}>Geen diensten</p>
+              <p style={{ fontSize:12, color:"#8b80b0", marginTop:4 }}>Er zijn geen diensten gepland voor deze maand.</p>
+            </div>
           ) : monthShifts.map(shift => {
             const mine = isMyShift(shift);
             const isParty = shift.type === "feestje";
@@ -322,6 +364,19 @@ export default function RoosterClient({
             <div style={{ background:"#221f38", borderRadius:12, padding:"12px 14px", marginBottom:16 }}>
               <p style={{ fontSize:15, fontWeight:700, color:"#f0eeff" }}>{claimModal.title}</p>
               <p style={{ fontSize:13, color:"#8b80b0", marginTop:4 }}>{formatDate(claimModal.date)} · {claimModal.start_time}–{claimModal.end_time}</p>
+              {(() => {
+                const assigned = (claimModal.assignments || []).filter((a: any) => a.status !== "declined").length;
+                const max = claimModal.max_tappers || 1;
+                const pct = Math.min(100, Math.round((assigned / max) * 100));
+                return (
+                  <div style={{ marginTop:10 }}>
+                    <div style={{ fontSize:11, color:"#8b80b0", marginBottom:4 }}>{assigned}/{max} plekken bezet</div>
+                    <div style={{ height:4, borderRadius:2, background:"#2e2a4a", overflow:"hidden" }}>
+                      <div style={{ height:"100%", width:`${pct}%`, background:"#00e5c3", borderRadius:2 }} />
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
             <p style={{ fontSize:12, color:"#8b80b0", marginBottom:20, lineHeight:1.5 }}>
               Je ontvangt een bevestiging per e-mail en herinneringen 2 weken en 1 week van tevoren.
@@ -341,9 +396,9 @@ const s: Record<string, React.CSSProperties> = {
   page: { padding:"16px 16px 100px" },
   toggleRow: { display:"flex", gap:8, marginBottom:16 },
   toggleBtn: { flex:1, padding:"10px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer" },
-  monthNav: { display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 },
+  monthNav: { display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, position:"relative" },
   navArrow: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:8, color:"#e8e0ff", fontSize:20, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" },
-  monthLabel: { fontSize:18, fontWeight:900, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif" },
+  monthLabel: { fontSize:18, fontWeight:900, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif", minWidth:140, textAlign:"center", cursor:"pointer" },
   calGrid: { display:"grid", gridTemplateColumns:"repeat(7, 1fr)", gap:4, marginBottom:16 },
   dayHeader: { textAlign:"center", fontSize:10, fontWeight:700, color:"#8b80b0", padding:"4px 0" },
   closeBtn: { background:"none", border:"none", color:"#8b80b0", fontSize:16, cursor:"pointer", padding:4, flexShrink:0 },

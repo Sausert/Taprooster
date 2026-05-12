@@ -122,7 +122,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
       {/* Tabs */}
       <div style={s.tabBar}>
         {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id as any)} style={{ ...s.tab, color: tab===t.id?"#00e5c3":"#8b80b0", borderBottom:`2px solid ${tab===t.id?"#00e5c3":"transparent"}` }}>{t.label}</button>
+          <button key={t.id} onClick={() => setTab(t.id as any)} style={{ ...s.tab, color: tab===t.id?"#00e5c3":"#8b80b0", borderBottom:`2px solid ${tab===t.id?"#00e5c3":"transparent"}`, fontWeight: tab===t.id ? 900 : 600 }}>{t.label}</button>
         ))}
       </div>
 
@@ -151,6 +151,9 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
           <p style={s.sectionTitle}>Beveiliging</p>
           <div style={s.card}>
             <button style={s.btnSecondary} onClick={() => router.push("/reset-password")}>🔑 Wachtwoord wijzigen</button>
+            <p style={{fontSize:11, color:"#8b80b0", marginTop:6, marginBottom:0}}>
+              Je wordt doorgestuurd naar een externe beveiligingspagina.
+            </p>
           </div>
           <button style={{ ...s.btnSecondary, marginTop:12, color:"#ff4f6d", borderColor:"#ff4f6d" }} onClick={handleLogout}>Uitloggen</button>
         </>
@@ -304,7 +307,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
 const s: Record<string, React.CSSProperties> = {
   page: { padding:"16px 16px 100px" },
   profileHeader: { display:"flex", gap:14, alignItems:"center", marginBottom:16, padding:16, background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:16 },
-  avatar: { width:56, height:56, borderRadius:16, background:"linear-gradient(135deg, #3b2f6e, #5a4a9e)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:20, color:"#00e5c3", flexShrink:0 },
+  avatar: { width:56, height:56, borderRadius:12, background:"linear-gradient(135deg, #3b2f6e, #5a4a9e)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:20, color:"#00e5c3", flexShrink:0 },
   name: { fontSize:17, fontWeight:700, color:"#f0eeff", fontFamily:"'Exo 2', sans-serif" },
   emailTxt: { fontSize:12, color:"#8b80b0", marginTop:2 },
   adminBadge: { display:"inline-block", marginTop:6, fontSize:11, fontWeight:700, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", borderRadius:20, padding:"2px 10px" },
@@ -314,9 +317,9 @@ const s: Record<string, React.CSSProperties> = {
   sectionTitle: { fontSize:11, fontWeight:700, letterSpacing:2, textTransform:"uppercase", color:"#8b80b0", margin:"16px 0 8px" },
   card: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:16, padding:16, marginBottom:10 },
   label: { display:"block", fontSize:11, fontWeight:700, letterSpacing:1, textTransform:"uppercase", color:"#8b80b0", marginBottom:6 },
-  input: { width:"100%", background:"#221f38", border:"1px solid #2e2a4a", borderRadius:10, padding:"11px 14px", color:"#e8e0ff", fontFamily:"'Exo 2', sans-serif", fontSize:14, outline:"none", marginBottom:12, display:"block" },
+  input: { width:"100%", background:"#221f38", border:"1px solid #2e2a4a", borderRadius:12, padding:"11px 14px", color:"#e8e0ff", fontFamily:"'Exo 2', sans-serif", fontSize:14, outline:"none", marginBottom:12, display:"block" },
   chipRow: { display:"flex", gap:8, flexWrap:"wrap" },
-  chip: { padding:"8px 14px", borderRadius:20, fontSize:12, fontWeight:700, cursor:"pointer", border:"1px solid #2e2a4a", background:"#221f38", color:"#8b80b0", textTransform:"uppercase" },
+  chip: { padding:"8px 14px", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer", border:"1px solid #2e2a4a", background:"#221f38", color:"#8b80b0", textTransform:"uppercase" },
   chipActive: { background:"rgba(0,229,195,0.1)", borderColor:"#00e5c3", color:"#00e5c3" },
   chipUnavailable: { background:"rgba(255,79,109,0.1)", borderColor:"#ff4f6d", color:"#ff4f6d" },
   btnPrimary: { width:"100%", padding:14, borderRadius:12, background:"linear-gradient(135deg, #00e5c3, #00b89c)", color:"#0f0d1a", fontFamily:"'Exo 2', sans-serif", fontSize:15, fontWeight:700, border:"none", cursor:"pointer", textTransform:"uppercase", letterSpacing:1, marginBottom:8 },
