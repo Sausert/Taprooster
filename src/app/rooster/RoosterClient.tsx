@@ -118,26 +118,6 @@ export default function RoosterClient({
     setLoading(null);
   }
 
-  function handleIcal(shift: any) {
-    const d = parseLocalDate(shift.date);
-    const fmt = (n: number) => String(n).padStart(2, "0");
-    const dateStr = `${d.getFullYear()}${fmt(d.getMonth()+1)}${fmt(d.getDate())}`;
-    const icsContent = [
-      "BEGIN:VCALENDAR", "VERSION:2.0",
-      "BEGIN:VEVENT",
-      `UID:shift-${shift.id}@${APP_CONFIG.domain}`,
-      `DTSTART:${dateStr}T${shift.start_time.replace(":","")}00`,
-      `DTEND:${dateStr}T${shift.end_time.replace(":","")}00`,
-      `SUMMARY:🍺 ${shift.title}`,
-      `LOCATION:${APP_CONFIG.locationIcal}`,
-      "END:VEVENT", "END:VCALENDAR",
-    ].join("\r\n");
-    const blob = new Blob([icsContent], { type: "text/calendar" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = `walhalla-${shift.date}.ics`; a.click();
-    URL.revokeObjectURL(url);
-  }
 
 
   return (
@@ -281,7 +261,7 @@ export default function RoosterClient({
                           {loading===shift.id ? "..." : "🔴 Afmelden"}
                         </button>
                       )}
-                      <button style={{ ...s.icalBtn, flex: claimable || mine ? 0 : 1 }} onClick={() => handleIcal(shift)}>📅</button>
+                      <a href={`/api/shifts/${shift.id}/ical`} style={{ ...s.icalBtn, flex: claimable || mine ? 0 : 1, textDecoration:"none" }}>📅</a>
                     </div>
                   </div>
                 );
@@ -321,7 +301,7 @@ export default function RoosterClient({
                   </div>
                   <div style={{ textAlign:"right", display:"flex", flexDirection:"column", gap:6, alignItems:"flex-end" }}>
                     <p style={{ fontSize:11, color: accentColor }}>{assigned}/{shift.max_tappers}</p>
-                    <button style={s.icalBtnSm} onClick={() => handleIcal(shift)}>📅</button>
+                    <a href={`/api/shifts/${shift.id}/ical`} style={{ ...s.icalBtnSm, textDecoration:"none" }}>📅</a>
                     {canClaim(shift) && <button style={s.claimBtnSm} onClick={() => setClaimModal(shift)}>Inschrijven</button>}
                     {mine && <button style={s.declineBtnSm} onClick={() => handleDecline(shift.id)}>Afmelden</button>}
                   </div>
