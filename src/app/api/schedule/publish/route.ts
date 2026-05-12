@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-helpers";
+import { createAdminClient } from "@/lib/supabase-server";
 import { sendRosterPublishedEmail } from "@/lib/email";
 
 function getMonthName(m: string): string {
@@ -44,8 +45,11 @@ export async function POST(req: NextRequest) {
 
   if (publishError) return NextResponse.json({ error: publishError.message }, { status: 500 });
 
+  // Admin client bypasses RLS — needed for notification inserts (no INSERT policy for regular users)
+  const adminClient = createAdminClient();
+
   // Haal alle tappers op
-  const { data: allProfiles } = await supabase.from("profiles").select("id, email, full_name");
+  const { data: allProfiles } = await adminClient.from("profiles").select("id, email, full_name");
 
   // Maak periode label van rangeStart/rangeEnd
   const startParts = rangeStart.split("-");
@@ -58,7 +62,7 @@ export async function POST(req: NextRequest) {
 
   // Maak in-app notificaties voor ALLE tappers
   if (allProfiles && allProfiles.length > 0) {
-    const { error: notifError } = await supabase.from("notifications").insert(
+    const { error: notifError } = await adminClient.from("notifications").insert(
       allProfiles.map(p => ({
         user_id: p.id,
         type: "roster_published",
@@ -93,7 +97,7 @@ export async function POST(req: NextRequest) {
       }
     }
     if (shiftNotifs.length > 0) {
-      await supabase.from("notifications").insert(shiftNotifs);
+      await adminClient.from("notifications").insert(shiftNotifs);
     }
   }
 

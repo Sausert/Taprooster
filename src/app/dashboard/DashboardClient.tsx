@@ -191,6 +191,27 @@ export default function DashboardClient({
         </div>
       )}
 
+      {/* Admin berichten */}
+      {adminMessages.length > 0 && (
+        <>
+          <p className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px" }}>Berichten van admin</p>
+          {adminMessages.map((msg) => (
+            <div key={msg.id} className={sharedStyles.card}>
+              <div style={{ display:"flex", gap:10 }}>
+                <span style={{ fontSize:20 }}>📢</span>
+                <div>
+                  <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", marginBottom:4 }}>{msg.title}</p>
+                  <p style={{ fontSize:12, color:"#8b80b0", lineHeight:1.5 }}>{msg.body}</p>
+                  <p style={{ fontSize:11, color:"#8b80b0", marginTop:6 }}>
+                    {new Date(msg.created_at).toLocaleString("nl-NL", { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+
       {/* Stats */}
       <p className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px" }}>Jouw statistieken</p>
       <div style={s.statRow}>
@@ -293,27 +314,6 @@ export default function DashboardClient({
           <a href="/rooster" style={{display:"block", textAlign:"center", fontSize:12, color:"#00e5c3", textDecoration:"none", padding:"8px 0"}}>
             Bekijk alle diensten op de roosterpagina →
           </a>
-        </>
-      )}
-
-      {/* Admin berichten */}
-      {adminMessages.length > 0 && (
-        <>
-          <p className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px" }}>Berichten van admin</p>
-          {adminMessages.map((msg) => (
-            <div key={msg.id} className={sharedStyles.card}>
-              <div style={{ display:"flex", gap:10 }}>
-                <span style={{ fontSize:20 }}>📢</span>
-                <div>
-                  <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", marginBottom:4 }}>{msg.title}</p>
-                  <p style={{ fontSize:12, color:"#8b80b0", lineHeight:1.5 }}>{msg.body}</p>
-                  <p style={{ fontSize:11, color:"#8b80b0", marginTop:6 }}>
-                    {new Date(msg.created_at).toLocaleString("nl-NL", { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" })}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
         </>
       )}
 

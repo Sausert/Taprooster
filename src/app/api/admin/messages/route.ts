@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-helpers";
+import { createAdminClient } from "@/lib/supabase-server";
 import { sendAdminMessageEmail } from "@/lib/email";
 
 export async function GET() {
@@ -39,11 +40,12 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Notify all tappers
-  const { data: allProfiles } = await supabase.from("profiles").select("id, email, full_name");
+  // Notify all tappers — use admin client to bypass RLS (no INSERT policy for regular users)
+  const adminClient = createAdminClient();
+  const { data: allProfiles } = await adminClient.from("profiles").select("id, email, full_name");
 
   if (allProfiles && allProfiles.length > 0) {
-    await supabase.from("notifications").insert(
+    const { error: notifError } = await adminClient.from("notifications").insert(
       allProfiles.map(p => ({
         user_id: p.id,
         type: "admin_message",
@@ -52,6 +54,7 @@ export async function POST(req: NextRequest) {
         read: false,
       }))
     );
+    if (notifError) console.error("Notificatie aanmaken mislukt:", notifError.message);
 
     await Promise.allSettled(
       allProfiles.map(p => sendAdminMessageEmail(p.email, p.full_name, title.trim(), msgBody.trim()))

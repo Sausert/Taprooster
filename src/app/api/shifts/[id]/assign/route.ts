@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase-server";
 import { sendOpenShiftEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -67,7 +67,8 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       const shiftDate = new Date(shift.date).toLocaleDateString("nl-NL", { weekday:"long", day:"numeric", month:"long" });
       const shiftTime = `${shift.start_time}–${shift.end_time}`;
       if (allProfiles) {
-        await supabase.from("notifications").insert(
+        const adminClient = createAdminClient();
+        await adminClient.from("notifications").insert(
           allProfiles.map(p => ({ user_id:p.id, type:"open_shift", title:"🔓 Open dienst!", message:`Er is een open plek voor ${shift.title} op ${shiftDate}.`, shift_id:shiftId, read:false }))
         );
         await Promise.allSettled(allProfiles.map(p => sendOpenShiftEmail(p.email, p.full_name, shift.title, shiftDate, shiftTime, shiftId)));
