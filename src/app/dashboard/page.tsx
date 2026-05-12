@@ -48,7 +48,7 @@ export default async function DashboardPage() {
 
     if ((myFutureAssignments || []).length > 0) {
       const { data: futureShiftDetails } = await supabase
-        .from("shifts").select("*")
+        .from("shifts").select("*, assignments:shift_assignments(user_id, status)")
         .in("id", (myFutureAssignments || []).map((a: any) => a.shift_id))
         .order("date", { ascending: true });
 
@@ -63,19 +63,22 @@ export default async function DashboardPage() {
   const myShiftIds = myUpcoming.map((a: any) => a.shift_id);
   const incomingPlanned = myUpcoming.length; // count of future planned shifts
 
-  // Open diensten
+  // Open diensten — fetch via shifts table to include assignment names
   const { data: openShiftsRaw } = await supabase
-    .from("shift_occupancy")
-    .select("*")
+    .from("shifts")
+    .select("*, assignments:shift_assignments(user_id, status, profile:profiles(id, full_name))")
     .eq("status", "published")
-    .gt("open_spots", 0)
     .gte("date", today)
     .order("date", { ascending: true })
-    .limit(10);
+    .limit(20);
 
-  const claimableShifts = (openShiftsRaw || []).filter(
-    (s: any) => !myShiftIds.includes(s.id)
-  );
+  const claimableShifts = (openShiftsRaw || [])
+    .map((s: any) => {
+      const filled = (s.assignments || []).filter((a: any) => a.status !== "declined").length;
+      return { ...s, open_spots: Math.max(0, s.max_tappers - filled) };
+    })
+    .filter((s: any) => s.open_spots > 0 && !myShiftIds.includes(s.id))
+    .slice(0, 10);
 
   const { data: leaderboard } = await supabase
     .from("leaderboard").select("*").order("rank", { ascending: true });

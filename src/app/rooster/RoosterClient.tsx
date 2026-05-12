@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { APP_CONFIG } from "@/lib/config";
-import { parseLocalDate, formatDate, formatDateShort } from "@/lib/dates";
+import { parseLocalDate, formatDate, formatDateShort, formatTime } from "@/lib/dates";
 import { useShiftApi } from "@/hooks/useShiftApi";
 
 const MONTH_NAMES = ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December"];
@@ -249,7 +249,7 @@ export default function RoosterClient({
                           <p style={{ fontSize:16, fontWeight:700, color:"#f0eeff" }}>{shift.title}</p>
                           {isParty && <span style={s.warnBadge}>Feestje</span>}
                         </div>
-                        <p style={{ fontSize:13, color:"#8b80b0" }}>{formatDate(shift.date)} · {shift.start_time}–{shift.end_time}</p>
+                        <p style={{ fontSize:13, color:"#8b80b0" }}>{formatDate(shift.date)} · {formatTime(shift.start_time)}–{formatTime(shift.end_time)}</p>
                         <p style={{ fontSize:11, color: accentColor, marginTop:2 }}>{assigned.length}/{totalSpots} tappers</p>
                         {shift.admin_note && <p style={{ fontSize:11, color:"#3b82f6", marginTop:4 }}>📌 {shift.admin_note}</p>}
                       </div>
@@ -322,7 +322,7 @@ export default function RoosterClient({
                       {isParty && <span style={s.warnBadge}>Feestje</span>}
                     </div>
                     <p style={{ fontSize:12, color:"#8b80b0" }}>{formatDateShort(shift.date)}</p>
-                    <p style={{ fontSize:12, color:"#8b80b0" }}>{shift.start_time}–{shift.end_time}</p>
+                    <p style={{ fontSize:12, color:"#8b80b0" }}>{formatTime(shift.start_time)}–{formatTime(shift.end_time)}</p>
                     <div style={{ display:"flex", gap:4, marginTop:6, flexWrap:"wrap" }}>
                       {(shift.assignments || []).filter((a: any) => a.status !== "declined").map((a: any) => (
                         <span key={a.user_id} style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:a.user_id===userId?"rgba(90,74,158,0.2)":"#221f38", color:a.user_id===userId?C.myShift:"#8b80b0", borderWidth:1, borderStyle:"solid", borderColor:a.user_id===userId?C.myShift:"#2e2a4a" }}>
@@ -352,7 +352,7 @@ export default function RoosterClient({
             <h3 style={s.sheetTitle}>Inschrijven</h3>
             <div style={{ background:"#221f38", borderRadius:12, padding:"12px 14px", marginBottom:16 }}>
               <p style={{ fontSize:15, fontWeight:700, color:"#f0eeff" }}>{claimModal.title}</p>
-              <p style={{ fontSize:13, color:"#8b80b0", marginTop:4 }}>{formatDate(claimModal.date)} · {claimModal.start_time}–{claimModal.end_time}</p>
+              <p style={{ fontSize:13, color:"#8b80b0", marginTop:4 }}>{formatDate(claimModal.date)} · {formatTime(claimModal.start_time)}–{formatTime(claimModal.end_time)}</p>
               {(() => {
                 const assigned = (claimModal.assignments || []).filter((a: any) => a.status !== "declined");
                 const max = claimModal.max_tappers || 1;

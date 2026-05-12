@@ -15,8 +15,8 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
   const d = parseLocalDate(shift.date);
   const fmt = (n: number) => String(n).padStart(2, "0");
   const dateStr = `${d.getFullYear()}${fmt(d.getMonth()+1)}${fmt(d.getDate())}`;
-  const startStr = shift.start_time.replace(":", "");
-  const endStr = shift.end_time.replace(":", "");
+  const startStr = shift.start_time.replace(/:/g, "").slice(0, 4);
+  const endStr = shift.end_time.replace(/:/g, "").slice(0, 4);
 
   const ics = [
     "BEGIN:VCALENDAR",
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
   return new NextResponse(ics, {
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": `attachment; filename="walhalla-${shift.date}.ics"`,
+      "Content-Disposition": `inline; filename="walhalla-${shift.date}.ics"`,
     },
   });
 }

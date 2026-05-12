@@ -100,7 +100,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
     { id: "profiel", label: "👤 Profiel" },
     { id: "voorkeuren", label: "⚙️ Voorkeuren" },
     { id: "stats", label: "🏆 Stats" },
-    { id: "notif", label: `🔔${notifs.filter(n => !n.read).length > 0 ? ` (${notifs.filter(n => !n.read).length})` : ""}` },
+    { id: "notif", label: `🔔 Notificaties${notifs.filter(n => !n.read).length > 0 ? ` (${notifs.filter(n => !n.read).length})` : ""}` },
   ];
 
   return (
@@ -191,7 +191,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
           <p className={sharedStyles.sectionTitle}>Ik doe ook mee met</p>
           <div className={sharedStyles.card}>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-              {[["tapper","🍺 Tappen"],["bonnenkassa","🎟 Bonnenkassa"]].map(([v,l]) => (
+              {[["tapper","🍺 Tappen"],["bonnenkassa","Bonnenkassa 🎟"]].map(([v,l]) => (
                 <div key={v} className={`${sharedStyles.chip}${profile.preferred_roles.includes(v as any) ? ` ${sharedStyles.chipActive}` : ""}`} style={{ flex:1, textAlign:"center" }} onClick={() => toggleRole(v)}>{l}</div>
               ))}
               <div className={`${sharedStyles.chip}${profile.wants_parties ? ` ${sharedStyles.chipActive}` : ""}`} style={{ flex:1, textAlign:"center" }} onClick={() => setProfile(p => ({ ...p, wants_parties: !p.wants_parties }))}>🎉 Feestjes</div>
@@ -296,19 +296,19 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
               <div key={group.label}>
                 <p style={{ fontSize:10, fontWeight:700, letterSpacing:2, textTransform:"uppercase", color:"#8b80b0", margin:"12px 0 6px" }}>{group.label}</p>
                 {group.items.map(n => (
-                  <div key={n.id} className={sharedStyles.card} style={{ opacity:n.read?0.6:1, borderLeft:`3px solid ${n.type.includes("open")||n.type.includes("reminder")?"#ffb547":"#00e5c3"}` }}>
+                  <div key={n.id} className={sharedStyles.card} style={{ opacity:n.read?0.55:1, borderLeft:`3px solid ${n.read ? "#2e2a4a" : n.type.includes("open")||n.type.includes("reminder") ? "#ffb547" : "#00e5c3"}` }}>
                     <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
-                      <div style={{ width:36, height:36, borderRadius:10, flexShrink:0, background:"rgba(0,229,195,0.08)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>
+                      <div style={{ width:36, height:36, borderRadius:10, flexShrink:0, background:n.read ? "rgba(255,255,255,0.03)" : "rgba(0,229,195,0.08)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>
                         {n.type==="roster_published"?"📅":n.type.includes("reminder")?"⏰":n.type==="open_shift"?"🔓":"📢"}
                       </div>
                       <div style={{ flex:1 }}>
-                        <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff" }}>{n.title}</p>
+                        <p style={{ fontSize:13, fontWeight:700, color: n.read ? "#8b80b0" : "#f0eeff" }}>{n.title}</p>
                         <p style={{ fontSize:12, color:"#8b80b0", marginTop:2, lineHeight:1.4 }}>{n.message}</p>
                         <p style={{ fontSize:11, color:"#8b80b0", marginTop:6 }}>
                           {new Date(n.created_at).toLocaleTimeString("nl-NL", { hour:"2-digit", minute:"2-digit" })}
                         </p>
                       </div>
-                      {!n.read && <div style={{ width:8, height:8, borderRadius:"50%", background:"#00e5c3", flexShrink:0, marginTop:4 }} />}
+                      {!n.read && <div style={{ width:8, height:8, borderRadius:"50%", background:"#ff4f6d", flexShrink:0, marginTop:4 }} />}
                     </div>
                   </div>
                 ))}

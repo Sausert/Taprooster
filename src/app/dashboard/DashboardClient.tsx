@@ -3,7 +3,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { Profile, Shift, ShiftAssignment, AdminMessage } from "@/types";
 import { APP_CONFIG } from "@/lib/config";
-import { parseLocalDate, formatDate, formatDateShort } from "@/lib/dates";
+import { parseLocalDate, formatDate, formatDateShort, formatTime } from "@/lib/dates";
 import { useShiftApi } from "@/hooks/useShiftApi";
 import sharedStyles from "@/styles/shared.module.css";
 
@@ -102,7 +102,7 @@ export default function DashboardClient({
     if (typeof navigator !== "undefined" && navigator.share) {
       navigator.share({
         title: shift.title,
-        text: `Tapavond ${shift.title} — ${formatDate(shift.date)} ${shift.start_time}–${shift.end_time}. Schrijf je in op Taprooster!`,
+        text: `Tapavond ${shift.title} — ${formatDate(shift.date)} ${formatTime(shift.start_time)}–${formatTime(shift.end_time)}. Schrijf je in op Taprooster!`,
         url: window.location.origin + "/rooster",
       }).catch(() => {});
     }
@@ -121,7 +121,17 @@ export default function DashboardClient({
     }
   }
 
-  const shiftColor = (type: string) => type === "feestje" ? "#3b82f6" : "#00e5c3";
+  function openShiftBorderColor(shift: ClaimableShift) {
+    if (shift.type === "feestje") return "#3b82f6";
+    const filled = (shift as any).assignments?.filter((a: any) => a.status !== "declined").length || 0;
+    return filled > 0 ? "#ffb547" : "#00e5c3";
+  }
+
+  function openShiftBg(shift: ClaimableShift) {
+    if (shift.type === "feestje") return "rgba(59,130,246,0.04)";
+    const filled = (shift as any).assignments?.filter((a: any) => a.status !== "declined").length || 0;
+    return filled > 0 ? "rgba(255,181,71,0.04)" : "rgba(0,229,195,0.04)";
+  }
 
   return (
     <div style={s.page}>
@@ -151,7 +161,7 @@ export default function DashboardClient({
             <div style={{ flex:1 }}>
               <p style={s.heroLabel}>Volgende dienst</p>
               <h2 style={s.heroTitle}>{nextShift.title}</h2>
-              <p style={s.heroSub}>{formatDate(nextShift.date)} · {nextShift.start_time}–{nextShift.end_time}</p>
+              <p style={s.heroSub}>{formatDate(nextShift.date)} · {formatTime(nextShift.start_time)}–{formatTime(nextShift.end_time)}</p>
             </div>
             {daysUntilNext !== null && (
               <div style={{ textAlign:"center", minWidth:64 }}>
@@ -172,7 +182,14 @@ export default function DashboardClient({
             )}
           </div>
           {confirmedIds.includes(nextAssignment.shift_id) || nextAssignment.status === "confirmed" ? (
-            <div style={s.confirmedBanner}>✅ Bevestigd! Tot dan 🍺</div>
+            <div style={s.confirmedBanner}>
+              ✅ Bevestigd!{" "}
+              <a
+                href={`/api/shifts/${nextShift.id}/ical`}
+                style={{ color:"inherit", textDecoration:"underline", cursor:"pointer" }}
+                onClick={(e) => { if (typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent)) { e.preventDefault(); handleAgenda(nextShift); } }}
+              >Zet direct in agenda →</a>
+            </div>
           ) : (
             <div style={s.confirmBox}>
               <p style={{ fontSize:12, color:"#8b80b0", marginBottom:8 }}>Ben jij erbij?</p>
@@ -251,9 +268,11 @@ export default function DashboardClient({
             const isConfirmed = confirmedIds.includes(a.shift_id) || a.status === "confirmed";
             const daysUntil = Math.ceil((parseLocalDate(sh.date).getTime() - Date.now()) / (1000*60*60*24));
             const urgentUnconfirmed = !isConfirmed && daysUntil >= 0 && daysUntil < 3;
-            const accentColor = shiftColor(sh.type);
+            const filledCount = (sh as any).assignments?.filter((a: any) => a.status !== "declined").length ?? -1;
+            const accentColor = sh.type === "feestje" ? "#3b82f6" : (filledCount >= 0 && filledCount < (sh.max_tappers || 2)) ? "#ffb547" : "#00e5c3";
+            const rgbAccent = sh.type === "feestje" ? "59,130,246" : (filledCount >= 0 && filledCount < (sh.max_tappers || 2)) ? "255,181,71" : "0,229,195";
             return (
-              <div key={a.shift_id} className={sharedStyles.card} style={{ borderLeft:`4px solid ${accentColor}`, background:`linear-gradient(90deg, rgba(${sh.type==="feestje"?"59,130,246":"0,229,195"},0.04) 0%, #1a1730 40%)` }}>
+              <div key={a.shift_id} className={sharedStyles.card} style={{ borderLeft:`4px solid ${accentColor}`, background:`linear-gradient(90deg, rgba(${rgbAccent},0.04) 0%, #1a1730 40%)` }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                   <div style={{ flex:1 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4, flexWrap:"wrap" }}>
@@ -263,7 +282,7 @@ export default function DashboardClient({
                       {urgentUnconfirmed && <span className={`${sharedStyles.badge} ${sharedStyles.badgeAmber}`}>⏰ Bevestig — nog {daysUntil === 0 ? "vandaag" : `${daysUntil} dag${daysUntil !== 1 ? "en" : ""}`}</span>}
                     </div>
                     <p style={{ fontSize:13, fontWeight:700, color:"#e8e0ff", marginBottom:2 }}>{formatDateShort(sh.date)}</p>
-                    <p style={{ fontSize:12, color:"#8b80b0" }}>{sh.start_time}–{sh.end_time}</p>
+                    <p style={{ fontSize:12, color:"#8b80b0" }}>{formatTime(sh.start_time)}–{formatTime(sh.end_time)}</p>
                     {sh.admin_note && <p style={{ fontSize:11, color:"#3b82f6", marginTop:4 }}>📌 {sh.admin_note}</p>}
                   </div>
                   <div style={{ display:"flex", flexDirection:"column", gap:6, alignItems:"flex-end" }}>
@@ -279,7 +298,9 @@ export default function DashboardClient({
                         onClick={(e) => { if (/Android/i.test(navigator.userAgent)) { e.preventDefault(); handleAgenda(sh); } }}
                       >📅</a>
                       {typeof navigator !== "undefined" && "share" in navigator && (
-                        <button style={s.agendaBtn} onClick={() => handleShare(sh)} title="Deel dienst">↗</button>
+                        <button style={s.agendaBtn} onClick={() => handleShare(sh)} title="Deel dienst">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                        </button>
                       )}
                     </div>
                   </div>
@@ -294,23 +315,37 @@ export default function DashboardClient({
       {claimable.length > 0 && (
         <>
           <p className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px" }}>Open diensten</p>
-          {claimable.map((shift) => (
-            <div key={shift.id} className={sharedStyles.card} style={{ borderLeft:`4px solid ${shiftColor(shift.type)}`, background:`linear-gradient(90deg, rgba(${shift.type==="feestje"?"59,130,246":"0,229,195"},0.04) 0%, #1a1730 40%)` }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                <div style={{ flex:1 }}>
-                  <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff" }}>{shift.title}</p>
-                  <p style={{ fontSize:13, fontWeight:700, color:"#e8e0ff", marginBottom:2, marginTop:2 }}>{formatDateShort(shift.date)}</p>
-                  <p style={{ fontSize:12, color:"#8b80b0" }}>{shift.start_time}–{shift.end_time}</p>
-                  <p style={{ fontSize:11, color:"#8b80b0", marginTop:4 }}>
-                    {shift.open_spots} open plek{shift.open_spots > 1 ? "ken" : ""}
-                  </p>
+          {claimable.map((shift) => {
+            const borderColor = openShiftBorderColor(shift);
+            const bgGrad = openShiftBg(shift);
+            const assignedNames = (shift as any).assignments?.filter((a: any) => a.status !== "declined") || [];
+            return (
+              <div key={shift.id} className={sharedStyles.card} style={{ borderLeft:`4px solid ${borderColor}`, background:`linear-gradient(90deg, ${bgGrad} 0%, #1a1730 40%)` }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                  <div style={{ flex:1 }}>
+                    <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff" }}>{shift.title}</p>
+                    <p style={{ fontSize:13, fontWeight:700, color:"#e8e0ff", marginBottom:2, marginTop:2 }}>{formatDateShort(shift.date)}</p>
+                    <p style={{ fontSize:12, color:"#8b80b0" }}>{formatTime(shift.start_time)}–{formatTime(shift.end_time)}</p>
+                    <p style={{ fontSize:11, color:"#8b80b0", marginTop:4 }}>
+                      {shift.open_spots} open plek{shift.open_spots > 1 ? "ken" : ""}
+                    </p>
+                    {assignedNames.length > 0 && (
+                      <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginTop:6 }}>
+                        {assignedNames.map((a: any) => (
+                          <span key={a.user_id} style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:"#221f38", border:"1px solid #2e2a4a", color:"#8b80b0" }}>
+                            {a.profile?.full_name?.split(" ")[0] || "?"}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <button style={{ ...s.claimBtn, opacity: loading===shift.id ? 0.5 : 1 }} disabled={loading===shift.id} onClick={() => setClaimModal(shift)}>
+                    {loading===shift.id ? "..." : "Inschrijven"}
+                  </button>
                 </div>
-                <button style={{ ...s.claimBtn, opacity: loading===shift.id ? 0.5 : 1 }} disabled={loading===shift.id} onClick={() => setClaimModal(shift)}>
-                  {loading===shift.id ? "..." : "Inschrijven"}
-                </button>
               </div>
-            </div>
-          ))}
+            );
+          })}
           <a href="/rooster" style={{display:"block", textAlign:"center", fontSize:12, color:"#00e5c3", textDecoration:"none", padding:"8px 0"}}>
             Bekijk alle diensten op de roosterpagina →
           </a>
@@ -325,7 +360,7 @@ export default function DashboardClient({
             <h3 className={sharedStyles.sheetTitle}>Inschrijven voor dienst</h3>
             <div style={{ background:"#221f38", borderRadius:12, padding:"12px 14px", marginBottom:16 }}>
               <p style={{ fontSize:15, fontWeight:700, color:"#f0eeff" }}>{claimModal.title}</p>
-              <p style={{ fontSize:13, color:"#8b80b0", marginTop:4 }}>{formatDate(claimModal.date)} · {claimModal.start_time}–{claimModal.end_time}</p>
+              <p style={{ fontSize:13, color:"#8b80b0", marginTop:4 }}>{formatDate(claimModal.date)} · {formatTime(claimModal.start_time)}–{formatTime(claimModal.end_time)}</p>
               {(claimModal as any).assignments?.filter((a: any) => a.status !== "declined").length > 0 && (
                 <div style={{ marginTop:10 }}>
                   <p style={{ fontSize:11, color:"#8b80b0", marginBottom:6 }}>Al ingeroosterd:</p>
@@ -364,7 +399,7 @@ export default function DashboardClient({
             <div style={{ background:"#221f38", borderRadius:12, padding:"12px 14px", marginBottom:16 }}>
               <p style={{ fontSize:15, fontWeight:700, color:"#f0eeff" }}>{declineModal.shift?.title}</p>
               <p style={{ fontSize:13, color:"#8b80b0", marginTop:4 }}>
-                {declineModal.shift ? formatDate(declineModal.shift.date) : ""} · {declineModal.shift?.start_time}–{declineModal.shift?.end_time}
+                {declineModal.shift ? formatDate(declineModal.shift.date) : ""} · {formatTime(declineModal.shift?.start_time || "")}–{formatTime(declineModal.shift?.end_time || "")}
               </p>
             </div>
             <button className={sharedStyles.btnPrimary} style={{ background:"linear-gradient(135deg,#ff4f6d,#cc3355)", boxShadow:"0 4px 20px rgba(255,79,109,0.3)" }}

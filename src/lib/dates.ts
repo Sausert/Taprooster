@@ -23,3 +23,7 @@ export function formatDate(dateStr: string, options?: Intl.DateTimeFormatOptions
 export function formatDateShort(dateStr: string): string {
   return parseLocalDate(dateStr).toLocaleDateString("nl-NL", { weekday: "short", day: "numeric", month: "short" });
 }
+
+export function formatTime(timeStr: string): string {
+  return timeStr ? timeStr.slice(0, 5) : "";
+}
