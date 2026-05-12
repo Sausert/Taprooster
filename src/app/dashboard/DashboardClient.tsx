@@ -246,8 +246,12 @@ export default function DashboardClient({
                       ? <span style={s.mintBadge}>✓ Bevestigd</span>
                       : <button style={{ ...s.btnYesSmall, opacity: loading===a.shift_id ? 0.5 : 1 }} disabled={loading===a.shift_id} onClick={() => handleConfirm(a.shift_id)}>✅ Bevestigen</button>
                     }
-                    <button style={s.agendaBtn} onClick={() => handleAgenda(sh)}>📅</button>
                     <button style={{ ...s.declineBtn, opacity: loading===a.shift_id ? 0.5 : 1 }} disabled={loading===a.shift_id} onClick={() => setDeclineModal(a)}>Afmelden</button>
+                    <a
+                      href={`/api/shifts/${sh.id}/ical`}
+                      style={{ ...s.agendaBtn, textDecoration:"none", display:"inline-flex", alignItems:"center", gap:4, fontSize:11 }}
+                      onClick={(e) => { if (/Android/i.test(navigator.userAgent)) { e.preventDefault(); handleAgenda(sh); } }}
+                    >📅 Agenda</a>
                   </div>
                 </div>
               </div>
