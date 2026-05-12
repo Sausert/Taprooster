@@ -17,7 +17,6 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   title: "Taprooster — OJC Walhalla",
   description: "Het taprooster van OJC Walhalla, Sevenum",
-  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
