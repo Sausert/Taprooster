@@ -92,9 +92,10 @@ export default function DashboardClient({
     if (res.ok) {
       setClaimable(cs => cs.filter(s => s.id !== shift.id));
       setUpcoming(u => [...u, {
-        shift_id: shift.id, status:"assigned",
+        id: "", user_id: "", created_at: "",
+        shift_id: shift.id, status: "assigned" as const,
         shift: { ...shift },
-      }].sort((a,b) => a.shift.date.localeCompare(b.shift.date)));
+      }].sort((a,b) => a.shift!.date.localeCompare(b.shift!.date)));
     } else {
       const err = await res.json().catch(() => ({}));
       setFetchError(err.error ?? "Inschrijven mislukt. Probeer opnieuw.");
