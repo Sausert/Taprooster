@@ -120,21 +120,21 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
   }
 
   function toggleEditDay(day:string){
-    const days = editForm.preferred_days.includes(day)
-      ? editForm.preferred_days.filter((d:string)=>d!==day)
-      : [...editForm.preferred_days, day];
+    const days = (editForm.preferred_days||[]).includes(day)
+      ? (editForm.preferred_days||[]).filter((d:string)=>d!==day)
+      : [...(editForm.preferred_days||[]), day];
     setEditForm((f:any)=>({...f,preferred_days:days}));
   }
   function toggleEditRole(role:string){
-    const roles = editForm.preferred_roles.includes(role)
-      ? editForm.preferred_roles.filter((r:string)=>r!==role)
-      : [...editForm.preferred_roles, role];
+    const roles = (editForm.preferred_roles||[]).includes(role)
+      ? (editForm.preferred_roles||[]).filter((r:string)=>r!==role)
+      : [...(editForm.preferred_roles||[]), role];
     setEditForm((f:any)=>({...f,preferred_roles:roles}));
   }
   function toggleEditMonth(idx:number){
-    const months = editForm.unavailable_months.includes(idx)
-      ? editForm.unavailable_months.filter((m:number)=>m!==idx)
-      : [...editForm.unavailable_months, idx];
+    const months = (editForm.unavailable_months||[]).includes(idx)
+      ? (editForm.unavailable_months||[]).filter((m:number)=>m!==idx)
+      : [...(editForm.unavailable_months||[]), idx];
     setEditForm((f:any)=>({...f,unavailable_months:months}));
   }
 
@@ -497,20 +497,20 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
                       <label style={s.label}>Voorkeursdagen</label>
                       <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
                         {[["wednesday","Wo"],["friday","Vr"],["saturday","Za"]].map(([v,l])=>(
-                          <div key={v} style={{...s.chip,...(editForm.preferred_days.includes(v)?s.chipActive:{}),flex:1,textAlign:"center"}} onClick={()=>toggleEditDay(v)}>{l}</div>
+                          <div key={v} style={{...s.chip,...((editForm.preferred_days||[]).includes(v)?s.chipActive:{}),flex:1,textAlign:"center"}} onClick={()=>toggleEditDay(v)}>{l}</div>
                         ))}
                       </div>
                       <label style={s.label}>Voorkeursdiensten</label>
                       <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
                         {[["tapper","🍺 Tappen"],["bonnenkassa","🎟 Kassa"]].map(([v,l])=>(
-                          <div key={v} style={{...s.chip,...(editForm.preferred_roles.includes(v)?s.chipActive:{}),flex:1,textAlign:"center"}} onClick={()=>toggleEditRole(v)}>{l}</div>
+                          <div key={v} style={{...s.chip,...((editForm.preferred_roles||[]).includes(v)?s.chipActive:{}),flex:1,textAlign:"center"}} onClick={()=>toggleEditRole(v)}>{l}</div>
                         ))}
                         <div style={{...s.chip,...(editForm.wants_parties?s.chipActive:{}),flex:1,textAlign:"center"}} onClick={()=>setEditForm((f:any)=>({...f,wants_parties:!f.wants_parties}))}>🎉 Feestjes</div>
                       </div>
                       <label style={s.label}>Niet beschikbaar in</label>
                       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,marginBottom:14}}>
                         {MONTH_NAMES_SHORT.map((name,idx)=>(
-                          <div key={idx} style={{...s.chip,...(editForm.unavailable_months.includes(idx)?s.chipUnavailable:{}),textAlign:"center",padding:"6px 4px",fontSize:11}} onClick={()=>toggleEditMonth(idx)}>{name}</div>
+                          <div key={idx} style={{...s.chip,...((editForm.unavailable_months||[]).includes(idx)?s.chipUnavailable:{}),textAlign:"center",padding:"6px 4px",fontSize:11}} onClick={()=>toggleEditMonth(idx)}>{name}</div>
                         ))}
                       </div>
                     </>
