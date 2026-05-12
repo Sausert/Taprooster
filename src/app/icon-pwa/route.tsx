@@ -3,15 +3,9 @@ import { NextRequest } from "next/server";
 
 export function GET(req: NextRequest) {
   const px = Number(req.nextUrl.searchParams.get("size") || "192");
-
-  const radius = Math.round(px * 0.21);
-  const glowSize = Math.round(px * 0.61);
-  const glowTop = Math.round(px * 0.16);
-  const glowLeft = Math.round(px * 0.19);
-  const fontSize = Math.round(px * 0.58);
-  const barWidth = Math.round(px * 0.29);
-  const barHeight = Math.round(px * 0.028);
-  const barBottom = Math.round(px * 0.18);
+  const radius = Math.round(px * 0.222);
+  const fontSize = Math.round(px * 0.533);
+  const border = Math.max(2, Math.round(px * 0.017));
 
   return new ImageResponse(
     (
@@ -24,47 +18,20 @@ export function GET(req: NextRequest) {
           justifyContent: "center",
           background: "#0f0d1a",
           borderRadius: radius,
+          border: `${border}px solid #00e5c3`,
           position: "relative",
           overflow: "hidden",
         }}
       >
-        {/* Mint glow */}
+        {/* Glow backdrop */}
         <div
           style={{
             position: "absolute",
-            width: glowSize,
-            height: glowSize,
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(0,229,195,0.18) 0%, transparent 70%)",
-            top: glowTop,
-            left: glowLeft,
+            inset: 0,
+            background: "radial-gradient(circle at 50% 45%, rgba(0,229,195,0.12) 0%, transparent 65%)",
           }}
         />
-        {/* Large T */}
-        <span
-          style={{
-            fontSize,
-            fontWeight: 900,
-            color: "#ffffff",
-            fontFamily: "sans-serif",
-            lineHeight: 1,
-            letterSpacing: -2,
-            marginTop: -Math.round(px * 0.045),
-          }}
-        >
-          T
-        </span>
-        {/* Mint accent bar */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: barBottom,
-            width: barWidth,
-            height: barHeight,
-            background: "#00e5c3",
-            borderRadius: 3,
-          }}
-        />
+        <span style={{ fontSize, lineHeight: 1 }}>🍺</span>
       </div>
     ),
     { width: px, height: px }

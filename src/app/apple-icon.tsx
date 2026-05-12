@@ -14,48 +14,22 @@ export default function AppleIcon() {
           alignItems: "center",
           justifyContent: "center",
           background: "#0f0d1a",
-          borderRadius: 38,
+          borderRadius: 40,
+          border: "3px solid #00e5c3",
+          boxShadow: "0 0 40px rgba(0,229,195,0.25)",
           position: "relative",
           overflow: "hidden",
         }}
       >
-        {/* Mint glow blob */}
+        {/* Subtle glow backdrop */}
         <div
           style={{
             position: "absolute",
-            width: 110,
-            height: 110,
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(0,229,195,0.18) 0%, transparent 70%)",
-            top: 28,
-            left: 34,
+            inset: 0,
+            background: "radial-gradient(circle at 50% 45%, rgba(0,229,195,0.12) 0%, transparent 65%)",
           }}
         />
-        {/* Large T */}
-        <span
-          style={{
-            fontSize: 104,
-            fontWeight: 900,
-            color: "#ffffff",
-            fontFamily: "sans-serif",
-            lineHeight: 1,
-            letterSpacing: -4,
-            marginTop: -8,
-          }}
-        >
-          T
-        </span>
-        {/* Mint accent bar */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 32,
-            width: 52,
-            height: 5,
-            background: "#00e5c3",
-            borderRadius: 3,
-          }}
-        />
+        <span style={{ fontSize: 96, lineHeight: 1 }}>🍺</span>
       </div>
     ),
     { ...size }
