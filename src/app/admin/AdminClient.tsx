@@ -120,15 +120,15 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
   }
 
   function toggleEditDay(day:string){
-    const days = (editForm.preferred_days||[]).includes(day)
+    const days = (editForm.preferred_days||[]).includes(day as any)
       ? (editForm.preferred_days||[]).filter((d:string)=>d!==day)
-      : [...(editForm.preferred_days||[]), day];
+      : [...(editForm.preferred_days||[]), day as any];
     setEditForm((f:any)=>({...f,preferred_days:days}));
   }
   function toggleEditRole(role:string){
-    const roles = (editForm.preferred_roles||[]).includes(role)
+    const roles = (editForm.preferred_roles||[]).includes(role as any)
       ? (editForm.preferred_roles||[]).filter((r:string)=>r!==role)
-      : [...(editForm.preferred_roles||[]), role];
+      : [...(editForm.preferred_roles||[]), role as any];
     setEditForm((f:any)=>({...f,preferred_roles:roles}));
   }
   function toggleEditMonth(idx:number){
@@ -497,13 +497,13 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
                       <label style={s.label}>Voorkeursdagen</label>
                       <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
                         {[["wednesday","Wo"],["friday","Vr"],["saturday","Za"]].map(([v,l])=>(
-                          <div key={v} style={{...s.chip,...((editForm.preferred_days||[]).includes(v)?s.chipActive:{}),flex:1,textAlign:"center"}} onClick={()=>toggleEditDay(v)}>{l}</div>
+                          <div key={v} style={{...s.chip,...((editForm.preferred_days||[]).includes(v as any)?s.chipActive:{}),flex:1,textAlign:"center"}} onClick={()=>toggleEditDay(v)}>{l}</div>
                         ))}
                       </div>
                       <label style={s.label}>Voorkeursdiensten</label>
                       <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
                         {[["tapper","🍺 Tappen"],["bonnenkassa","🎟 Kassa"]].map(([v,l])=>(
-                          <div key={v} style={{...s.chip,...((editForm.preferred_roles||[]).includes(v)?s.chipActive:{}),flex:1,textAlign:"center"}} onClick={()=>toggleEditRole(v)}>{l}</div>
+                          <div key={v} style={{...s.chip,...((editForm.preferred_roles||[]).includes(v as any)?s.chipActive:{}),flex:1,textAlign:"center"}} onClick={()=>toggleEditRole(v)}>{l}</div>
                         ))}
                         <div style={{...s.chip,...(editForm.wants_parties?s.chipActive:{}),flex:1,textAlign:"center"}} onClick={()=>setEditForm((f:any)=>({...f,wants_parties:!f.wants_parties}))}>🎉 Feestjes</div>
                       </div>
