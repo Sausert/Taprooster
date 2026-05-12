@@ -42,12 +42,14 @@ const s: Record<string, React.CSSProperties> = {
 };
 
 export function HealthTab() {
-  const { shifts, leaderboard, setAddTapperModal } = useAdminShell();
+  const { shifts, conceptShifts, leaderboard, setAddTapperModal } = useAdminShell();
   const [statusMonthFilter, setStatusMonthFilter] = useState("");
   const now = new Date();
 
-  const underfilled = shifts.filter(s => ((s.assignments || []) as any[]).filter((a: any) => a.status !== "declined").length < s.max_tappers);
-  const unconfirmed = shifts.filter(s => ((s.assignments || []) as any[]).some((a: any) => a.status === "assigned"));
+  const allShifts = [...shifts, ...conceptShifts].sort((a, b) => a.date.localeCompare(b.date));
+
+  const underfilled = allShifts.filter(s => ((s.assignments || []) as any[]).filter((a: any) => a.status !== "declined").length < s.max_tappers);
+  const unconfirmed = allShifts.filter(s => ((s.assignments || []) as any[]).some((a: any) => a.status === "assigned"));
 
   function getHealthColor(shift: any) {
     const n = ((shift.assignments || []) as any[]).filter((a: any) => a.status !== "declined").length;
@@ -66,7 +68,7 @@ export function HealthTab() {
         <button onClick={() => setStatusMonthFilter("")} style={{ padding:"5px 12px", borderRadius:20, fontSize:11, fontWeight:700, cursor:"pointer", background:statusMonthFilter === "" ? "rgba(0,229,195,0.1)" : "#221f38", color:statusMonthFilter === "" ? "#00e5c3" : "#8b80b0", border:`1px solid ${statusMonthFilter === "" ? "#00e5c3" : "#2e2a4a"}` }}>Alles</button>
         {MONTH_NAMES_FULL.map((name, idx) => {
           const key = `${now.getFullYear()}-${String(idx + 1).padStart(2, "0")}`;
-          if (!shifts.some(s => s.date?.startsWith(key))) return null;
+          if (!allShifts.some(s => s.date?.startsWith(key))) return null;
           return (
             <button key={idx} onClick={() => setStatusMonthFilter(key)} style={{ padding:"5px 12px", borderRadius:20, fontSize:11, fontWeight:700, cursor:"pointer", background:statusMonthFilter === key ? "rgba(0,229,195,0.1)" : "#221f38", color:statusMonthFilter === key ? "#00e5c3" : "#8b80b0", border:`1px solid ${statusMonthFilter === key ? "#00e5c3" : "#2e2a4a"}` }}>
               {name.slice(0, 3)}
@@ -76,14 +78,15 @@ export function HealthTab() {
       </div>
 
       <div className={styles.card}>
-        {shifts.length === 0 && (
+        {allShifts.length === 0 && (
           <div style={{ textAlign:"center", padding:"32px 20px" }}>
             <div style={{ fontSize:36, marginBottom:8 }}>📅</div>
             <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", margin:0 }}>Geen diensten</p>
             <p style={{ fontSize:12, color:"#8b80b0", marginTop:4 }}>Er zijn nog geen diensten aangemaakt.</p>
           </div>
         )}
-        {shifts.filter(s => !statusMonthFilter || s.date?.startsWith(statusMonthFilter)).map(shift => {
+        {allShifts.filter(s => !statusMonthFilter || s.date?.startsWith(statusMonthFilter)).map(shift => {
+          const isConcept = (shift as any).status === "concept";
           const color = getHealthColor(shift);
           const assigned = ((shift.assignments || []) as any[]).filter((a: any) => a.status !== "declined").length;
           const confirmed = ((shift.assignments || []) as any[]).filter((a: any) => a.status === "confirmed").length;
@@ -93,8 +96,11 @@ export function HealthTab() {
               <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                 <div style={{ width:10, height:10, borderRadius:"50%", flexShrink:0, background:color, boxShadow:`0 0 6px ${color}` }} />
                 <div style={{ flex:1 }}>
-                  <p style={{ fontSize:13, fontWeight:600, color:"#e8e0ff" }}>{formatDate(shift.date)} — {shift.title}</p>
-                  <p style={{ fontSize:11, color }}>{assigned}/{shift.max_tappers} bezet · {confirmed} bevestigd</p>
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                    <p style={{ fontSize:13, fontWeight:600, color:"#e8e0ff", margin:0 }}>{formatDate(shift.date)} — {shift.title}</p>
+                    {isConcept && <span className={`${styles.badge} ${styles.badgeAmber}`}>Concept</span>}
+                  </div>
+                  <p style={{ fontSize:11, color, margin:0 }}>{assigned}/{shift.max_tappers} bezet · {confirmed} bevestigd</p>
                 </div>
                 <div style={{ display:"flex", gap:6, alignItems:"center" }}>
                   {assigned < shift.max_tappers && <span className={`${styles.badge} ${styles.badgeRed}`}>{shift.max_tappers - assigned} open</span>}

@@ -6,16 +6,18 @@ import { AdminShellContext, type LeaderboardEntry } from "./AdminShellContext";
 import { HealthTab } from "./tabs/HealthTab";
 import { TappersTab } from "./tabs/TappersTab";
 import { RoosterTab } from "./tabs/RoosterTab";
+import { EventsTab } from "./tabs/EventsTab";
 import { PublishTab } from "./tabs/PublishTab";
 import { InviteTab } from "./tabs/InviteTab";
 import { AddTapperModal } from "./components/AddTapperModal";
 
-type AdminTab = "health" | "tappers" | "rooster" | "publiceer" | "uitnodiging";
+type AdminTab = "health" | "tappers" | "rooster" | "events" | "publiceer" | "uitnodiging";
 
 const TABS = [
   { id: "health",      icon: "📊", label: "Status" },
   { id: "tappers",     icon: "👥", label: "Tappers" },
   { id: "rooster",     icon: "📅", label: "Rooster" },
+  { id: "events",      icon: "🎉", label: "Events" },
   { id: "publiceer",   icon: "🚀", label: "Publiceer" },
   { id: "uitnodiging", icon: "🔗", label: "Uitnodiging" },
 ] as const;
@@ -25,11 +27,13 @@ export default function AdminClient({
   profiles: initialProfiles,
   leaderboard,
   publishedShifts: initialPublished,
+  initialConceptShifts,
 }: {
   shifts: Shift[];
   profiles: Profile[];
   leaderboard: LeaderboardEntry[];
   publishedShifts: Shift[];
+  initialConceptShifts: Shift[];
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<AdminTab>("health");
@@ -38,7 +42,7 @@ export default function AdminClient({
   const [shifts, setShifts] = useState<Shift[]>(initialShifts);
   const [profiles, setProfiles] = useState<Profile[]>(initialProfiles);
   const [published, setPublished] = useState<Shift[]>(initialPublished);
-  const [conceptShifts, setConceptShifts] = useState<Shift[]>([]);
+  const [conceptShifts, setConceptShifts] = useState<Shift[]>(initialConceptShifts);
 
   const [dateFrom, setDateFrom] = useState(() => {
     const d = new Date();
@@ -147,6 +151,7 @@ export default function AdminClient({
           {tab === "health"      && <HealthTab />}
           {tab === "tappers"     && <TappersTab />}
           {tab === "rooster"     && <RoosterTab onGoToPublish={() => setTab("publiceer")} />}
+          {tab === "events"      && <EventsTab />}
           {tab === "publiceer"   && <PublishTab />}
           {tab === "uitnodiging" && <InviteTab />}
         </div>

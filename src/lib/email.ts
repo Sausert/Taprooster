@@ -4,7 +4,10 @@
 import { Resend } from "resend";
 import { APP_CONFIG } from "@/lib/config";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  if (!process.env.RESEND_API_KEY) throw new Error("RESEND_API_KEY is not set");
+  return new Resend(process.env.RESEND_API_KEY);
+}
 const FROM = process.env.RESEND_FROM_EMAIL || "taprooster@ojcwalhalla.nl";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
@@ -56,7 +59,7 @@ export async function sendRosterPublishedEmail(
   name: string,
   message?: string
 ) {
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to,
     subject: "📅 Het taprooster is live!",
@@ -81,7 +84,7 @@ export async function sendShiftReminderEmail(
   shiftTime: string,
   weeksAhead: 1 | 2
 ) {
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to,
     subject: `⏰ Reminder: jouw dienst over ${weeksAhead === 2 ? "2 weken" : "1 week"}`,
@@ -110,7 +113,7 @@ export async function sendOpenShiftEmail(
   shiftTime: string,
   shiftId: string
 ) {
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to,
     subject: `🔓 Open dienst: ${shiftDate}`,
@@ -133,7 +136,7 @@ export async function sendOpenShiftEmail(
 // ── Uitnodigingslink ──
 export async function sendInviteEmail(to: string, token: string, adminName: string) {
   const inviteUrl = `${APP_URL}/register?token=${token}`;
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to,
     subject: `🍺 Uitnodiging: Word tapper bij ${APP_CONFIG.orgName}`,
@@ -152,7 +155,7 @@ export async function sendInviteEmail(to: string, token: string, adminName: stri
 
 // ── Wachtwoord reset ──
 export async function sendPasswordResetEmail(to: string, resetLink: string) {
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to,
     subject: "🔑 Wachtwoord herstellen",

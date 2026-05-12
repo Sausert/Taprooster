@@ -12,26 +12,31 @@ export default async function AdminPage() {
 
   const now = new Date();
   const thisYear = now.getFullYear();
-  // Huidige maand voor healthcheck
-  const monthStart = `${thisYear}-${String(now.getMonth()+1).padStart(2,"0")}-01`;
-  const monthEnd = `${thisYear}-${String(now.getMonth()+1).padStart(2,"0")}-31`;
+  const yearStart = `${thisYear}-01-01`;
+  const yearEnd = `${thisYear}-12-31`;
 
-  // Shifts voor healthcheck (published, huidige maand)
+  // Shifts voor healthcheck (published, heel jaar)
   const { data: shifts } = await supabase
     .from("shifts")
     .select("*, assignments:shift_assignments(user_id, status, profile:profiles(full_name))")
     .eq("status", "published")
-    .gte("date", monthStart).lte("date", monthEnd)
+    .gte("date", yearStart).lte("date", yearEnd)
     .order("date", { ascending: true });
 
-  // Gepubliceerde shifts voor HEEL het jaar (zodat admin altijd het volledige gepubliceerde rooster ziet)
-  const yearStart = `${thisYear}-01-01`;
-  const yearEnd = `${thisYear}-12-31`;
+  // Gepubliceerde shifts voor heel het jaar (voor RoosterTab)
   const { data: publishedShifts } = await supabase
     .from("shifts")
     .select("*, assignments:shift_assignments(user_id, status, profile:profiles(id, full_name))")
     .eq("status", "published")
     .gte("date", yearStart).lte("date", yearEnd)
+    .order("date", { ascending: true });
+
+  // Concept shifts voor heel het jaar (zodat feestjes niet verdwijnen na refresh)
+  const { data: initialConceptShifts } = await supabase
+    .from("shifts")
+    .select("*, assignments:shift_assignments(user_id, status, profile:profiles(id, full_name))")
+    .eq("status", "concept")
+    .gte("date", yearStart)
     .order("date", { ascending: true });
 
   const { data: profiles } = await supabase
@@ -47,6 +52,7 @@ export default async function AdminPage() {
         profiles={profiles || []}
         leaderboard={leaderboard || []}
         publishedShifts={publishedShifts || []}
+        initialConceptShifts={initialConceptShifts || []}
       />
     </div>
   );
