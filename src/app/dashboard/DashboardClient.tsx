@@ -308,7 +308,7 @@ export default function DashboardClient({
                   <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", marginBottom:4 }}>{msg.title}</p>
                   <p style={{ fontSize:12, color:"#8b80b0", lineHeight:1.5 }}>{msg.body}</p>
                   <p style={{ fontSize:11, color:"#8b80b0", marginTop:6 }}>
-                    {new Date(msg.created_at).toLocaleDateString("nl-NL")}
+                    {new Date(msg.created_at).toLocaleString("nl-NL", { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" })}
                   </p>
                 </div>
               </div>

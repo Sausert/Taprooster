@@ -169,3 +169,20 @@ export async function sendPasswordResetEmail(to: string, resetLink: string) {
     ),
   });
 }
+
+// ── Admin bericht ──
+export async function sendAdminMessageEmail(to: string, name: string, title: string, body: string) {
+  await getResend().emails.send({
+    from: FROM,
+    to,
+    subject: `📢 ${title}`,
+    html: emailTemplate(
+      title,
+      `
+      <p>Hey ${name},</p>
+      <div class="highlight"><p>${body}</p></div>
+      <a href="${APP_URL}/dashboard" class="btn">Bekijk in de app →</a>
+      `
+    ),
+  });
+}

@@ -9,9 +9,10 @@ import { RoosterTab } from "./tabs/RoosterTab";
 import { EventsTab } from "./tabs/EventsTab";
 import { PublishTab } from "./tabs/PublishTab";
 import { InviteTab } from "./tabs/InviteTab";
+import { MessagesTab } from "./tabs/MessagesTab";
 import { AddTapperModal } from "./components/AddTapperModal";
 
-type AdminTab = "health" | "tappers" | "rooster" | "events" | "publiceer" | "uitnodiging";
+type AdminTab = "health" | "tappers" | "rooster" | "events" | "publiceer" | "berichten" | "uitnodiging";
 
 const TABS = [
   { id: "health",      icon: "📊", label: "Status" },
@@ -19,6 +20,7 @@ const TABS = [
   { id: "rooster",     icon: "📅", label: "Rooster" },
   { id: "events",      icon: "🎉", label: "Events" },
   { id: "publiceer",   icon: "🚀", label: "Publiceer" },
+  { id: "berichten",   icon: "📢", label: "Berichten" },
   { id: "uitnodiging", icon: "🔗", label: "Uitnodiging" },
 ] as const;
 
@@ -153,6 +155,7 @@ export default function AdminClient({
           {tab === "rooster"     && <RoosterTab onGoToPublish={() => setTab("publiceer")} />}
           {tab === "events"      && <EventsTab />}
           {tab === "publiceer"   && <PublishTab />}
+          {tab === "berichten"   && <MessagesTab />}
           {tab === "uitnodiging" && <InviteTab />}
         </div>
 

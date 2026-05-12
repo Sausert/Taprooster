@@ -115,10 +115,6 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
         </div>
       </div>
 
-      {profile.role === "admin" && (
-        <button style={s.adminBtn} onClick={() => router.push("/admin")}>⚙️ Admin Dashboard</button>
-      )}
-
       {/* Tabs */}
       <div style={s.tabBar}>
         {TABS.map(t => (
@@ -270,7 +266,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
                 <div style={{ flex:1 }}>
                   <p style={{ fontSize:13, fontWeight:600, color:lb.id===profile.id?"#00e5c3":"#e8e0ff" }}>{lb.full_name}{lb.id===profile.id?" (jij)":""}</p>
                   <div style={{ ...s.progressWrap, margin:"4px 0 0", height:4 }}>
-                    <div style={{ ...s.progressFill, width:`${Math.min(100,Math.round((lb.taps_this_year/(lb.target*12))*100))}%`, height:"100%" }} />
+                    <div style={{ ...s.progressFill, width:`${Math.min(100,Math.round((lb.taps_this_year/Math.max(1,lb.target*12))*100))}%`, height:"100%" }} />
                   </div>
                 </div>
                 <span style={{ fontFamily:"monospace", fontSize:14, color:"#00e5c3" }}>{lb.taps_this_year}x</span>
