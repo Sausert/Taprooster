@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Profile, Notification } from "@/types";
+import { useApp } from "@/components/layout/AppShell";
 
 const MEDALS = ["🥇","🥈","🥉"];
 const MONTH_NAMES = ["Jan","Feb","Mrt","Apr","Mei","Jun","Jul","Aug","Sep","Okt","Nov","Dec"];
@@ -11,6 +12,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
+  const { setUnreadCount } = useApp();
 
   const defaultTab = searchParams.get("tab") === "notif" ? "notif" : "profiel";
   const [tab, setTab] = useState<"profiel"|"voorkeuren"|"stats"|"notif">(defaultTab as any);
@@ -35,7 +37,10 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
   useEffect(() => {
     if (tab === "notif") {
       supabase.from("notifications").update({ read: true }).eq("user_id", profile.id).eq("read", false)
-        .then(() => setNotifs(n => n.map(x => ({ ...x, read: true }))));
+        .then(() => {
+          setNotifs(n => n.map(x => ({ ...x, read: true })));
+          setUnreadCount(0);
+        });
     }
   }, [tab]);
 

@@ -227,7 +227,7 @@ export default function RoosterClient({
                 const claimable = canClaim(shift) && !declined;
                 const assigned = (shift.assignments || []).filter((a: any) => a.status !== "declined");
                 const totalSpots = shift.max_tappers;
-                const filledSpots = assigned.length + (claimedIds.includes(shift.id) ? 0 : 0);
+                const filledSpots = assigned.length + (claimedIds.includes(shift.id) ? 1 : 0);
                 const isParty = shift.type === "feestje";
                 const accentColor = mine ? C.myShift : isParty ? C.party : filledSpots >= totalSpots ? C.full : filledSpots === 0 ? C.empty : C.partial;
 
@@ -272,12 +272,12 @@ export default function RoosterClient({
                     {/* Actions */}
                     <div style={{ display:"flex", gap:8 }}>
                       {claimable && !declined && (
-                        <button style={{ ...s.claimBtn, flex:1 }} disabled={loading===shift.id} onClick={() => setClaimModal(shift)}>
+                        <button style={{ ...s.claimBtn, flex:1, opacity: loading===shift.id ? 0.5 : 1 }} disabled={loading===shift.id} onClick={() => setClaimModal(shift)}>
                           {loading===shift.id ? "..." : "✅ Inschrijven"}
                         </button>
                       )}
                       {mine && !declined && (
-                        <button style={{ ...s.declineBtn, flex:1 }} disabled={loading===shift.id} onClick={() => handleDecline(shift.id)}>
+                        <button style={{ ...s.declineBtn, flex:1, opacity: loading===shift.id ? 0.5 : 1 }} disabled={loading===shift.id} onClick={() => handleDecline(shift.id)}>
                           {loading===shift.id ? "..." : "🔴 Afmelden"}
                         </button>
                       )}
@@ -379,6 +379,6 @@ const s: Record<string, React.CSSProperties> = {
   sheet: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:"24px 24px 0 0", padding:"24px 20px 40px", width:"100%", maxWidth:430 },
   sheetHandle: { width:36, height:4, background:"#2e2a4a", borderRadius:2, margin:"0 auto 20px" },
   sheetTitle: { fontSize:18, fontWeight:700, color:"#f0eeff", marginBottom:8, fontFamily:"'Exo 2',sans-serif" },
-  btnPrimary: { width:"100%", padding:14, borderRadius:12, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", fontFamily:"'Exo 2',sans-serif", fontSize:15, fontWeight:700, border:"none", cursor:"pointer", textTransform:"uppercase", display:"block" },
+  btnPrimary: { width:"100%", padding:14, borderRadius:12, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", fontFamily:"'Exo 2',sans-serif", fontSize:14, fontWeight:700, border:"none", cursor:"pointer", textTransform:"uppercase", display:"block" },
   btnSecondary: { width:"100%", padding:14, borderRadius:12, background:"#221f38", color:"#e8e0ff", fontFamily:"'Exo 2',sans-serif", fontSize:15, fontWeight:700, border:"1px solid #2e2a4a", cursor:"pointer", textTransform:"uppercase", display:"block" },
 };

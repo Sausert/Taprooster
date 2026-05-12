@@ -22,7 +22,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await req.json();
+  let body: Record<string, unknown> = {};
+  try { body = await req.json(); } catch { /* body is optioneel */ }
   const { email } = body; // optioneel: stuur direct naar e-mailadres
 
   // Maak token aan

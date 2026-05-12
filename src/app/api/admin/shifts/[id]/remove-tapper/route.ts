@@ -10,7 +10,9 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
   const { data: adminProfile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   if (adminProfile?.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { userId } = await req.json();
+  let body: Record<string, unknown>;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "Ongeldige request body" }, { status: 400 }); }
+  const { userId } = body;
   const { error } = await supabase.from("shift_assignments")
     .update({ status: "declined", declined_at: new Date().toISOString() })
     .eq("shift_id", shiftId).eq("user_id", userId);

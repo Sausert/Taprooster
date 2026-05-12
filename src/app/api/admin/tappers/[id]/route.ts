@@ -10,7 +10,8 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   const { data: adminProfile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   if (adminProfile?.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const body = await req.json();
+  let body: Record<string, unknown>;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "Ongeldige request body" }, { status: 400 }); }
   const {
     full_name, email, phone, role,
     // Preference fields

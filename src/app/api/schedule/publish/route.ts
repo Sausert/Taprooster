@@ -15,7 +15,8 @@ export async function POST(req: NextRequest) {
   const { data: adminProfile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   if (adminProfile?.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const body = await req.json();
+  let body: Record<string, unknown>;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "Ongeldige request body" }, { status: 400 }); }
   const { message, dateFrom, dateTo } = body;
 
   let rangeStart: string;
@@ -29,7 +30,8 @@ export async function POST(req: NextRequest) {
     if (months.length === 0) return NextResponse.json({ error: "Geen periode opgegeven" }, { status: 400 });
     const allDates = months.map((m: string) => {
       const [year, mo] = m.split("-");
-      return { start: `${year}-${mo}-01`, end: `${year}-${mo}-31` };
+      const lastDay = new Date(Number(year), Number(mo), 0).getDate();
+      return { start: `${year}-${mo}-01`, end: `${year}-${mo}-${String(lastDay).padStart(2, "0")}` };
     });
     rangeStart = allDates[0].start;
     rangeEnd = allDates[allDates.length - 1].end;

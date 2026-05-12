@@ -27,6 +27,8 @@ export interface Profile {
   preferred_roles: ShiftRole[];
   wants_parties: boolean;
   language: "nl" | "en";
+  phone?: string;
+  unavailable_months?: number[];
   created_at: string;
   updated_at: string;
 }

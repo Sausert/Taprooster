@@ -169,7 +169,7 @@ export default function DashboardClient({
             <div style={s.confirmBox}>
               <p style={{ fontSize:12, color:"#8b80b0", marginBottom:8 }}>Ben jij erbij?</p>
               <div style={{ display:"flex", gap:8 }}>
-                <button style={s.btnYes} disabled={loading===nextAssignment.shift_id} onClick={() => handleConfirm(nextAssignment.shift_id)}>✅ Ik ben erbij</button>
+                <button style={{ ...s.btnYes, opacity: loading===nextAssignment.shift_id ? 0.5 : 1 }} disabled={loading===nextAssignment.shift_id} onClick={() => handleConfirm(nextAssignment.shift_id)}>✅ Ik ben erbij</button>
                 <button style={s.btnNo} onClick={() => setDeclineModal(nextAssignment)}>🔴 Ik kan niet</button>
               </div>
             </div>
@@ -227,10 +227,10 @@ export default function DashboardClient({
                   <div style={{ display:"flex", flexDirection:"column", gap:6, alignItems:"flex-end" }}>
                     {isConfirmed
                       ? <span style={s.mintBadge}>✓ Bevestigd</span>
-                      : <button style={s.btnYesSmall} disabled={loading===a.shift_id} onClick={() => handleConfirm(a.shift_id)}>✅ Bevestigen</button>
+                      : <button style={{ ...s.btnYesSmall, opacity: loading===a.shift_id ? 0.5 : 1 }} disabled={loading===a.shift_id} onClick={() => handleConfirm(a.shift_id)}>✅ Bevestigen</button>
                     }
                     <button style={s.agendaBtn} onClick={() => handleAgenda(sh)}>📅</button>
-                    <button style={s.declineBtn} disabled={loading===a.shift_id} onClick={() => setDeclineModal(a)}>Afmelden</button>
+                    <button style={{ ...s.declineBtn, opacity: loading===a.shift_id ? 0.5 : 1 }} disabled={loading===a.shift_id} onClick={() => setDeclineModal(a)}>Afmelden</button>
                   </div>
                 </div>
               </div>
@@ -255,7 +255,7 @@ export default function DashboardClient({
                     {shift.open_spots} open plek{shift.open_spots > 1 ? "ken" : ""}
                   </p>
                 </div>
-                <button style={s.claimBtn} disabled={loading===shift.id} onClick={() => setClaimModal(shift)}>
+                <button style={{ ...s.claimBtn, opacity: loading===shift.id ? 0.5 : 1 }} disabled={loading===shift.id} onClick={() => setClaimModal(shift)}>
                   {loading===shift.id ? "..." : "Inschrijven"}
                 </button>
               </div>
@@ -366,6 +366,6 @@ const s: Record<string, React.CSSProperties> = {
   sheet: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:"24px 24px 0 0", padding:"24px 20px 40px", width:"100%", maxWidth:430 },
   sheetHandle: { width:36, height:4, background:"#2e2a4a", borderRadius:2, margin:"0 auto 20px" },
   sheetTitle: { fontSize:18, fontWeight:700, color:"#f0eeff", marginBottom:8, fontFamily:"'Exo 2',sans-serif" },
-  btnPrimary: { width:"100%", padding:14, borderRadius:12, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", fontFamily:"'Exo 2',sans-serif", fontSize:15, fontWeight:700, border:"none", cursor:"pointer", textTransform:"uppercase", letterSpacing:1, display:"block" },
-  btnSecondary: { width:"100%", padding:14, borderRadius:12, background:"#221f38", color:"#e8e0ff", fontFamily:"'Exo 2',sans-serif", fontSize:15, fontWeight:700, border:"1px solid #2e2a4a", cursor:"pointer", textTransform:"uppercase", letterSpacing:1, display:"block" },
+  btnPrimary: { width:"100%", padding:14, borderRadius:12, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", fontFamily:"'Exo 2',sans-serif", fontSize:14, fontWeight:700, border:"none", cursor:"pointer", textTransform:"uppercase", letterSpacing:1, display:"block" },
+  btnSecondary: { width:"100%", padding:14, borderRadius:12, background:"#221f38", color:"#e8e0ff", fontFamily:"'Exo 2',sans-serif", fontSize:14, fontWeight:700, border:"1px solid #2e2a4a", cursor:"pointer", textTransform:"uppercase", letterSpacing:1, display:"block" },
 };
