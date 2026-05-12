@@ -69,7 +69,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
         await supabase.from("notifications").insert(
           allProfiles.map(p => ({ user_id:p.id, type:"open_shift", title:"🔓 Open dienst!", message:`Er is een open plek voor ${shift.title} op ${shiftDate}.`, shift_id:shiftId, read:false }))
         );
-        Promise.allSettled(allProfiles.map(p => sendOpenShiftEmail(p.email, p.full_name, shift.title, shiftDate, shiftTime, shiftId)));
+        await Promise.allSettled(allProfiles.map(p => sendOpenShiftEmail(p.email, p.full_name, shift.title, shiftDate, shiftTime, shiftId)));
       }
     }
     return NextResponse.json({ data: { declined: true } });

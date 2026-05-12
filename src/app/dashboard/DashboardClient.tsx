@@ -1,20 +1,24 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Profile } from "@/types";
+import type { Profile, Shift, ShiftAssignment, AdminMessage } from "@/types";
+import { APP_CONFIG } from "@/lib/config";
+import { parseLocalDate, formatDate, formatDateShort } from "@/lib/dates";
+
+type ClaimableShift = Shift & { open_spots: number };
 
 interface Props {
   profile: Profile | null;
-  myUpcoming: any[];
-  claimableShifts: any[];
+  myUpcoming: ShiftAssignment[];
+  claimableShifts: ClaimableShift[];
   tapsThisYear: number;
   incomingPlanned: number;
   myRank: number;
-  adminMessages: any[];
+  adminMessages: AdminMessage[];
 }
 
 // Platform detection for agenda link
-function getAgendaLink(shift: any): { url: string; type: "ical" | "google" } {
+function getAgendaLink(shift: Shift): { url: string; type: "ical" | "google" } {
   const isIOS = typeof navigator !== "undefined" && /iPhone|iPad|iPod/i.test(navigator.userAgent);
   const isAndroid = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
 
@@ -32,8 +36,8 @@ function getAgendaLink(shift: any): { url: string; type: "ical" | "google" } {
       action: "TEMPLATE",
       text: `🍺 ${shift.title}`,
       dates: `${fmt(start)}/${fmt(end)}`,
-      details: "Tapavond OJC Walhalla",
-      location: "De Donckstraat 24/26, 5975 AC Sevenum",
+      details: `Tapavond ${APP_CONFIG.orgName}`,
+      location: APP_CONFIG.location,
     });
     return { url: `https://calendar.google.com/calendar/render?${params}`, type: "google" };
   }
@@ -42,21 +46,17 @@ function getAgendaLink(shift: any): { url: string; type: "ical" | "google" } {
   return { url: `/api/shifts/${shift.id}/ical`, type: "ical" };
 }
 
-function parseLocalDate(dateStr: string): Date {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
-
 export default function DashboardClient({
   profile, myUpcoming, claimableShifts, tapsThisYear, incomingPlanned, myRank, adminMessages,
 }: Props) {
   const router = useRouter();
-  const [upcoming, setUpcoming] = useState(myUpcoming);
-  const [claimable, setClaimable] = useState(claimableShifts);
-  const [claimModal, setClaimModal] = useState<any | null>(null);
-  const [declineModal, setDeclineModal] = useState<any | null>(null);
+  const [upcoming, setUpcoming] = useState<ShiftAssignment[]>(myUpcoming);
+  const [claimable, setClaimable] = useState<ClaimableShift[]>(claimableShifts);
+  const [claimModal, setClaimModal] = useState<ClaimableShift | null>(null);
+  const [declineModal, setDeclineModal] = useState<ShiftAssignment | null>(null);
   const [confirmedIds, setConfirmedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const firstName = profile?.full_name?.split(" ")[0] || "Tapper";
   const target = (profile?.preferred_frequency || 4) * 12;
@@ -68,24 +68,22 @@ export default function DashboardClient({
     ? Math.ceil((parseLocalDate(nextShift.date).getTime() - Date.now()) / (1000*60*60*24))
     : null;
 
-  function formatDate(d: string) {
-    return parseLocalDate(d).toLocaleDateString("nl-NL", { weekday:"long", day:"numeric", month:"long" });
-  }
-  function formatDateShort(d: string) {
-    return parseLocalDate(d).toLocaleDateString("nl-NL", { weekday:"short", day:"numeric", month:"short" });
-  }
-
   async function handleConfirm(shiftId: string) {
     setLoading(shiftId);
-    await fetch(`/api/shifts/${shiftId}/assign`, {
+    const res = await fetch(`/api/shifts/${shiftId}/assign`, {
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ action:"confirm" }),
     });
-    setConfirmedIds(p => [...p, shiftId]);
+    if (res.ok) {
+      setConfirmedIds(p => [...p, shiftId]);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      setFetchError(err.error ?? "Bevestigen mislukt. Probeer opnieuw.");
+    }
     setLoading(null);
   }
 
-  async function handleClaim(shift: any) {
+  async function handleClaim(shift: ClaimableShift) {
     setLoading(shift.id);
     const res = await fetch(`/api/shifts/${shift.id}/assign`, {
       method:"POST", headers:{"Content-Type":"application/json"},
@@ -97,23 +95,31 @@ export default function DashboardClient({
         shift_id: shift.id, status:"assigned",
         shift: { ...shift },
       }].sort((a,b) => a.shift.date.localeCompare(b.shift.date)));
+    } else {
+      const err = await res.json().catch(() => ({}));
+      setFetchError(err.error ?? "Inschrijven mislukt. Probeer opnieuw.");
     }
     setClaimModal(null);
     setLoading(null);
   }
 
-  async function handleDecline(assignment: any) {
+  async function handleDecline(assignment: ShiftAssignment) {
     setLoading(assignment.shift_id);
     const res = await fetch(`/api/shifts/${assignment.shift_id}/assign`, {
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ action:"decline" }),
     });
-    if (res.ok) setUpcoming(u => u.filter(a => a.shift_id !== assignment.shift_id));
+    if (res.ok) {
+      setUpcoming(u => u.filter(a => a.shift_id !== assignment.shift_id));
+    } else {
+      const err = await res.json().catch(() => ({}));
+      setFetchError(err.error ?? "Afmelden mislukt. Probeer opnieuw.");
+    }
     setDeclineModal(null);
     setLoading(null);
   }
 
-  function handleAgenda(shift: any) {
+  function handleAgenda(shift: Shift) {
     const { url, type } = getAgendaLink(shift);
     if (type === "google") {
       window.open(url, "_blank");
@@ -127,6 +133,11 @@ export default function DashboardClient({
 
   return (
     <div style={s.page}>
+      {fetchError && (
+        <div style={s.errorBanner} onClick={() => setFetchError(null)}>
+          ⚠️ {fetchError}
+        </div>
+      )}
       {/* Greeting */}
       <div style={{ marginBottom:20 }}>
         <p style={{ fontSize:13, color:"#8b80b0", marginBottom:4 }}>Welkom terug,</p>
@@ -196,7 +207,7 @@ export default function DashboardClient({
       {upcoming.length > 0 && (
         <>
           <p style={s.sectionTitle}>Mijn diensten</p>
-          {upcoming.map((a: any) => {
+          {upcoming.map((a) => {
             const sh = a.shift;
             if (!sh) return null;
             const isFirst = a === nextAssignment;
@@ -232,7 +243,7 @@ export default function DashboardClient({
       {claimable.length > 0 && (
         <>
           <p style={s.sectionTitle}>Open diensten</p>
-          {claimable.map((shift: any) => (
+          {claimable.map((shift) => (
             <div key={shift.id} style={{ ...s.card, borderLeft:`3px solid ${shiftColor(shift.type)}` }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                 <div style={{ flex:1 }}>
@@ -257,7 +268,7 @@ export default function DashboardClient({
       {adminMessages.length > 0 && (
         <>
           <p style={s.sectionTitle}>Berichten van admin</p>
-          {adminMessages.map((msg: any) => (
+          {adminMessages.map((msg) => (
             <div key={msg.id} style={s.card}>
               <div style={{ display:"flex", gap:10 }}>
                 <span style={{ fontSize:20 }}>📢</span>
@@ -325,6 +336,7 @@ export default function DashboardClient({
 
 const s: Record<string, React.CSSProperties> = {
   page: { padding:"20px 16px 100px" },
+  errorBanner: { background:"rgba(255,79,109,0.1)", border:"1px solid #ff4f6d", borderRadius:10, padding:"10px 14px", fontSize:13, color:"#ff4f6d", marginBottom:14, cursor:"pointer" },
   greeting: { fontSize:26, fontWeight:900, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif", display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" },
   adminBadge: { fontSize:11, fontWeight:700, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", borderRadius:20, padding:"2px 10px" },
   heroCard: { background:"linear-gradient(135deg,#1a1730,#221f38)", border:"1px solid #00e5c3", borderRadius:18, padding:18, marginBottom:12, boxShadow:"0 0 30px rgba(0,229,195,0.08)" },

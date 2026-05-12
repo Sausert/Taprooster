@@ -1,16 +1,18 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import type { Profile, Shift } from "@/types";
+import { parseLocalDate, formatDateShort as formatDate } from "@/lib/dates";
 
 const PERIOD_OPTIONS = [{ value:1, label:"Maand" },{ value:3, label:"Kwartaal" },{ value:6, label:"Half jaar" },{ value:12, label:"Heel jaar" }];
 const MONTH_NAMES_SHORT = ["Jan","Feb","Mrt","Apr","Mei","Jun","Jul","Aug","Sep","Okt","Nov","Dec"];
 const MONTH_NAMES_FULL = ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December"];
 const emptyShift = () => ({ role:"tapper" as "tapper"|"bonnenkassa", start_time:"20:00", end_time:"02:00", max_tappers:2 });
 
-function parseLocalDate(d: string): Date { const [y,m,day]=d.split("-").map(Number); return new Date(y,m-1,day); }
-function formatDate(d: string) { return parseLocalDate(d).toLocaleDateString("nl-NL",{weekday:"short",day:"numeric",month:"short"}); }
+type LeaderboardEntry = Profile & { taps_this_year: number; target: number };
+type AdminTab = "health"|"tappers"|"rooster"|"publiceer"|"uitnodiging";
 
-function TapBarChart({ leaderboard }: { leaderboard: any[] }) {
+function TapBarChart({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
   const max = Math.max(...leaderboard.map(l => l.taps_this_year || 0), 1);
   return (
     <div style={{ marginTop:8 }}>
@@ -35,13 +37,13 @@ function TapBarChart({ leaderboard }: { leaderboard: any[] }) {
 }
 
 export default function AdminClient({ shifts: initialShifts, profiles: initialProfiles, leaderboard, publishedShifts: initialPublished }: {
-  shifts: any[]; profiles: any[]; leaderboard: any[]; publishedShifts: any[];
+  shifts: Shift[]; profiles: Profile[]; leaderboard: LeaderboardEntry[]; publishedShifts: Shift[];
 }) {
   const router = useRouter();
-  const [tab, setTab] = useState<"health"|"tappers"|"rooster"|"publiceer"|"uitnodiging">("health");
-  const [shifts, setShifts] = useState(initialShifts);
-  const [profiles, setProfiles] = useState(initialProfiles);
-  const [published, setPublished] = useState(initialPublished);
+  const [tab, setTab] = useState<AdminTab>("health");
+  const [shifts, setShifts] = useState<Shift[]>(initialShifts);
+  const [profiles, setProfiles] = useState<Profile[]>(initialProfiles);
+  const [published, setPublished] = useState<Shift[]>(initialPublished);
 
   // Rooster
   const [rosterView, setRosterView] = useState<"concept"|"published">("published");
@@ -53,7 +55,7 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   });
   const [generating, setGenerating] = useState(false);
-  const [conceptShifts, setConceptShifts] = useState<any[]>([]);
+  const [conceptShifts, setConceptShifts] = useState<Shift[]>([]);
   const [editingShiftId, setEditingShiftId] = useState<string|null>(null);
 
   // Feestje
@@ -63,13 +65,13 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
   const [eventSaved, setEventSaved] = useState(false);
 
   // Tapper toevoegen aan dienst
-  const [addTapperModal, setAddTapperModal] = useState<any|null>(null);
+  const [addTapperModal, setAddTapperModal] = useState<Shift|null>(null);
   const [tapperSearchModal, setTapperSearchModal] = useState("");
   const [addingTapper, setAddingTapper] = useState<string|null>(null);
 
   // Tapper bewerken (uitgebreid met voorkeuren)
-  const [editingTapper, setEditingTapper] = useState<any|null>(null);
-  const [editForm, setEditForm] = useState<any>({});
+  const [editingTapper, setEditingTapper] = useState<Profile|null>(null);
+  const [editForm, setEditForm] = useState<Partial<Profile> & { first_name?: string; last_name?: string }>({});
   const [editTab, setEditTab] = useState<"info"|"voorkeuren">("info");
   const [savingTapper, setSavingTapper] = useState(false);
   const [tapperSearch, setTapperSearch] = useState("");
@@ -154,8 +156,13 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
 
   async function resetStats(tapperId:string, tapperName:string){
     if(!confirm(`Statistieken van ${tapperName} resetten? Dit verwijdert alle tapregistraties van dit jaar.`)) return;
-    await fetch(`/api/admin/tappers/${tapperId}/reset-stats`,{method:"POST"});
-    alert(`✅ Statistieken van ${tapperName} gereset.`);
+    const res = await fetch(`/api/admin/tappers/${tapperId}/reset-stats`,{method:"POST"});
+    if(res.ok){
+      alert(`✅ Statistieken van ${tapperName} gereset.`);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      alert(`❌ Resetten mislukt: ${data.error ?? "Probeer opnieuw."}`);
+    }
   }
 
   async function deleteTapper(tapperId:string, tapperName:string){
@@ -184,9 +191,14 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
 
   // Tapper verwijderen van dienst
   async function handleRemoveTapper(shiftId:string, userId:string){
-    await fetch(`/api/admin/shifts/${shiftId}/remove-tapper`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId})});
-    const updateList=(list:any[])=>list.map(s=>s.id===shiftId?{...s,assignments:(s.assignments||[]).filter((a:any)=>a.user_id!==userId)}:s);
-    setPublished(updateList); setConceptShifts(updateList); setShifts(updateList);
+    const res = await fetch(`/api/admin/shifts/${shiftId}/remove-tapper`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId})});
+    if(res.ok){
+      const updateList=(list:any[])=>list.map(s=>s.id===shiftId?{...s,assignments:(s.assignments||[]).filter((a:any)=>a.user_id!==userId)}:s);
+      setPublished(updateList); setConceptShifts(updateList); setShifts(updateList);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      alert(`❌ Verwijderen mislukt: ${data.error ?? "Probeer opnieuw."}`);
+    }
   }
 
   // Dienst verwijderen
@@ -231,7 +243,12 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
 
   function updateShiftInList(id:string,field:string,value:any,list:any[],setList:(v:any[])=>void){setList(list.map(s=>s.id===id?{...s,[field]:value}:s));}
   async function saveShiftEdit(shift:any){
-    await fetch(`/api/shifts/${shift.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:shift.title,start_time:shift.start_time,end_time:shift.end_time,max_tappers:shift.max_tappers,admin_note:shift.admin_note})});
+    const res = await fetch(`/api/shifts/${shift.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:shift.title,start_time:shift.start_time,end_time:shift.end_time,max_tappers:shift.max_tappers,admin_note:shift.admin_note})});
+    if(!res.ok){
+      const data = await res.json().catch(() => ({}));
+      alert(`❌ Opslaan mislukt: ${data.error ?? "Probeer opnieuw."}`);
+      return;
+    }
     setEditingShiftId(null);
   }
 
@@ -345,7 +362,7 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
       </div>
       <div style={s.tabBar}>
         {TABS.map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id as any)} style={{...s.tabBtn,color:tab===t.id?"#00e5c3":"#8b80b0",borderBottom:`2px solid ${tab===t.id?"#00e5c3":"transparent"}`}}>{t.label}</button>
+          <button key={t.id} onClick={()=>setTab(t.id as AdminTab)} style={{...s.tabBtn,color:tab===t.id?"#00e5c3":"#8b80b0",borderBottom:`2px solid ${tab===t.id?"#00e5c3":"transparent"}`}}>{t.label}</button>
         ))}
       </div>
       <div style={s.content}>

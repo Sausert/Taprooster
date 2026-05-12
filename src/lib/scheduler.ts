@@ -1,5 +1,7 @@
 // lib/scheduler.ts — Strict availability + rotation scheduler
 import type { Profile, Shift, ShiftAssignment } from "@/types";
+import { APP_CONFIG } from "@/lib/config";
+import { parseLocalDate } from "@/lib/dates";
 
 type DayOfWeek = "wednesday" | "friday" | "saturday";
 
@@ -16,10 +18,6 @@ interface ScheduleInput {
   existingAssignments: ShiftAssignment[];
 }
 
-function parseLocalDate(dateStr: string): Date {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
 
 function getDayOfWeek(dateStr: string): DayOfWeek | null {
   const day = parseLocalDate(dateStr).getDay();
@@ -226,13 +224,13 @@ export function generateICalEvent(shift: Shift): string {
   const fmt = (n: number) => String(n).padStart(2, "0");
   const dateStr = `${d.getFullYear()}${fmt(d.getMonth()+1)}${fmt(d.getDate())}`;
   return [
-    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//OJC Walhalla//Taprooster//NL",
+    `BEGIN:VCALENDAR`, "VERSION:2.0", `PRODID:-//${APP_CONFIG.orgName}//Taprooster//NL`,
     "BEGIN:VEVENT",
-    `UID:shift-${shift.id}@ojcwalhalla.nl`,
+    `UID:shift-${shift.id}@${APP_CONFIG.domain}`,
     `DTSTART:${dateStr}T${shift.start_time.replace(":","")}00`,
     `DTEND:${dateStr}T${shift.end_time.replace(":","")}00`,
     `SUMMARY:🍺 ${shift.title}`,
-    "LOCATION:De Donckstraat 24/26\\, 5975 AC Sevenum",
+    `LOCATION:${APP_CONFIG.locationIcal}`,
     `DTSTAMP:${new Date().toISOString().replace(/[-:]/g,"").split(".")[0]}Z`,
     "END:VEVENT", "END:VCALENDAR",
   ].join("\r\n");

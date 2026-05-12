@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
 
   // Stuur ook notificaties per dienst aan de ingeplande tappers
   if (publishedShifts && publishedShifts.length > 0) {
-    const shiftNotifs: any[] = [];
+    const shiftNotifs: { user_id: string; type: string; title: string; message: string; shift_id: string; read: boolean }[] = [];
     for (const shift of publishedShifts) {
       for (const assignment of (shift.assignments || [])) {
         shiftNotifs.push({
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
 
   // Verstuur e-mails (fire-and-forget)
   if (allProfiles) {
-    Promise.allSettled(allProfiles.map(p =>
+    await Promise.allSettled(allProfiles.map(p =>
       sendRosterPublishedEmail(p.email, p.full_name, message)
     ));
   }

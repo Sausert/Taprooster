@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import { APP_CONFIG } from "@/lib/config";
+import { parseLocalDate, formatDate, formatDateShort } from "@/lib/dates";
 
 const MONTH_NAMES = ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December"];
 const DAY_LABELS = ["Ma","Di","Wo","Do","Vr","Za","Zo"];
@@ -12,11 +14,6 @@ const C = {
   partial:   "#ffb547", // Oranje — niet alle plaatsen gevuld
   empty:     "#ff4f6d", // Rood — nog geen plaatsen gevuld
 };
-
-function parseLocalDate(dateStr: string): Date {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
 
 function getMondayOffset(year: number, month: number): number {
   const firstDay = new Date(year, month, 1).getDay();
@@ -128,11 +125,11 @@ export default function RoosterClient({
     const icsContent = [
       "BEGIN:VCALENDAR", "VERSION:2.0",
       "BEGIN:VEVENT",
-      `UID:shift-${shift.id}@ojcwalhalla.nl`,
+      `UID:shift-${shift.id}@${APP_CONFIG.domain}`,
       `DTSTART:${dateStr}T${shift.start_time.replace(":","")}00`,
       `DTEND:${dateStr}T${shift.end_time.replace(":","")}00`,
       `SUMMARY:🍺 ${shift.title}`,
-      "LOCATION:De Donckstraat 24/26\\, 5975 AC Sevenum",
+      `LOCATION:${APP_CONFIG.locationIcal}`,
       "END:VEVENT", "END:VCALENDAR",
     ].join("\r\n");
     const blob = new Blob([icsContent], { type: "text/calendar" });
@@ -142,12 +139,6 @@ export default function RoosterClient({
     URL.revokeObjectURL(url);
   }
 
-  function formatDate(d: string) {
-    return parseLocalDate(d).toLocaleDateString("nl-NL", { weekday:"long", day:"numeric", month:"long" });
-  }
-  function formatDateShort(d: string) {
-    return parseLocalDate(d).toLocaleDateString("nl-NL", { weekday:"short", day:"numeric", month:"short" });
-  }
 
   return (
     <div style={s.page}>

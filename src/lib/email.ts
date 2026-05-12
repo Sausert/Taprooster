@@ -2,6 +2,7 @@
 // lib/email.ts — E-mail verzending via Resend
 // ============================================================
 import { Resend } from "resend";
+import { APP_CONFIG } from "@/lib/config";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = process.env.RESEND_FROM_EMAIL || "taprooster@ojcwalhalla.nl";
@@ -35,14 +36,14 @@ function emailTemplate(title: string, body: string) {
   <div class="container">
     <div class="header">
       <div class="logo">TAP<span>RSTR</span></div>
-      <div class="subtitle">OJC Walhalla · Sevenum</div>
+      <div class="subtitle">${APP_CONFIG.orgName} · ${APP_CONFIG.city}</div>
     </div>
     <div class="content">
       <h1>${title}</h1>
       ${body}
     </div>
     <div class="footer">
-      <p>OJC Walhalla · De Donckstraat 24/26 · 5975 AC Sevenum</p>
+      <p>${APP_CONFIG.orgName} · ${APP_CONFIG.location}</p>
     </div>
   </div>
 </body>
@@ -135,12 +136,12 @@ export async function sendInviteEmail(to: string, token: string, adminName: stri
   await resend.emails.send({
     from: FROM,
     to,
-    subject: "🍺 Uitnodiging: Word tapper bij OJC Walhalla",
+    subject: `🍺 Uitnodiging: Word tapper bij ${APP_CONFIG.orgName}`,
     html: emailTemplate(
       "Je bent uitgenodigd!",
       `
       <p>Hey,</p>
-      <p><strong>${adminName}</strong> heeft je uitgenodigd om tapper te worden bij OJC Walhalla.</p>
+      <p><strong>${adminName}</strong> heeft je uitgenodigd om tapper te worden bij ${APP_CONFIG.orgName}.</p>
       <p>Klik op de knop hieronder om je account aan te maken. Deze link is 7 dagen geldig.</p>
       <a href="${inviteUrl}" class="btn">Maak account aan →</a>
       <p style="font-size:12px; margin-top:16px;">Of kopieer: ${inviteUrl}</p>
