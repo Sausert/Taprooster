@@ -79,9 +79,9 @@ export default function LoginPage() {
             />
 
             <div style={{ textAlign: "right", marginBottom: 20 }}>
-              <span style={s.link} onClick={() => setMode("forgot")}>
+              <button type="button" style={{ ...s.link, background:"none", border:"none", padding:0, cursor:"pointer" }} onClick={() => setMode("forgot")}>
                 Wachtwoord vergeten?
-              </span>
+              </button>
             </div>
 
             <button style={s.btnPrimary} type="submit" disabled={loading}>
@@ -174,7 +174,7 @@ const s: Record<string, React.CSSProperties> = {
     justifyContent: "center",
     fontSize: 36,
     marginBottom: 20,
-    boxShadow: "0 0 40px rgba(0,229,195,0.2)",
+    boxShadow: "0 0 40px rgba(0,229,195,0.25), inset 0 0 0 1px rgba(0,229,195,0.3)",
   },
   title: {
     fontFamily: "'Exo 2', sans-serif",

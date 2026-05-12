@@ -26,8 +26,8 @@ function TapBarChart({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
               <span style={{ fontSize:12, color:"#e8e0ff", fontWeight:600 }}>{lb.full_name?.split(" ")[0]}</span>
               <span style={{ fontSize:12, fontFamily:"monospace", color:"#00e5c3" }}>{lb.taps_this_year||0}x <span style={{color:"#8b80b0",fontSize:10}}>({goalPct}% v/doel)</span></span>
             </div>
-            <div style={{ background:"#2e2a4a", borderRadius:4, height:8, overflow:"hidden" }}>
-              <div style={{ height:"100%", borderRadius:4, width:`${pct}%`, background: pct>75?"linear-gradient(90deg,#00e5c3,#00b89c)":pct>40?"linear-gradient(90deg,#ffb547,#e09030)":"linear-gradient(90deg,#5a4a9e,#3b2f6e)", transition:"width 0.6s ease" }}/>
+            <div style={{ background:"#2e2a4a", borderRadius:6, height:8, overflow:"hidden" }}>
+              <div style={{ height:"100%", borderRadius:6, width:`${pct}%`, background: pct>75?"linear-gradient(90deg,#00e5c3,#00b89c)":pct>40?"linear-gradient(90deg,#ffb547,#e09030)":"linear-gradient(90deg,#5a4a9e,#3b2f6e)", transition:"width 0.6s ease" }}/>
             </div>
           </div>
         );
@@ -52,11 +52,13 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
   });
   const [dateTo, setDateTo] = useState(() => {
     const d = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0);
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    const mo = d.getMonth() + 1;
+    return `${d.getFullYear()}-${String(mo).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   });
   const [generating, setGenerating] = useState(false);
   const [conceptShifts, setConceptShifts] = useState<Shift[]>([]);
   const [editingShiftId, setEditingShiftId] = useState<string|null>(null);
+  const [shiftEditError, setShiftEditError] = useState<string|null>(null);
 
   // Feestje
   const [showEventForm, setShowEventForm] = useState(false);
@@ -247,10 +249,11 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
 
   function updateShiftInList(id:string,field:string,value:any,list:any[],setList:(v:any[])=>void){setList(list.map(s=>s.id===id?{...s,[field]:value}:s));}
   async function saveShiftEdit(shift:any){
+    setShiftEditError(null);
     const res = await fetch(`/api/shifts/${shift.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:shift.title,start_time:shift.start_time,end_time:shift.end_time,max_tappers:shift.max_tappers,admin_note:shift.admin_note})});
     if(!res.ok){
       const data = await res.json().catch(() => ({}));
-      alert(`❌ Opslaan mislukt: ${data.error ?? "Probeer opnieuw."}`);
+      setShiftEditError(data.error ?? "Opslaan mislukt. Probeer opnieuw.");
       return;
     }
     setEditingShiftId(null);
@@ -319,9 +322,12 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
             <input style={{...s.input,width:80}} type="number" min={1} max={20} value={shift.max_tappers} onChange={e=>updateShiftInList(shift.id,"max_tappers",Number(e.target.value),list,setList)}/>
             <label style={s.label}>Notitie</label>
             <input style={s.input} value={shift.admin_note||""} onChange={e=>updateShiftInList(shift.id,"admin_note",e.target.value,list,setList)} placeholder="Optionele notitie..."/>
+            {shiftEditError && editingShiftId===shift.id && (
+              <div style={{background:"rgba(255,79,109,0.1)",border:"1px solid #ff4f6d",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#ff4f6d",marginBottom:8}}>❌ {shiftEditError}</div>
+            )}
             <div style={{display:"flex",gap:8}}>
               <button style={{...s.btnPrimary,flex:1,padding:"10px"}} onClick={()=>saveShiftEdit(shift)}>💾 Opslaan</button>
-              <button style={{...s.btnSecondary,flex:1,padding:"10px"}} onClick={()=>setEditingShiftId(null)}>Annuleer</button>
+              <button style={{...s.btnSecondary,flex:1,padding:"10px"}} onClick={()=>{setEditingShiftId(null);setShiftEditError(null);}}>Annuleer</button>
             </div>
           </div>
         ) : (
@@ -788,12 +794,12 @@ const s: Record<string, React.CSSProperties> = {
   back:{background:"none",border:"none",color:"#00e5c3",fontSize:22,cursor:"pointer",padding:0,width:28},
   headerTitle:{fontSize:14,fontWeight:700,color:"#f0eeff",letterSpacing:1,fontFamily:"'Exo 2', sans-serif"},
   tabBar:{display:"flex",borderBottom:"1px solid #2e2a4a",background:"#0f0d1a",overflowX:"auto"},
-  tabBtn:{flex:1,minWidth:80,padding:"10px 6px",background:"none",border:"none",fontFamily:"'Exo 2', sans-serif",fontWeight:700,fontSize:11,cursor:"pointer",whiteSpace:"nowrap"},
+  tabBtn:{flex:1,minWidth:80,padding:"12px 4px",background:"none",border:"none",fontFamily:"'Exo 2', sans-serif",fontWeight:700,fontSize:11,cursor:"pointer",whiteSpace:"nowrap"},
   content:{flex:1,overflowY:"auto",padding:"16px 16px 40px"},
   sectionTitle:{fontSize:11,fontWeight:700,letterSpacing:2,textTransform:"uppercase",color:"#8b80b0",margin:"16px 0 8px"},
   card:{background:"#1a1730",border:"1px solid #2e2a4a",borderRadius:16,padding:16,marginBottom:10},
   statGrid:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:4},
-  statCard:{background:"#1a1730",border:"1px solid #2e2a4a",borderRadius:14,padding:16,textAlign:"center"},
+  statCard:{background:"#1a1730",border:"1px solid #2e2a4a",borderRadius:16,padding:16,textAlign:"center"},
   statVal:{fontFamily:"monospace",fontSize:30,fontWeight:700,margin:0},
   statLabel:{fontSize:10,color:"#8b80b0",letterSpacing:1,textTransform:"uppercase",marginTop:4,margin:0},
   healthRow:{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:"1px solid #2e2a4a"},

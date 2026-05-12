@@ -48,7 +48,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
     e.preventDefault();
     setSavingProfile(true);
     await supabase.from("profiles").update({ phone, email }).eq("id", profile.id);
-    setProfile(p => ({ ...p, email }));
+    setProfile(p => ({ ...p, email, phone }));
     setSavingProfile(false);
     setSavedProfile(true);
     setTimeout(() => setSavedProfile(false), 2000);
@@ -94,7 +94,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
   }
 
   const myStats = leaderboard.find(l => l.id === profile.id);
-  const tapsPct = Math.min(100, Math.round(((myStats?.taps_this_year || 0) / (profile.preferred_frequency * 12)) * 100));
+  const tapsPct = Math.min(100, Math.round(((myStats?.taps_this_year || 0) / Math.max(1, profile.preferred_frequency * 12)) * 100));
 
   const TABS = [
     { id: "profiel", label: "👤 Profiel" },

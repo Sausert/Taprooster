@@ -72,13 +72,13 @@ export default function DashboardClient({
 
   async function handleConfirm(shiftId: string) {
     setLoading(shiftId);
+    setConfirmedIds(p => [...p, shiftId]); // optimistic
     const res = await fetch(`/api/shifts/${shiftId}/assign`, {
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ action:"confirm" }),
     });
-    if (res.ok) {
-      setConfirmedIds(p => [...p, shiftId]);
-    } else {
+    if (!res.ok) {
+      setConfirmedIds(p => p.filter(id => id !== shiftId)); // rollback
       const err = await res.json().catch(() => ({}));
       setFetchError(err.error ?? "Bevestigen mislukt. Probeer opnieuw.");
     }
@@ -183,10 +183,10 @@ export default function DashboardClient({
             {daysUntilNext !== null && (
               <div style={{ textAlign:"center", minWidth:64 }}>
                 {daysUntilNext === 0 ? (
-                  <p style={{ ...s.countdown, fontSize:22 }}>Vandaag! 🔥</p>
+                  <p style={{ ...s.countdown, fontSize:22, color:"#00e5c3" }}>Vandaag! 🔥</p>
                 ) : daysUntilNext === 1 ? (
                   <>
-                    <p style={{ ...s.countdown, fontSize:20 }}>Morgen!</p>
+                    <p style={{ ...s.countdown, fontSize:20, color:"#00e5c3" }}>Morgen!</p>
                     <p style={{ fontSize:10, color:"#8b80b0", letterSpacing:1, textTransform:"uppercase", margin:0 }}>🍺</p>
                   </>
                 ) : (
@@ -266,7 +266,7 @@ export default function DashboardClient({
                       <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff" }}>{sh.title}</p>
                       {sh.type==="feestje" && <span style={s.blueBadge}>Feestje</span>}
                       {isFirst && <span style={s.mintBadge}>Eerstvolgende</span>}
-                      {urgentUnconfirmed && <span style={s.urgentBadge}>⏰ Bevestig snel!</span>}
+                      {urgentUnconfirmed && <span style={s.urgentBadge}>⏰ Bevestig — nog {daysUntil === 0 ? "vandaag" : `${daysUntil} dag${daysUntil !== 1 ? "en" : ""}`}</span>}
                     </div>
                     <p style={{ fontSize:13, fontWeight:700, color:"#e8e0ff", marginBottom:2 }}>{formatDateShort(sh.date)}</p>
                     <p style={{ fontSize:12, color:"#8b80b0" }}>{sh.start_time}–{sh.end_time}</p>
@@ -317,7 +317,7 @@ export default function DashboardClient({
               </div>
             </div>
           ))}
-          <a href="/rooster" style={{display:"block", textAlign:"center", fontSize:12, color:"#00e5c3", textDecoration:"none", padding:"8px 0", opacity:0.8}}>
+          <a href="/rooster" style={{display:"block", textAlign:"center", fontSize:12, color:"#00e5c3", textDecoration:"none", padding:"8px 0"}}>
             Bekijk alle diensten op de roosterpagina →
           </a>
         </>

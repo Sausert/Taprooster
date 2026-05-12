@@ -83,7 +83,7 @@ export default function RoosterClient({
 
   // Check if user can claim a shift
   const canClaim = (shift: any) => {
-    if (myShiftIds.includes(shift.id) || claimedIds.includes(shift.id)) return false;
+    if (myShiftIds.includes(shift.id) || claimedIds.includes(shift.id) || declinedIds.includes(shift.id)) return false;
     const assigned = (shift.assignments || []).filter((a: any) => a.status !== "declined").length;
     return assigned < shift.max_tappers;
   };
@@ -188,7 +188,7 @@ export default function RoosterClient({
             {[
               { color: C.myShift, bg: "rgba(90,74,158,0.2)", label: "Mijn dienst" },
               { color: C.full,    bg: "rgba(0,229,195,0.1)", label: "Vol" },
-              { color: C.partial, bg: "rgba(59,130,246,0.1)", label: "Niet vol" },
+              { color: C.partial, bg: "rgba(255,181,71,0.1)", label: "Niet vol" },
               { color: C.empty,   bg: "rgba(255,79,109,0.1)", label: "Leeg" },
               { color: C.party,   bg: "rgba(59,130,246,0.12)", label: "Feestje" },
             ].map(({ color, bg, label }) => (
@@ -312,7 +312,7 @@ export default function RoosterClient({
         /* List view */
         <>
           {monthShifts.length === 0 ? (
-            <div style={{ textAlign:"center", padding:"40px 20px" }}>
+            <div style={{ textAlign:"center", padding:"40px 20px", background:"#1a1730", borderRadius:16, border:"1px dashed #2e2a4a" }}>
               <div style={{ fontSize:40, marginBottom:12 }}>📅</div>
               <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff", margin:0 }}>Geen diensten</p>
               <p style={{ fontSize:12, color:"#8b80b0", marginTop:4 }}>Er zijn geen diensten gepland voor deze maand.</p>
@@ -320,7 +320,8 @@ export default function RoosterClient({
           ) : monthShifts.map(shift => {
             const mine = isMyShift(shift);
             const isParty = shift.type === "feestje";
-            const assigned = (shift.assignments || []).filter((a: any) => a.status !== "declined").length;
+            const assignedBase = (shift.assignments || []).filter((a: any) => a.status !== "declined").length;
+            const assigned = assignedBase + (claimedIds.includes(shift.id) ? 1 : 0);
             const accentColor = mine ? C.myShift : isParty ? C.party : assigned >= shift.max_tappers ? C.full : assigned === 0 ? C.empty : C.partial;
 
             return (
@@ -411,7 +412,7 @@ const s: Record<string, React.CSSProperties> = {
   navArrow: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:8, color:"#e8e0ff", fontSize:20, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" },
   monthLabel: { fontSize:18, fontWeight:900, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif", minWidth:140, textAlign:"center", cursor:"pointer" },
   calGrid: { display:"grid", gridTemplateColumns:"repeat(7, 1fr)", gap:4, marginBottom:16 },
-  dayHeader: { textAlign:"center", fontSize:10, fontWeight:700, color:"#8b80b0", padding:"4px 0" },
+  dayHeader: { textAlign:"center", fontSize:12, fontWeight:700, color:"#8b80b0", padding:"4px 0" },
   closeBtn: { background:"none", border:"none", color:"#8b80b0", fontSize:16, cursor:"pointer", padding:4, flexShrink:0 },
   warnBadge: { background:"rgba(59,130,246,0.1)", borderWidth:1, borderStyle:"solid", borderColor:"#3b82f6", color:"#3b82f6", fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:20 },
   myBadge: { background:"rgba(90,74,158,0.2)", borderWidth:1, borderStyle:"solid", borderColor:"#5a4a9e", color:"#5a4a9e", fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:20 },
