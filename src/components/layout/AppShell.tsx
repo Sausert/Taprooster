@@ -96,7 +96,7 @@ export default function AppShell({
                 onClick={() => router.push(item.path)}
               >
                 {active && <div style={s.navBar} />}
-                <span style={{ display:"flex", alignItems:"center", justifyContent:"center", color: active ? "#00e5c3" : "#8b80b0" }}>
+                <span style={{ display:"flex", alignItems:"center", justifyContent:"center", color: active ? "#00e5c3" : "#8b80b0", filter: active ? "drop-shadow(0 0 6px #00e5c3)" : "none", transition:"filter 0.2s" }}>
                   {item.icon}
                 </span>
                 <span style={{

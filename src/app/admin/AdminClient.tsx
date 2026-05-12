@@ -95,6 +95,9 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
   const [copied, setCopied] = useState(false);
   const [copiedInvite, setCopiedInvite] = useState(false);
 
+  // Status filter
+  const [statusMonthFilter, setStatusMonthFilter] = useState<string>("");
+
   const now = new Date();
 
   // Health
@@ -352,7 +355,7 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
     );
   };
 
-  const TABS = [{id:"health",label:"📊 Status"},{id:"tappers",label:"👥 Tappers"},{id:"rooster",label:"📅 Rooster"},{id:"publiceer",label:"🚀 Publiceer"},{id:"uitnodiging",label:"🔗 Uitnodiging"}];
+  const TABS = [{id:"health",icon:"📊",label:"Status"},{id:"tappers",icon:"👥",label:"Tappers"},{id:"rooster",icon:"📅",label:"Rooster"},{id:"publiceer",icon:"🚀",label:"Publiceer"},{id:"uitnodiging",icon:"🔗",label:"Uitnodiging"}];
 
   return (
     <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",background:"#0f0d1a"}}>
@@ -363,7 +366,10 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
       </div>
       <div style={s.tabBar}>
         {TABS.map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id as AdminTab)} style={{...s.tabBtn,color:tab===t.id?"#00e5c3":"#8b80b0",borderBottom:`2px solid ${tab===t.id?"#00e5c3":"transparent"}`,fontWeight:tab===t.id?900:600}}>{t.label}</button>
+          <button key={t.id} onClick={()=>setTab(t.id as AdminTab)} style={{...s.tabBtn,color:tab===t.id?"#00e5c3":"#8b80b0",borderBottom:`2px solid ${tab===t.id?"#00e5c3":"transparent"}`,fontWeight:tab===t.id?900:600,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+            <span style={{fontSize:16}}>{t.icon}</span>
+            <span style={{fontSize:9,letterSpacing:0.5,textTransform:"uppercase"}}>{t.label}</span>
+          </button>
         ))}
       </div>
       <div style={s.content}>
@@ -376,6 +382,15 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
               <div style={s.statCard}><p style={{...s.statVal,color:"#ffb547"}}>{unconfirmed.length}</p><p style={s.statLabel}>Onbevestigd</p></div>
             </div>
             <p style={s.sectionTitle}>Dienststatus</p>
+            <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+              <button onClick={()=>setStatusMonthFilter("")} style={{padding:"5px 12px",borderRadius:20,fontSize:11,fontWeight:700,cursor:"pointer",background:statusMonthFilter===""?"rgba(0,229,195,0.1)":"#221f38",color:statusMonthFilter===""?"#00e5c3":"#8b80b0",border:`1px solid ${statusMonthFilter===""?"#00e5c3":"#2e2a4a"}`}}>Alles</button>
+              {MONTH_NAMES_FULL.map((name,idx)=>{
+                const key=`${now.getFullYear()}-${String(idx+1).padStart(2,"0")}`;
+                const hasShifts=shifts.some(s=>s.date?.startsWith(key));
+                if(!hasShifts) return null;
+                return <button key={idx} onClick={()=>setStatusMonthFilter(key)} style={{padding:"5px 12px",borderRadius:20,fontSize:11,fontWeight:700,cursor:"pointer",background:statusMonthFilter===key?"rgba(0,229,195,0.1)":"#221f38",color:statusMonthFilter===key?"#00e5c3":"#8b80b0",border:`1px solid ${statusMonthFilter===key?"#00e5c3":"#2e2a4a"}`}}>{name.slice(0,3)}</button>;
+              })}
+            </div>
             <div style={s.card}>
               {shifts.length===0&&(
                 <div style={{textAlign:"center", padding:"32px 20px"}}>
@@ -384,21 +399,32 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
                   <p style={{fontSize:12, color:"#8b80b0", marginTop:4}}>Er zijn nog geen diensten aangemaakt.</p>
                 </div>
               )}
-              {shifts.map(shift=>{
+              {shifts.filter(s=>!statusMonthFilter||s.date?.startsWith(statusMonthFilter)).map(shift=>{
                 const color=getHealthColor(shift);
                 const assigned=(shift.assignments||[]).filter((a:any)=>a.status!=="declined").length;
                 const confirmed=(shift.assignments||[]).filter((a:any)=>a.status==="confirmed").length;
+                const unresponsive=(shift.assignments||[]).filter((a:any)=>a.status==="assigned").map((a:any)=>a.profile?.full_name?.split(" ")[0]||"?");
                 return(
-                  <div key={shift.id} style={s.healthRow}>
-                    <div style={{width:10,height:10,borderRadius:"50%",flexShrink:0,background:color,boxShadow:`0 0 6px ${color}`}}/>
-                    <div style={{flex:1}}>
-                      <p style={{fontSize:13,fontWeight:600,color:"#e8e0ff"}}>{formatDate(shift.date)} — {shift.title}</p>
-                      <p style={{fontSize:11,color}}>{assigned}/{shift.max_tappers} bezet · {confirmed} bevestigd</p>
+                  <div key={shift.id} style={{...s.healthRow,flexDirection:"column",alignItems:"stretch",gap:6}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <div style={{width:10,height:10,borderRadius:"50%",flexShrink:0,background:color,boxShadow:`0 0 6px ${color}`}}/>
+                      <div style={{flex:1}}>
+                        <p style={{fontSize:13,fontWeight:600,color:"#e8e0ff"}}>{formatDate(shift.date)} — {shift.title}</p>
+                        <p style={{fontSize:11,color}}>{assigned}/{shift.max_tappers} bezet · {confirmed} bevestigd</p>
+                      </div>
+                      <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                        {assigned<shift.max_tappers&&<span style={s.dangerBadge}>{shift.max_tappers-assigned} open</span>}
+                        {assigned<shift.max_tappers&&<button style={s.addTapperBtn} onClick={()=>setAddTapperModal(shift)}>+ Tapper</button>}
+                      </div>
                     </div>
-                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                      {assigned<shift.max_tappers&&<span style={s.dangerBadge}>{shift.max_tappers-assigned} open</span>}
-                      {assigned<shift.max_tappers&&<button style={s.addTapperBtn} onClick={()=>setAddTapperModal(shift)}>+ Tapper</button>}
-                    </div>
+                    {unresponsive.length>0&&(
+                      <div style={{paddingLeft:20,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+                        <span style={{fontSize:10,color:"#ffb547"}}>⏳ Niet bevestigd:</span>
+                        {unresponsive.map((name,i)=>(
+                          <span key={i} style={{fontSize:11,padding:"1px 8px",borderRadius:20,background:"rgba(255,181,71,0.1)",border:"1px solid rgba(255,181,71,0.3)",color:"#ffb547"}}>{name}</span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -789,6 +815,6 @@ const s: Record<string, React.CSSProperties> = {
   btnSecondary:{width:"100%",padding:"12px 14px",borderRadius:12,background:"#221f38",color:"#e8e0ff",fontFamily:"'Exo 2', sans-serif",fontSize:14,fontWeight:700,border:"1px solid #2e2a4a",cursor:"pointer",textTransform:"uppercase",letterSpacing:1,display:"block",textAlign:"center",textDecoration:"none"},
   overlay:{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(6px)",zIndex:100,display:"flex",alignItems:"flex-end",justifyContent:"center"},
   sheet:{background:"#1a1730",border:"1px solid #2e2a4a",borderRadius:"24px 24px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:430},
-  sheetHandle:{width:36,height:4,background:"#2e2a4a",borderRadius:2,margin:"0 auto 20px"},
+  sheetHandle:{width:48,height:5,background:"#3b2f6e",borderRadius:3,margin:"0 auto 20px"},
   sheetTitle:{fontSize:18,fontWeight:700,color:"#f0eeff",marginBottom:16,fontFamily:"'Exo 2', sans-serif"},
 };

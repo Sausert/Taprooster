@@ -38,9 +38,9 @@ function getDayColor(dayShifts: any[], myShiftIds: string[]): { bg: string; colo
 }
 
 export default function RoosterClient({
-  shifts, myShiftIds, userId, userAssignments,
+  shifts, myShiftIds, userId, userAssignments, isAdmin,
 }: {
-  shifts: any[]; myShiftIds: string[]; userId: string; userAssignments: any[];
+  shifts: any[]; myShiftIds: string[]; userId: string; userAssignments: any[]; isAdmin?: boolean;
 }) {
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getFullYear());
@@ -211,8 +211,9 @@ export default function RoosterClient({
 
               if (!hasShift) {
                 return (
-                  <div key={day} style={{ aspectRatio:"1", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"#8b80b0", borderRadius:8, outline: today ? "2px solid rgba(0,229,195,0.3)" : "none" }}>
+                  <div key={day} style={{ aspectRatio:"1", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"#8b80b0", borderRadius:8, outline: today ? "2px solid rgba(0,229,195,0.3)" : "none", position:"relative" }}>
                     {day}
+                    {isAdmin && <span style={{ position:"absolute", bottom:1, right:2, fontSize:9, color:"rgba(0,229,195,0.4)" }}>+</span>}
                   </div>
                 );
               }
@@ -360,20 +361,30 @@ export default function RoosterClient({
           <div style={s.sheet} onClick={e => e.stopPropagation()}>
             <div style={s.sheetHandle} />
             <h3 style={s.sheetTitle}>Inschrijven</h3>
-            <p style={{ fontSize:13, color:"#8b80b0", marginBottom:16 }}>Bevestig jouw aanmelding voor deze dienst.</p>
             <div style={{ background:"#221f38", borderRadius:12, padding:"12px 14px", marginBottom:16 }}>
               <p style={{ fontSize:15, fontWeight:700, color:"#f0eeff" }}>{claimModal.title}</p>
               <p style={{ fontSize:13, color:"#8b80b0", marginTop:4 }}>{formatDate(claimModal.date)} · {claimModal.start_time}–{claimModal.end_time}</p>
               {(() => {
-                const assigned = (claimModal.assignments || []).filter((a: any) => a.status !== "declined").length;
+                const assigned = (claimModal.assignments || []).filter((a: any) => a.status !== "declined");
                 const max = claimModal.max_tappers || 1;
-                const pct = Math.min(100, Math.round((assigned / max) * 100));
+                const pct = Math.min(100, Math.round((assigned.length / max) * 100));
                 return (
                   <div style={{ marginTop:10 }}>
-                    <div style={{ fontSize:11, color:"#8b80b0", marginBottom:4 }}>{assigned}/{max} plekken bezet</div>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                      <div style={{ fontSize:11, color:"#8b80b0" }}>{assigned.length}/{max} plekken bezet</div>
+                    </div>
                     <div style={{ height:4, borderRadius:2, background:"#2e2a4a", overflow:"hidden" }}>
                       <div style={{ height:"100%", width:`${pct}%`, background:"#00e5c3", borderRadius:2 }} />
                     </div>
+                    {assigned.length > 0 && (
+                      <div style={{ marginTop:10, display:"flex", gap:6, flexWrap:"wrap" }}>
+                        {assigned.map((a: any) => (
+                          <span key={a.user_id} style={{ fontSize:11, padding:"2px 10px", borderRadius:20, background:"#1a1730", border:"1px solid #2e2a4a", color:"#e8e0ff" }}>
+                            {a.profile?.full_name?.split(" ")[0] || "?"}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -412,7 +423,7 @@ const s: Record<string, React.CSSProperties> = {
   icalBtnSm: { padding:"5px 8px", borderRadius:8, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", fontSize:14, cursor:"pointer" },
   overlay: { position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", backdropFilter:"blur(6px)", zIndex:100, display:"flex", alignItems:"flex-end", justifyContent:"center" },
   sheet: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:"24px 24px 0 0", padding:"24px 20px 40px", width:"100%", maxWidth:430 },
-  sheetHandle: { width:36, height:4, background:"#2e2a4a", borderRadius:2, margin:"0 auto 20px" },
+  sheetHandle: { width:48, height:5, background:"#3b2f6e", borderRadius:3, margin:"0 auto 20px" },
   sheetTitle: { fontSize:18, fontWeight:700, color:"#f0eeff", marginBottom:8, fontFamily:"'Exo 2',sans-serif" },
   btnPrimary: { width:"100%", padding:14, borderRadius:12, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", fontFamily:"'Exo 2',sans-serif", fontSize:14, fontWeight:700, border:"none", cursor:"pointer", textTransform:"uppercase", display:"block" },
   btnSecondary: { width:"100%", padding:14, borderRadius:12, background:"#221f38", color:"#e8e0ff", fontFamily:"'Exo 2',sans-serif", fontSize:15, fontWeight:700, border:"1px solid #2e2a4a", cursor:"pointer", textTransform:"uppercase", display:"block" },

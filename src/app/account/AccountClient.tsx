@@ -257,8 +257,11 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
 
           <p style={s.sectionTitle}>🏆 Leaderboard</p>
           <div style={s.card}>
-            {leaderboard.map((lb) => (
-              <div key={lb.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 8px", borderRadius:10, marginBottom:4, background:lb.id===profile.id?"rgba(0,229,195,0.06)":"transparent", border:lb.id===profile.id?"1px solid rgba(0,229,195,0.2)":"1px solid transparent" }}>
+            {leaderboard.map((lb) => {
+              const rankBg = lb.rank===1 ? "rgba(255,215,0,0.07)" : lb.rank===2 ? "rgba(192,192,192,0.07)" : lb.rank===3 ? "rgba(205,127,50,0.07)" : lb.id===profile.id ? "rgba(0,229,195,0.06)" : "transparent";
+              const rankBorder = lb.rank===1 ? "1px solid rgba(255,215,0,0.25)" : lb.rank===2 ? "1px solid rgba(192,192,192,0.2)" : lb.rank===3 ? "1px solid rgba(205,127,50,0.2)" : lb.id===profile.id ? "1px solid rgba(0,229,195,0.2)" : "1px solid transparent";
+              return (
+              <div key={lb.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 8px", borderRadius:10, marginBottom:4, background:rankBg, border:rankBorder }}>
                 <span style={{ fontSize:lb.rank<=3?20:16, fontFamily:"monospace", width:28, textAlign:"center", color:lb.rank<=3?undefined:"#8b80b0" }}>
                   {lb.rank<=3?MEDALS[lb.rank-1]:lb.rank}
                 </span>
@@ -271,7 +274,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
                 </div>
                 <span style={{ fontFamily:"monospace", fontSize:14, color:"#00e5c3" }}>{lb.taps_this_year}x</span>
               </div>
-            ))}
+            );})}
           </div>
         </>
       )}
@@ -281,23 +284,40 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
         <>
           {notifs.length === 0 ? (
             <div style={{ textAlign:"center", padding:"40px 0", color:"#8b80b0" }}>Geen notificaties.</div>
-          ) : notifs.map(n => (
-            <div key={n.id} style={{ ...s.card, opacity:n.read?0.6:1, borderLeft:`3px solid ${n.type.includes("open")||n.type.includes("reminder")?"#ffb547":"#00e5c3"}` }}>
-              <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
-                <div style={{ width:36, height:36, borderRadius:10, flexShrink:0, background:"rgba(0,229,195,0.08)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>
-                  {n.type==="roster_published"?"📅":n.type.includes("reminder")?"⏰":n.type==="open_shift"?"🔓":"📢"}
-                </div>
-                <div style={{ flex:1 }}>
-                  <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff" }}>{n.title}</p>
-                  <p style={{ fontSize:12, color:"#8b80b0", marginTop:2, lineHeight:1.4 }}>{n.message}</p>
-                  <p style={{ fontSize:11, color:"#8b80b0", marginTop:6 }}>
-                    {new Date(n.created_at).toLocaleDateString("nl-NL", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })}
-                  </p>
-                </div>
-                {!n.read && <div style={{ width:8, height:8, borderRadius:"50%", background:"#00e5c3", flexShrink:0, marginTop:4 }} />}
+          ) : (() => {
+            const now2 = new Date();
+            const todayStart = new Date(now2.getFullYear(), now2.getMonth(), now2.getDate());
+            const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+            const groups: { label: string; items: typeof notifs }[] = [];
+            const todayN = notifs.filter(n => new Date(n.created_at) >= todayStart);
+            const ystN = notifs.filter(n => { const d = new Date(n.created_at); return d >= yesterdayStart && d < todayStart; });
+            const oldN = notifs.filter(n => new Date(n.created_at) < yesterdayStart);
+            if (todayN.length > 0) groups.push({ label:"Vandaag", items:todayN });
+            if (ystN.length > 0) groups.push({ label:"Gisteren", items:ystN });
+            if (oldN.length > 0) groups.push({ label:"Eerder", items:oldN });
+            return groups.map(group => (
+              <div key={group.label}>
+                <p style={{ fontSize:10, fontWeight:700, letterSpacing:2, textTransform:"uppercase", color:"#8b80b0", margin:"12px 0 6px" }}>{group.label}</p>
+                {group.items.map(n => (
+                  <div key={n.id} style={{ ...s.card, opacity:n.read?0.6:1, borderLeft:`3px solid ${n.type.includes("open")||n.type.includes("reminder")?"#ffb547":"#00e5c3"}` }}>
+                    <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
+                      <div style={{ width:36, height:36, borderRadius:10, flexShrink:0, background:"rgba(0,229,195,0.08)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>
+                        {n.type==="roster_published"?"📅":n.type.includes("reminder")?"⏰":n.type==="open_shift"?"🔓":"📢"}
+                      </div>
+                      <div style={{ flex:1 }}>
+                        <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff" }}>{n.title}</p>
+                        <p style={{ fontSize:12, color:"#8b80b0", marginTop:2, lineHeight:1.4 }}>{n.message}</p>
+                        <p style={{ fontSize:11, color:"#8b80b0", marginTop:6 }}>
+                          {new Date(n.created_at).toLocaleTimeString("nl-NL", { hour:"2-digit", minute:"2-digit" })}
+                        </p>
+                      </div>
+                      {!n.read && <div style={{ width:8, height:8, borderRadius:"50%", background:"#00e5c3", flexShrink:0, marginTop:4 }} />}
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-          ))}
+            ));
+          })()}
         </>
       )}
     </div>

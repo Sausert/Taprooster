@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { Profile, Shift, ShiftAssignment, AdminMessage } from "@/types";
 import { APP_CONFIG } from "@/lib/config";
@@ -50,6 +50,7 @@ export default function DashboardClient({
   profile, myUpcoming, claimableShifts, tapsThisYear, incomingPlanned, myRank, adminMessages,
 }: Props) {
   const router = useRouter();
+  const mijnDienstenRef = useRef<HTMLDivElement>(null);
   const [upcoming, setUpcoming] = useState<ShiftAssignment[]>(myUpcoming);
   const [claimable, setClaimable] = useState<ClaimableShift[]>(claimableShifts);
   const [claimModal, setClaimModal] = useState<ClaimableShift | null>(null);
@@ -99,6 +100,7 @@ export default function DashboardClient({
       }].sort((a,b) => a.shift!.date.localeCompare(b.shift!.date)));
       setClaimSuccess(shift.title);
       setTimeout(() => setClaimSuccess(null), 3000);
+      setTimeout(() => mijnDienstenRef.current?.scrollIntoView({ behavior:"smooth", block:"start" }), 300);
     } else {
       const err = await res.json().catch(() => ({}));
       setFetchError(err.error ?? "Inschrijven mislukt. Probeer opnieuw.");
@@ -121,6 +123,16 @@ export default function DashboardClient({
     }
     setDeclineModal(null);
     setLoading(null);
+  }
+
+  function handleShare(shift: Shift) {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      navigator.share({
+        title: shift.title,
+        text: `Tapavond ${shift.title} — ${formatDate(shift.date)} ${shift.start_time}–${shift.end_time}. Schrijf je in op Taprooster!`,
+        url: window.location.origin + "/rooster",
+      }).catch(() => {});
+    }
   }
 
   function handleAgenda(shift: Shift) {
@@ -169,9 +181,20 @@ export default function DashboardClient({
               <p style={s.heroSub}>{formatDate(nextShift.date)} · {nextShift.start_time}–{nextShift.end_time}</p>
             </div>
             {daysUntilNext !== null && (
-              <div style={{ textAlign:"center", minWidth:52 }}>
-                <p style={s.countdown}>{daysUntilNext}</p>
-                <p style={{ fontSize:10, color:"#8b80b0", letterSpacing:1, textTransform:"uppercase", margin:0 }}>dagen</p>
+              <div style={{ textAlign:"center", minWidth:64 }}>
+                {daysUntilNext === 0 ? (
+                  <p style={{ ...s.countdown, fontSize:22 }}>Vandaag! 🔥</p>
+                ) : daysUntilNext === 1 ? (
+                  <>
+                    <p style={{ ...s.countdown, fontSize:20 }}>Morgen!</p>
+                    <p style={{ fontSize:10, color:"#8b80b0", letterSpacing:1, textTransform:"uppercase", margin:0 }}>🍺</p>
+                  </>
+                ) : (
+                  <>
+                    <p style={s.countdown}>{daysUntilNext}</p>
+                    <p style={{ fontSize:10, color:"#8b80b0", letterSpacing:1, textTransform:"uppercase", margin:0 }}>dagen</p>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -212,7 +235,10 @@ export default function DashboardClient({
           <span style={{ fontSize:12, color:"#8b80b0" }}>Voortgang dit jaar ({tapsThisYear}/{target})</span>
           <span style={{ fontFamily:"monospace", fontSize:12, color:"#00e5c3" }}>{pct}%</span>
         </div>
-        <div style={s.progressWrap}><div style={{ ...s.progressFill, width:`${pct}%` }}/></div>
+        <div style={{ ...s.progressWrap, position:"relative" }}>
+          <div style={{ ...s.progressFill, width:`${pct}%` }}/>
+          <div style={{ position:"absolute", top:0, left:"50%", transform:"translateX(-50%)", width:1, height:"100%", background:"rgba(255,255,255,0.25)" }}/>
+        </div>
         {myRank > 0 && <p style={{ fontSize:11, color:"#8b80b0", marginTop:6 }}>Je staat op plek <strong style={{ color:"#00e5c3" }}>#{myRank}</strong> dit jaar 🏆</p>}
         {tapsThisYear >= Math.round((new Date().getMonth() + 1) / 12 * target)
           ? <p style={{fontSize:11, color:"#00e5c3", textAlign:"center", margin:"4px 0 0"}}>Je ligt op koers ✓</p>
@@ -223,22 +249,27 @@ export default function DashboardClient({
       {/* All upcoming shifts */}
       {upcoming.length > 0 && (
         <>
-          <p style={s.sectionTitle}>Mijn diensten</p>
+          <p ref={mijnDienstenRef} style={s.sectionTitle}>Mijn diensten</p>
           {upcoming.map((a) => {
             const sh = a.shift;
             if (!sh) return null;
             const isFirst = a === nextAssignment;
             const isConfirmed = confirmedIds.includes(a.shift_id) || a.status === "confirmed";
+            const daysUntil = Math.ceil((parseLocalDate(sh.date).getTime() - Date.now()) / (1000*60*60*24));
+            const urgentUnconfirmed = !isConfirmed && daysUntil >= 0 && daysUntil < 3;
+            const accentColor = shiftColor(sh.type);
             return (
-              <div key={a.shift_id} style={{ ...s.card, borderLeft:`3px solid ${shiftColor(sh.type)}` }}>
+              <div key={a.shift_id} style={{ ...s.card, borderLeft:`4px solid ${accentColor}`, background:`linear-gradient(90deg, rgba(${sh.type==="feestje"?"59,130,246":"0,229,195"},0.04) 0%, #1a1730 40%)` }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                   <div style={{ flex:1 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4, flexWrap:"wrap" }}>
                       <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff" }}>{sh.title}</p>
                       {sh.type==="feestje" && <span style={s.blueBadge}>Feestje</span>}
                       {isFirst && <span style={s.mintBadge}>Eerstvolgende</span>}
+                      {urgentUnconfirmed && <span style={s.urgentBadge}>⏰ Bevestig snel!</span>}
                     </div>
-                    <p style={{ fontSize:12, color:"#8b80b0" }}>{formatDateShort(sh.date)} · {sh.start_time}–{sh.end_time}</p>
+                    <p style={{ fontSize:13, fontWeight:700, color:"#e8e0ff", marginBottom:2 }}>{formatDateShort(sh.date)}</p>
+                    <p style={{ fontSize:12, color:"#8b80b0" }}>{sh.start_time}–{sh.end_time}</p>
                     {sh.admin_note && <p style={{ fontSize:11, color:"#3b82f6", marginTop:4 }}>📌 {sh.admin_note}</p>}
                   </div>
                   <div style={{ display:"flex", flexDirection:"column", gap:6, alignItems:"flex-end" }}>
@@ -247,11 +278,16 @@ export default function DashboardClient({
                       : <button style={{ ...s.btnYesSmall, opacity: loading===a.shift_id ? 0.5 : 1 }} disabled={loading===a.shift_id} onClick={() => handleConfirm(a.shift_id)}>✅ Bevestigen</button>
                     }
                     <button style={{ ...s.declineBtn, opacity: loading===a.shift_id ? 0.5 : 1 }} disabled={loading===a.shift_id} onClick={() => setDeclineModal(a)}>Afmelden</button>
-                    <a
-                      href={`/api/shifts/${sh.id}/ical`}
-                      style={{ ...s.agendaBtn, textDecoration:"none", display:"inline-flex", alignItems:"center", gap:4, fontSize:11 }}
-                      onClick={(e) => { if (/Android/i.test(navigator.userAgent)) { e.preventDefault(); handleAgenda(sh); } }}
-                    >📅 Agenda</a>
+                    <div style={{ display:"flex", gap:4 }}>
+                      <a
+                        href={`/api/shifts/${sh.id}/ical`}
+                        style={{ ...s.agendaBtn, textDecoration:"none", display:"inline-flex", alignItems:"center", gap:4, fontSize:11 }}
+                        onClick={(e) => { if (/Android/i.test(navigator.userAgent)) { e.preventDefault(); handleAgenda(sh); } }}
+                      >📅</a>
+                      {typeof navigator !== "undefined" && "share" in navigator && (
+                        <button style={s.agendaBtn} onClick={() => handleShare(sh)} title="Deel dienst">↗</button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -265,13 +301,12 @@ export default function DashboardClient({
         <>
           <p style={s.sectionTitle}>Open diensten</p>
           {claimable.map((shift) => (
-            <div key={shift.id} style={{ ...s.card, borderLeft:`3px solid ${shiftColor(shift.type)}` }}>
+            <div key={shift.id} style={{ ...s.card, borderLeft:`4px solid ${shiftColor(shift.type)}`, background:`linear-gradient(90deg, rgba(${shift.type==="feestje"?"59,130,246":"0,229,195"},0.04) 0%, #1a1730 40%)` }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                 <div style={{ flex:1 }}>
                   <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff" }}>{shift.title}</p>
-                  <p style={{ fontSize:12, color:"#8b80b0", marginTop:2 }}>
-                    {formatDateShort(shift.date)} · {shift.start_time}–{shift.end_time}
-                  </p>
+                  <p style={{ fontSize:13, fontWeight:700, color:"#e8e0ff", marginBottom:2, marginTop:2 }}>{formatDateShort(shift.date)}</p>
+                  <p style={{ fontSize:12, color:"#8b80b0" }}>{shift.start_time}–{shift.end_time}</p>
                   <p style={{ fontSize:11, color:"#8b80b0", marginTop:4 }}>
                     {shift.open_spots} open plek{shift.open_spots > 1 ? "ken" : ""}
                   </p>
@@ -318,6 +353,18 @@ export default function DashboardClient({
             <div style={{ background:"#221f38", borderRadius:12, padding:"12px 14px", marginBottom:16 }}>
               <p style={{ fontSize:15, fontWeight:700, color:"#f0eeff" }}>{claimModal.title}</p>
               <p style={{ fontSize:13, color:"#8b80b0", marginTop:4 }}>{formatDate(claimModal.date)} · {claimModal.start_time}–{claimModal.end_time}</p>
+              {(claimModal as any).assignments?.filter((a: any) => a.status !== "declined").length > 0 && (
+                <div style={{ marginTop:10 }}>
+                  <p style={{ fontSize:11, color:"#8b80b0", marginBottom:6 }}>Al ingeroosterd:</p>
+                  <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                    {(claimModal as any).assignments.filter((a: any) => a.status !== "declined").map((a: any) => (
+                      <span key={a.user_id} style={{ fontSize:12, padding:"2px 10px", borderRadius:20, background:"#1a1730", border:"1px solid #2e2a4a", color:"#e8e0ff" }}>
+                        {a.profile?.full_name?.split(" ")[0] || "?"}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <p style={{ fontSize:12, color:"#8b80b0", marginBottom:20, lineHeight:1.5 }}>
               Je ontvangt een e-mail bevestiging en herinneringen 2 weken en 1 week van tevoren.
@@ -390,7 +437,8 @@ const s: Record<string, React.CSSProperties> = {
   claimBtn: { padding:"9px 14px", borderRadius:12, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", border:"none", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:12, letterSpacing:1, cursor:"pointer", textTransform:"uppercase", flexShrink:0 },
   overlay: { position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", backdropFilter:"blur(6px)", zIndex:100, display:"flex", alignItems:"flex-end", justifyContent:"center" },
   sheet: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:"24px 24px 0 0", padding:"24px 20px 40px", width:"100%", maxWidth:430 },
-  sheetHandle: { width:36, height:4, background:"#2e2a4a", borderRadius:2, margin:"0 auto 20px" },
+  sheetHandle: { width:48, height:5, background:"#3b2f6e", borderRadius:3, margin:"0 auto 20px" },
+  urgentBadge: { fontSize:10, fontWeight:700, background:"rgba(255,181,71,0.12)", border:"1px solid #ffb547", color:"#ffb547", borderRadius:20, padding:"2px 8px" },
   sheetTitle: { fontSize:18, fontWeight:700, color:"#f0eeff", marginBottom:8, fontFamily:"'Exo 2',sans-serif" },
   btnPrimary: { width:"100%", padding:14, borderRadius:12, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", fontFamily:"'Exo 2',sans-serif", fontSize:14, fontWeight:700, border:"none", cursor:"pointer", textTransform:"uppercase", letterSpacing:1, display:"block" },
   btnSecondary: { width:"100%", padding:14, borderRadius:12, background:"#221f38", color:"#e8e0ff", fontFamily:"'Exo 2',sans-serif", fontSize:14, fontWeight:700, border:"1px solid #2e2a4a", cursor:"pointer", textTransform:"uppercase", letterSpacing:1, display:"block" },

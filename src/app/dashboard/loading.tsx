@@ -1,8 +1,21 @@
 export default function Loading() {
   return (
-    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#0f0d1a", gap:12 }}>
-      <div style={{ fontSize:36, animation:"pulse 1.5s ease-in-out infinite" }}>🍺</div>
-      <p style={{ fontSize:11, fontWeight:700, letterSpacing:2, color:"#8b80b0", textTransform:"uppercase" }}>Laden...</p>
+    <div style={{ padding:"20px 16px", background:"#0f0d1a", minHeight:"100vh" }}>
+      <div style={{ marginBottom:20 }}>
+        <div className="skeleton-box" style={{ width:100, height:14, marginBottom:8 }}/>
+        <div className="skeleton-box" style={{ width:160, height:26 }}/>
+      </div>
+      <div className="skeleton-box" style={{ height:140, borderRadius:16, marginBottom:12 }}/>
+      <div className="skeleton-box" style={{ width:120, height:11, marginBottom:8 }}/>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
+        <div className="skeleton-box" style={{ height:80, borderRadius:16 }}/>
+        <div className="skeleton-box" style={{ height:80, borderRadius:16 }}/>
+      </div>
+      <div className="skeleton-box" style={{ height:60, borderRadius:16, marginBottom:12 }}/>
+      <div className="skeleton-box" style={{ width:100, height:11, marginBottom:8 }}/>
+      {[1,2].map(i => (
+        <div key={i} className="skeleton-box" style={{ height:90, borderRadius:16, marginBottom:10 }}/>
+      ))}
     </div>
   );
 }

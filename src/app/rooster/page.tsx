@@ -12,6 +12,8 @@ export default async function RoosterPage() {
   // Toon shifts tot eind volgend jaar zodat het volledige gepubliceerde rooster zichtbaar is
   const endOfNextYear = `${now.getFullYear() + 1}-12-31`;
 
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+
   const { data: shifts } = await supabase
     .from("shifts")
     .select("*, assignments:shift_assignments(user_id, status, profile:profiles(id, full_name))")
@@ -34,6 +36,7 @@ export default async function RoosterPage() {
       myShiftIds={myShiftIds}
       userId={user.id}
       userAssignments={myAssignments || []}
+      isAdmin={profile?.role === "admin"}
     />
   );
 }
