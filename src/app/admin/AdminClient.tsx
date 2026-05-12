@@ -287,7 +287,7 @@ export default function AdminClient({ shifts: initialShifts, profiles: initialPr
     const dow = (()=>{const [y,m,d]=shiftDate.split("-").map(Number);return new Date(y,m-1,d).getDay();})();
     const dayMap:Record<number,string> = {3:"wednesday",5:"friday",6:"saturday"};
     const shiftDay = dayMap[dow];
-    if (shiftDay && (p.preferred_days||[]).length > 0 && !(p.preferred_days||[]).includes(shiftDay)) return false;
+    if (shiftDay && (p.preferred_days||[]).length > 0 && !(p.preferred_days||[]).includes(shiftDay as any)) return false;
     // Check party preference
     if (addTapperModal.type === "feestje" && !p.wants_parties) return false;
     return true;
