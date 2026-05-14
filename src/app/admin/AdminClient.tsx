@@ -139,9 +139,9 @@ export default function AdminClient({
         {/* Tab bar */}
         <nav style={{ display:"flex", borderBottom:"1px solid #2e2a4a", background:"#0f0d1a", overflowX:"auto" }}>
           {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id as AdminTab)} style={{ flex:1, minWidth:80, padding:"12px 4px", background:"none", border:"none", fontFamily:"'Exo 2', sans-serif", fontWeight:tab === t.id ? 900 : 600, fontSize:11, cursor:"pointer", whiteSpace:"nowrap", display:"flex", flexDirection:"column", alignItems:"center", gap:2, color:tab === t.id ? "#00e5c3" : "#8b80b0", borderBottom:`2px solid ${tab === t.id ? "#00e5c3" : "transparent"}` }}>
-              <span style={{ fontSize:16 }}>{t.icon}</span>
-              <span style={{ fontSize:10, letterSpacing:0.5, textTransform:"uppercase" }}>{t.label}</span>
+            <button key={t.id} onClick={() => setTab(t.id as AdminTab)} style={{ flex:1, minWidth:80, padding:"12px 4px", background:"none", border:"none", fontFamily:"'Exo 2', sans-serif", fontWeight:tab === t.id ? 900 : 600, fontSize:11, cursor:"pointer", whiteSpace:"nowrap", display:"flex", flexDirection:"column", alignItems:"center", gap:2, color:tab === t.id ? "#00e5c3" : "#b8b0d4", borderBottom:`2px solid ${tab === t.id ? "#00e5c3" : "transparent"}`, transition:"color 0.15s" }}>
+              <span style={{ fontSize:16, fontFamily:'"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif' }}>{t.icon}</span>
+              <span style={{ fontSize:10, letterSpacing:"0.05em", textTransform:"uppercase" }}>{t.label}</span>
             </button>
           ))}
         </nav>

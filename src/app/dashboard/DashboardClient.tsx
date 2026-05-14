@@ -294,7 +294,7 @@ export default function DashboardClient({
                   <div style={{ flex:1 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4, flexWrap:"wrap" }}>
                       <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff" }}>{sh.title}</p>
-                      {sh.type==="feestje" && <span className={`${sharedStyles.badge} ${sharedStyles.badgeBlue}`}>Feestje</span>}
+                      {sh.type==="feestje" && <span className={`${sharedStyles.badge} ${sharedStyles.badgeViolet}`}>Feestje</span>}
                       {isFirst && <span className={`${sharedStyles.badge} ${sharedStyles.badgeMint}`}>Eerstvolgende</span>}
                       {urgentUnconfirmed && <span className={`${sharedStyles.badge} ${sharedStyles.badgeAmber}`}>⏰ Bevestig — nog {daysUntil === 0 ? "vandaag" : `${daysUntil} dag${daysUntil !== 1 ? "en" : ""}`}</span>}
                     </div>
@@ -340,7 +340,7 @@ export default function DashboardClient({
       {/* Open diensten */}
       {claimable.length > 0 && (
         <>
-          <p ref={openDienstenRef} className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px" }}>Open diensten</p>
+          <p ref={openDienstenRef} className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px", color:"#ffb547" }}>● Open diensten</p>
           {claimable.map((shift) => {
             const borderColor = openShiftBorderColor(shift);
             const bgGrad = openShiftBg(shift);

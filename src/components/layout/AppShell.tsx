@@ -14,8 +14,9 @@ export const useApp = () => useContext(AppContext);
 
 // ── SVG Icons ──
 const IconDashboard = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M13 2L4.09 12.96A1 1 0 005 14.5h6.5L11 22l8.91-10.96A1 1 0 0019 9.5h-6.5L13 2z"/>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1V10.5z"/>
+    <path d="M9 22V13h6v9"/>
   </svg>
 );
 const IconRooster = () => (
@@ -70,6 +71,7 @@ export default function AppShell({
         {/* Top bar */}
         <header style={s.topBar}>
           <div style={s.logo}>
+            <span style={{ fontSize:16, lineHeight:1 }}>🍺</span>
             Taprooster
           </div>
           <div style={s.pageLabel}>{currentLabel.toUpperCase()}</div>
@@ -96,15 +98,16 @@ export default function AppShell({
                 onClick={() => router.push(item.path)}
               >
                 {active && <div style={s.navBar} />}
-                <span style={{ display:"flex", alignItems:"center", justifyContent:"center", color: active ? "#00e5c3" : "#8b80b0", filter: active ? "drop-shadow(0 0 6px #00e5c3)" : "none", transition:"filter 0.2s" }}>
+                <span style={{ display:"flex", alignItems:"center", justifyContent:"center", color: active ? "#00e5c3" : "#b8b0d4", filter: active ? "drop-shadow(0 0 6px #00e5c3)" : "none", transition:"filter 0.2s, color 0.15s" }}>
                   {item.icon}
                 </span>
                 <span style={{
                   fontSize: 10,
                   fontWeight: active ? 900 : 600,
-                  letterSpacing: 0.5,
+                  letterSpacing: "0.05em",
                   textTransform: "uppercase",
-                  color: active ? "#00e5c3" : "#8b80b0",
+                  color: active ? "#00e5c3" : "#b8b0d4",
+                  transition: "color 0.15s",
                 }}>
                   {item.label}
                 </span>
@@ -144,14 +147,17 @@ const s: Record<string, React.CSSProperties> = {
     fontWeight: 900,
     fontSize: 18,
     color: "#00e5c3",
-    letterSpacing: 2,
+    letterSpacing: "0.1em",
     textTransform: "uppercase",
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
   },
   pageLabel: {
     fontSize: 11,
     fontWeight: 700,
-    letterSpacing: 2,
-    color: "#8b80b0",
+    letterSpacing: "0.1em",
+    color: "#b8b0d4",
   },
   notifBtn: {
     width: 36,
@@ -218,5 +224,6 @@ const s: Record<string, React.CSSProperties> = {
     background: "#00e5c3",
     borderRadius: "0 0 2px 2px",
     boxShadow: "0 0 8px #00e5c3",
+    animation: "navBarIn 0.2s ease",
   },
 };

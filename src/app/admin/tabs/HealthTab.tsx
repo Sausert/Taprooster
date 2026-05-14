@@ -22,8 +22,8 @@ function TapBarChart({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
                 {lb.taps_this_year || 0}x <span style={{ color:"#8b80b0", fontSize:10 }}>({goalPct}% v/doel)</span>
               </span>
             </div>
-            <div style={{ background:"#2e2a4a", borderRadius:6, height:8, overflow:"hidden" }}>
-              <div style={{ height:"100%", borderRadius:6, width:`${pct}%`, background: pct > 75 ? "linear-gradient(90deg,#00e5c3,#00b89c)" : pct > 40 ? "linear-gradient(90deg,#ffb547,#e09030)" : "linear-gradient(90deg,#5a4a9e,#3b2f6e)", transition:"width 0.6s ease" }} />
+            <div style={{ background:"#2e2a4a", borderRadius:4, height:6, overflow:"hidden" }}>
+              <div style={{ height:"100%", borderRadius:4, width:`${pct}%`, background: pct > 75 ? "linear-gradient(90deg,#00e5c3,#00b89c)" : pct > 40 ? "linear-gradient(90deg,#ffb547,#e09030)" : "linear-gradient(90deg,#5a4a9e,#3b2f6e)", transition:"width 0.6s ease" }} />
             </div>
           </div>
         );

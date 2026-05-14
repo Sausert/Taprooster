@@ -27,7 +27,7 @@ export function AdminShiftCard({ shift, source }: { shift: Shift & Record<string
   const accentColor = shift.type === "feestje" ? "#a896ff" : "#00e5c3";
 
   return (
-    <div style={{ background:"#1a1730", borderLeft:`3px solid ${accentColor}`, borderTop:"1px solid #2e2a4a", borderRight:"1px solid #2e2a4a", borderBottom:"1px solid #2e2a4a", borderRadius:16, padding:16, marginBottom:10 }}>
+    <div style={{ background:"#1a1730", borderLeft:`4px solid ${accentColor}`, borderTop:"1px solid #2e2a4a", borderRight:"1px solid #2e2a4a", borderBottom:"1px solid #2e2a4a", borderRadius:16, padding:16, marginBottom:10 }}>
       {isEditing ? (
         <div>
           <label className={styles.label}>Naam dienst</label>
@@ -53,7 +53,7 @@ export function AdminShiftCard({ shift, source }: { shift: Shift & Record<string
           <div style={{ flex:1 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4, flexWrap:"wrap" }}>
               <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff" }}>{shift.title}</p>
-              {shift.type === "feestje" && <span className={`${styles.badge} ${styles.badgeBlue}`}>Feestje</span>}
+              {shift.type === "feestje" && <span className={`${styles.badge} ${styles.badgeViolet}`}>Feestje</span>}
               {shift.role === "bonnenkassa" && <span className={`${styles.badge} ${styles.badgeViolet}`}>Kassa</span>}
             </div>
             <p style={{ fontSize:12, color:"#8b80b0" }}>{formatDate(shift.date)} · {shift.start_time}–{shift.end_time}</p>
