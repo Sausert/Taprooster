@@ -85,3 +85,21 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ data: { valid: true, expiresAt: invite.expires_at } });
 }
+
+// PATCH /api/invite — markeer token als gebruikt (aangeroepen na succesvolle registratie)
+export async function PATCH(req: NextRequest) {
+  let body: Record<string, unknown>;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "Ongeldige request body" }, { status: 400 }); }
+  const token = body.token as string | undefined;
+  if (!token) return NextResponse.json({ error: "Token required" }, { status: 400 });
+
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase
+    .from("invite_tokens")
+    .update({ status: "used", used_at: new Date().toISOString() })
+    .eq("token", token)
+    .eq("status", "active");
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ data: { marked: true } });
+}

@@ -131,10 +131,11 @@ export async function POST(req: NextRequest) {
   });
 
   if (suggestions.length > 0) {
-    await supabase.from("shift_assignments").upsert(
+    const { error: upsertError } = await supabase.from("shift_assignments").upsert(
       suggestions.map(s => ({ shift_id: s.shiftId, user_id: s.userId, status: "assigned" })),
       { onConflict: "shift_id,user_id" }
     );
+    if (upsertError) return NextResponse.json({ error: upsertError.message }, { status: 500 });
   }
 
   // Geef conceptrooster terug met assignments

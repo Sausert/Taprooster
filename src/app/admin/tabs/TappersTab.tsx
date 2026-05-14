@@ -57,12 +57,14 @@ export function TappersTab() {
     setSavingTapper(true);
     const saveData = { ...editForm, full_name: `${editForm.first_name} ${editForm.last_name}`.trim() };
     const res = await fetch(`/api/admin/tappers/${editingTapper.id}`, { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(saveData) });
-    if (res.ok) {
-      const data = await res.json();
+    const data = await res.json();
+    if (!res.ok) {
+      alert(`❌ Opslaan mislukt: ${data.error ?? "Probeer opnieuw."}`);
+    } else {
       setProfiles(ps => ps.map(p => p.id === editingTapper.id ? { ...p, ...data.data } : p));
+      setEditingTapper(null);
     }
     setSavingTapper(false);
-    setEditingTapper(null);
   }
 
   async function resetStats(tapperId: string, tapperName: string) {

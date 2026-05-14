@@ -54,9 +54,10 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
   }
 
   if (action === "decline") {
-    await supabase.from("shift_assignments")
+    const { error: declineError } = await supabase.from("shift_assignments")
       .update({ status: "declined", declined_at: new Date().toISOString() })
       .eq("shift_id", shiftId).eq("user_id", targetUserId);
+    if (declineError) return NextResponse.json({ error: declineError.message }, { status: 500 });
 
     const { data: shift } = await supabase.from("shifts")
       .select("*, assignments:shift_assignments(user_id, status)").eq("id", shiftId).single();

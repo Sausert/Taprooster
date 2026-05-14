@@ -33,7 +33,8 @@ export function EventsTab() {
       setSaved(true);
       setTimeout(() => setSaved(false), 4000);
     } else {
-      alert(`❌ ${data.error ?? "Aanmaken mislukt. Probeer opnieuw."}`);
+      const errMsg = typeof data.error === "string" ? data.error : "Aanmaken mislukt. Controleer de invoer en probeer opnieuw.";
+      alert(`❌ ${errMsg}`);
     }
     setSaving(false);
   }

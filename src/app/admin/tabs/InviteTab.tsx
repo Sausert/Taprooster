@@ -8,12 +8,19 @@ export function InviteTab() {
   const [inviteUrl, setInviteUrl] = useState("");
   const [qrCode, setQrCode] = useState("");
   const [copiedInvite, setCopiedInvite] = useState(false);
+  const [inviteError, setInviteError] = useState("");
 
   async function handleCreateInvite() {
     setInviteLoading(true);
+    setInviteError("");
     const res = await fetch("/api/invite", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email: inviteEmail || undefined }) });
     const data = await res.json();
-    if (data.data) { setInviteUrl(data.data.url); setQrCode(data.data.qrCode); }
+    if (!res.ok) {
+      setInviteError(data.error ?? "Genereren mislukt. Probeer opnieuw.");
+    } else if (data.data) {
+      setInviteUrl(data.data.url);
+      setQrCode(data.data.qrCode);
+    }
     setInviteLoading(false);
   }
 
@@ -26,6 +33,7 @@ export function InviteTab() {
         <button className={styles.btnPrimary} onClick={handleCreateInvite} disabled={inviteLoading}>
           {inviteLoading ? "Genereren..." : "🔗 Genereer uitnodigingslink"}
         </button>
+        {inviteError && <p style={{ fontSize:12, color:"#ff4f6d", marginTop:8 }}>{inviteError}</p>}
       </div>
 
       {inviteUrl && (

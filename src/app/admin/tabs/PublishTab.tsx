@@ -17,7 +17,8 @@ export function PublishTab() {
       setConceptShifts([]);
       setPublishMsg("");
     } else {
-      alert("❌ Publiceren mislukt.");
+      const errData = await res.json().catch(() => ({}));
+      alert(`❌ Publiceren mislukt: ${errData.error ?? "Probeer opnieuw."}`);
     }
     setPublishing(false);
   }
