@@ -96,11 +96,12 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
   const myStats = leaderboard.find(l => l.id === profile.id);
   const tapsPct = Math.min(100, Math.round(((myStats?.taps_this_year || 0) / Math.max(1, profile.preferred_frequency * 12)) * 100));
 
+  const unreadNotifCount = notifs.filter(n => !n.read).length;
   const TABS = [
     { id: "profiel", label: "👤 Profiel" },
     { id: "voorkeuren", label: "⚙️ Voorkeuren" },
     { id: "stats", label: "🏆 Stats" },
-    { id: "notif", label: `🔔 Notificaties${notifs.filter(n => !n.read).length > 0 ? ` (${notifs.filter(n => !n.read).length})` : ""}` },
+    { id: "notif", label: "🔔 Notificaties" },
   ];
 
   return (
@@ -118,7 +119,12 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
       {/* Tabs */}
       <div style={s.tabBar}>
         {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id as any)} style={{ ...s.tab, color: tab===t.id?"#00e5c3":"#8b80b0", borderBottom:`2px solid ${tab===t.id?"#00e5c3":"transparent"}`, fontWeight: tab===t.id ? 900 : 600 }}>{t.label}</button>
+          <button key={t.id} onClick={() => setTab(t.id as any)} style={{ ...s.tab, color: tab===t.id?"#00e5c3":"#8b80b0", borderBottom:`2px solid ${tab===t.id?"#00e5c3":"transparent"}`, fontWeight: tab===t.id ? 900 : 600, position:"relative" }}>
+            {t.label}
+            {t.id === "notif" && unreadNotifCount > 0 && (
+              <span style={{ position:"absolute", top:6, right:6, width:8, height:8, borderRadius:"50%", background:"#ff4f6d", display:"block" }} />
+            )}
+          </button>
         ))}
       </div>
 

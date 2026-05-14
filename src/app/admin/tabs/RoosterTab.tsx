@@ -83,6 +83,7 @@ export function RoosterTab({ onGoToPublish }: { onGoToPublish: () => void }) {
           {/* 2. Inklapbare generator sectie onderaan */}
           <div style={{ borderTop:"1px solid #2e2a4a", paddingTop:12, marginTop:4 }}>
             <button style={s.chevronBtn} onClick={() => setShowGenerator(v => !v)}>
+              <span style={{ fontSize:11, transition:"transform 0.2s", display:"inline-block", transform: showGenerator ? "rotate(90deg)" : "rotate(0deg)" }}>▶</span>
               Tapavonden genereren
             </button>
             {showGenerator && (

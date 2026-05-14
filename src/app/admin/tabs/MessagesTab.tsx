@@ -65,7 +65,7 @@ export function MessagesTab() {
           />
           {error && <p style={{ fontSize:12, color:"#ff4f6d", marginTop:4 }}>{error}</p>}
           <button className={styles.btnPrimary} type="submit" disabled={sending}>
-            {sending ? "Verzenden..." : "📢 Stuur bericht naar alle tappers"}
+            {sending ? "Verzenden..." : "📢 Bericht versturen"}
           </button>
           <p style={{ fontSize:11, color:"#8b80b0", marginTop:8 }}>
             Alle tappers ontvangen direct een in-app notificatie en e-mail.
