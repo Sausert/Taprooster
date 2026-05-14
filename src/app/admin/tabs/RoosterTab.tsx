@@ -9,8 +9,8 @@ const s: Record<string, React.CSSProperties> = {
   chevronBtn: { background:"none", border:"none", cursor:"pointer", color:"#8b80b0", padding:"4px 8px", display:"flex", alignItems:"center", gap:6, fontFamily:"'Exo 2', sans-serif", fontWeight:700, fontSize:13 } as React.CSSProperties,
 };
 
-export function RoosterTab({ onGoToPublish }: { onGoToPublish: () => void }) {
-  const { dateFrom, dateTo, setDateFrom, setDateTo, published, conceptShifts, setConceptShifts } = useAdminShell();
+export function RoosterTab() {
+  const { dateFrom, dateTo, setDateFrom, setDateTo, published, conceptShifts, setConceptShifts, setPublished } = useAdminShell();
   const [rosterView, setRosterView] = useState<"published" | "concept">("published");
   const [generating, setGenerating] = useState(false);
   const [showGenerator, setShowGenerator] = useState(conceptShifts.length === 0);
@@ -19,6 +19,11 @@ export function RoosterTab({ onGoToPublish }: { onGoToPublish: () => void }) {
     friday:    { enabled: true, start: "20:00", end: "00:00" },
     saturday:  { enabled: true, start: "20:00", end: "00:00" },
   });
+
+  // Inline publish state
+  const [publishMsg, setPublishMsg] = useState("");
+  const [publishing, setPublishing] = useState(false);
+  const [publishResult, setPublishResult] = useState<{ ok: boolean; text: string } | null>(null);
 
   async function handleGenerate() {
     if (!dateFrom || !dateTo) { alert("Selecteer een van- en tot-datum."); return; }
@@ -34,6 +39,27 @@ export function RoosterTab({ onGoToPublish }: { onGoToPublish: () => void }) {
       alert("Geen nieuwe diensten aangemaakt.");
     }
     setGenerating(false);
+  }
+
+  async function handlePublish() {
+    setPublishing(true);
+    setPublishResult(null);
+    const res = await fetch("/api/schedule/publish", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dateFrom, dateTo, message: publishMsg || undefined }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      const notified = data.data?.notified || 0;
+      setPublishResult({ ok: true, text: `🚀 Rooster gepubliceerd! ${notified} tapper${notified !== 1 ? "s" : ""} genotificeerd.` });
+      setPublished(ps => [...ps, ...conceptShifts.map(s => ({ ...s, status: "published" as const }))]);
+      setConceptShifts([]);
+      setPublishMsg("");
+    } else {
+      setPublishResult({ ok: false, text: `❌ Publiceren mislukt: ${data.error ?? "Probeer opnieuw."}` });
+    }
+    setPublishing(false);
   }
 
   return (
@@ -66,19 +92,39 @@ export function RoosterTab({ onGoToPublish }: { onGoToPublish: () => void }) {
             <>
               <p className={styles.sectionTitle}>Conceptrooster ({conceptShifts.length} diensten)</p>
               {conceptShifts.map(shift => <AdminShiftCard key={shift.id} shift={shift as any} source="concept" />)}
-              {(() => {
-                const allAssigned = conceptShifts.flatMap((s: any) => (s.assignments || [])).filter((a: any) => a.status !== "declined");
-                const uniqueTapperCount = new Set(allAssigned.map((a: any) => a.user_id)).size;
-                return (
-                  <div className={styles.card} style={{ borderColor:"#00e5c3", marginTop:8, marginBottom:16 }}>
-                    <p style={{ fontSize:13, color:"#8b80b0", marginBottom:4 }}>Tevreden? Zet het rooster live via "Publiceer".</p>
-                    {uniqueTapperCount > 0 && (
-                      <p style={{ fontSize:12, color:"#ffb547", marginBottom:12 }}>📬 {uniqueTapperCount} tapper{uniqueTapperCount !== 1 ? "s" : ""} {uniqueTapperCount !== 1 ? "ontvangen" : "ontvangt"} een e-mailnotificatie bij publiceren.</p>
-                    )}
-                    <button className={styles.btnPrimary} onClick={onGoToPublish}>🚀 Ga naar publiceren →</button>
+
+              {/* Inline publish form */}
+              <div className={styles.card} style={{ borderColor:"#00e5c3", marginTop:8, marginBottom:16 }}>
+                {publishResult && (
+                  <div style={{ background: publishResult.ok ? "rgba(0,229,195,0.08)" : "rgba(255,79,109,0.08)", border:`1px solid ${publishResult.ok ? "#00e5c3" : "#ff4f6d"}`, borderRadius:8, padding:"8px 12px", fontSize:13, color: publishResult.ok ? "#00e5c3" : "#ff4f6d", fontWeight:700, marginBottom:12 }}>
+                    {publishResult.text}
                   </div>
-                );
-              })()}
+                )}
+                {!publishResult?.ok && (
+                  <>
+                    <p style={{ fontSize:13, color:"#8b80b0", marginBottom:8 }}>Tevreden? Zet het rooster live.</p>
+                    {(() => {
+                      const allAssigned = conceptShifts.flatMap((s: any) => (s.assignments || [])).filter((a: any) => a.status !== "declined");
+                      const uniqueTapperCount = new Set(allAssigned.map((a: any) => a.user_id)).size;
+                      return uniqueTapperCount > 0 ? (
+                        <p style={{ fontSize:12, color:"#ffb547", marginBottom:8 }}>📬 {uniqueTapperCount} tapper{uniqueTapperCount !== 1 ? "s" : ""} {uniqueTapperCount !== 1 ? "ontvangen" : "ontvangt"} een e-mailnotificatie.</p>
+                      ) : null;
+                    })()}
+                    <label className={styles.label}>Optioneel bericht aan tappers</label>
+                    <textarea
+                      className={styles.input}
+                      rows={2}
+                      value={publishMsg}
+                      onChange={e => setPublishMsg(e.target.value)}
+                      placeholder="Bijv. Let op de nieuwe tijden..."
+                      style={{ resize:"none", marginBottom:10 }}
+                    />
+                    <button className={styles.btnPrimary} onClick={handlePublish} disabled={publishing}>
+                      {publishing ? "⏳ Publiceren..." : "🚀 Rooster publiceren"}
+                    </button>
+                  </>
+                )}
+              </div>
             </>
           )}
           {conceptShifts.length === 0 && !generating && (
@@ -99,8 +145,8 @@ export function RoosterTab({ onGoToPublish }: { onGoToPublish: () => void }) {
               <>
                 <div className={styles.card} style={{ marginTop:10 }}>
                   <div style={{ display:"flex", gap:10, marginBottom:14 }}>
-                    <div style={{ flex:1 }}><label className={styles.label}>Van</label><input type="date" className={styles.input} value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></div>
-                    <div style={{ flex:1 }}><label className={styles.label}>Tot en met</label><input type="date" className={styles.input} value={dateTo} onChange={e => setDateTo(e.target.value)} /></div>
+                    <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Van</label><input type="date" className={styles.input} value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></div>
+                    <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Tot en met</label><input type="date" className={styles.input} value={dateTo} onChange={e => setDateTo(e.target.value)} /></div>
                   </div>
                   <button className={styles.btnSecondary} onClick={handleGenerate} disabled={generating}>{generating ? "⏳ Genereren..." : "🤖 Genereer conceptrooster"}</button>
                 </div>
@@ -123,8 +169,8 @@ export function RoosterTab({ onGoToPublish }: { onGoToPublish: () => void }) {
                         </div>
                         {cfg.enabled && (
                           <div style={{ display:"flex", gap:8 }}>
-                            <div style={{ flex:1 }}><label className={styles.label} style={{ fontSize:10 }}>Start</label><input className={styles.input} style={{ marginBottom:0, padding:"8px 10px", fontSize:13 }} type="time" value={cfg.start} onChange={e => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], start: e.target.value } }))} /></div>
-                            <div style={{ flex:1 }}><label className={styles.label} style={{ fontSize:10 }}>Eind</label><input className={styles.input} style={{ marginBottom:0, padding:"8px 10px", fontSize:13 }} type="time" value={cfg.end} onChange={e => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], end: e.target.value } }))} /></div>
+                            <div style={{ flex:1, minWidth:0 }}><label className={styles.label} style={{ fontSize:10 }}>Start</label><input className={styles.input} style={{ marginBottom:0, padding:"8px 10px", fontSize:13 }} type="time" value={cfg.start} onChange={e => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], start: e.target.value } }))} /></div>
+                            <div style={{ flex:1, minWidth:0 }}><label className={styles.label} style={{ fontSize:10 }}>Eind</label><input className={styles.input} style={{ marginBottom:0, padding:"8px 10px", fontSize:13 }} type="time" value={cfg.end} onChange={e => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], end: e.target.value } }))} /></div>
                           </div>
                         )}
                       </div>

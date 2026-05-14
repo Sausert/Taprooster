@@ -7,15 +7,21 @@ const emptyShift = () => ({ role: "tapper" as "tapper" | "bonnenkassa", start_ti
 
 const s: Record<string, React.CSSProperties> = {
   iconBtn: { background:"#221f38", border:"1px solid #2e2a4a", borderRadius:8, width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:14, color:"#e8e0ff" },
-  savedBanner: { background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", borderRadius:10, padding:"10px 14px", fontSize:13, color:"#00e5c3", fontWeight:700, textAlign:"center" as const, marginBottom:12 },
 };
 
 export function EventsTab() {
-  const { setConceptShifts } = useAdminShell();
+  const { setConceptShifts, setPublished } = useAdminShell();
   const [eventForm, setEventForm] = useState({ title: "", date: "", shifts: [emptyShift()] });
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [eventError, setEventError] = useState("");
+
+  // State for the created feestje (pending publish)
+  const [createdFeestje, setCreatedFeestje] = useState<{ title: string; shiftIds: string[]; shifts: any[] } | null>(null);
+
+  // Inline publish state for the created feestje
+  const [publishMsg, setPublishMsg] = useState("");
+  const [publishing, setPublishing] = useState(false);
+  const [publishResult, setPublishResult] = useState<{ ok: boolean; text: string } | null>(null);
 
   function addShift() { setEventForm(f => ({ ...f, shifts: [...f.shifts, emptyShift()] })); }
   function removeShift(idx: number) { setEventForm(f => ({ ...f, shifts: f.shifts.filter((_, i) => i !== idx) })); }
@@ -28,11 +34,17 @@ export function EventsTab() {
     setSaving(true);
     const res = await fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(eventForm) });
     const data = await res.json();
-    if (res.ok) {
-      if (data.data?.shifts) setConceptShifts(cs => [...cs, ...data.data.shifts]);
+    if (res.ok && data.data?.shifts) {
+      const shifts = data.data.shifts;
+      setConceptShifts(cs => [...cs, ...shifts]);
+      setCreatedFeestje({
+        title: eventForm.title,
+        shiftIds: shifts.map((s: any) => s.id),
+        shifts,
+      });
       setEventForm({ title: "", date: "", shifts: [emptyShift()] });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 4000);
+      setPublishMsg("");
+      setPublishResult(null);
     } else {
       const errMsg = typeof data.error === "string" ? data.error : "Aanmaken mislukt. Controleer de invoer en probeer opnieuw.";
       setEventError(errMsg);
@@ -41,14 +53,71 @@ export function EventsTab() {
     setSaving(false);
   }
 
+  async function handlePublishFeestje() {
+    if (!createdFeestje) return;
+    setPublishing(true);
+    setPublishResult(null);
+    const res = await fetch("/api/schedule/publish", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ shiftIds: createdFeestje.shiftIds, message: publishMsg || undefined }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      const notified = data.data?.notified || 0;
+      setPublishResult({ ok: true, text: `🎉 Feestje gepubliceerd! ${notified} tapper${notified !== 1 ? "s" : ""} genotificeerd.` });
+      // Move the shifts from concept to published
+      setConceptShifts(cs => cs.filter(s => !createdFeestje.shiftIds.includes(s.id)));
+      setPublished(ps => [...ps, ...createdFeestje.shifts.map((s: any) => ({ ...s, status: "published" }))]);
+      setCreatedFeestje(null);
+    } else {
+      setPublishResult({ ok: false, text: `❌ Publiceren mislukt: ${data.error ?? "Probeer opnieuw."}` });
+    }
+    setPublishing(false);
+  }
+
   return (
     <>
-      {saved && <div style={s.savedBanner}>✅ Feestje aangemaakt! Je vindt het in het Conceptrooster.</div>}
       {eventError && (
         <div style={{ background:"rgba(255,79,109,0.08)", border:"1px solid #ff4f6d", borderRadius:10, padding:"10px 14px", fontSize:13, color:"#ff4f6d", fontWeight:700, marginBottom:12 }}>
           ❌ {eventError}
         </div>
       )}
+
+      {/* Created feestje — publish prompt */}
+      {createdFeestje && (
+        <div className={styles.card} style={{ borderColor:"#a896ff", marginBottom:16 }}>
+          <p style={{ fontSize:13, fontWeight:700, color:"#a896ff", marginBottom:4 }}>🎉 {createdFeestje.title} aangemaakt!</p>
+          <p style={{ fontSize:12, color:"#8b80b0", marginBottom:12 }}>
+            {createdFeestje.shiftIds.length} dienst{createdFeestje.shiftIds.length !== 1 ? "en" : ""} staan als concept klaar. Publiceer nu om alle tappers te notificeren.
+          </p>
+          {publishResult && (
+            <div style={{ background: publishResult.ok ? "rgba(0,229,195,0.08)" : "rgba(255,79,109,0.08)", border:`1px solid ${publishResult.ok ? "#00e5c3" : "#ff4f6d"}`, borderRadius:8, padding:"8px 12px", fontSize:13, color: publishResult.ok ? "#00e5c3" : "#ff4f6d", fontWeight:700, marginBottom:12 }}>
+              {publishResult.text}
+            </div>
+          )}
+          {!publishResult?.ok && (
+            <>
+              <label className={styles.label}>Optioneel bericht aan tappers</label>
+              <textarea
+                className={styles.input}
+                rows={2}
+                value={publishMsg}
+                onChange={e => setPublishMsg(e.target.value)}
+                placeholder="Bijv. Aanmelden kan tot vrijdag..."
+                style={{ resize:"none", marginBottom:10 }}
+              />
+              <button className={styles.btnPrimary} onClick={handlePublishFeestje} disabled={publishing}>
+                {publishing ? "⏳ Publiceren..." : "🚀 Feestje publiceren"}
+              </button>
+              <button className={styles.btnSecondary} style={{ marginTop:8 }} onClick={() => setCreatedFeestje(null)}>
+                Later publiceren
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
       <p className={styles.sectionTitle}>Feestje aanmaken</p>
       <form onSubmit={handleSubmit}>
         <div className={styles.card} style={{ marginBottom: 12 }}>
@@ -75,8 +144,8 @@ export function EventsTab() {
               ))}
             </div>
             <div style={{ display:"flex", gap:8, marginBottom:12 }}>
-              <div style={{ flex:1 }}><label className={styles.label}>Start</label><input className={styles.input} style={{ marginBottom:0 }} value={shift.start_time} onChange={e => updateShift(idx, "start_time", e.target.value)} required /></div>
-              <div style={{ flex:1 }}><label className={styles.label}>Eind</label><input className={styles.input} style={{ marginBottom:0 }} value={shift.end_time} onChange={e => updateShift(idx, "end_time", e.target.value)} required /></div>
+              <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Start</label><input className={styles.input} type="time" style={{ marginBottom:0 }} value={shift.start_time} onChange={e => updateShift(idx, "start_time", e.target.value)} required /></div>
+              <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Eind</label><input className={styles.input} type="time" style={{ marginBottom:0 }} value={shift.end_time} onChange={e => updateShift(idx, "end_time", e.target.value)} required /></div>
             </div>
             <label className={styles.label}>Aantal tappers</label>
             <div style={{ display:"flex", alignItems:"center", gap:12 }}>

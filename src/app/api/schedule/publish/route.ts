@@ -16,6 +16,47 @@ export async function POST(req: NextRequest) {
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Ongeldige request body" }, { status: 400 }); }
   const message = body.message as string | undefined;
+  const shiftIds = Array.isArray(body.shiftIds) ? (body.shiftIds as string[]) : null;
+
+  // Admin client bypasses RLS — needed for notification inserts
+  const adminClient = createAdminClient();
+  const { data: allProfiles } = await adminClient.from("profiles").select("id, email, full_name");
+
+  // ── Feestje-modus: publiceer alleen specifieke shifts ──
+  if (shiftIds && shiftIds.length > 0) {
+    const { error: publishError } = await supabase.from("shifts")
+      .update({ status: "published" })
+      .in("id", shiftIds);
+    if (publishError) return NextResponse.json({ error: publishError.message }, { status: 500 });
+
+    // Haal shift details op voor de notificatietekst
+    const { data: feestjeShifts } = await supabase.from("shifts").select("title, date").in("id", shiftIds).limit(1);
+    const firstShift = feestjeShifts?.[0];
+    const feestjeName = firstShift?.title?.replace(/ \(.*\)$/, "") || "feestje";
+    const feestjeDate = firstShift
+      ? new Date(firstShift.date).toLocaleDateString("nl-NL", { weekday:"long", day:"numeric", month:"long" })
+      : "";
+    const notifMessage = message || `${feestjeName}${feestjeDate ? ` op ${feestjeDate}` : ""}. Meld je aan via het rooster!`;
+
+    if (allProfiles && allProfiles.length > 0) {
+      await adminClient.from("notifications").insert(
+        allProfiles.map(p => ({
+          user_id: p.id,
+          type: "roster_published",
+          title: "🎉 Nieuw feestje gepubliceerd!",
+          message: notifMessage,
+          read: false,
+        }))
+      );
+      await Promise.allSettled(allProfiles.map(p =>
+        sendRosterPublishedEmail(p.email, p.full_name, notifMessage)
+      ));
+    }
+
+    return NextResponse.json({ data: { published: true, notified: allProfiles?.length || 0 } });
+  }
+
+  // ── Reguliere rooster-modus: publiceer op datum range ──
   const dateFrom = body.dateFrom as string | undefined;
   const dateTo = body.dateTo as string | undefined;
 
@@ -37,19 +78,12 @@ export async function POST(req: NextRequest) {
     rangeEnd = allDates[allDates.length - 1].end;
   }
 
-  // Publiceer alle concept shifts in de periode
   const { error: publishError } = await supabase.from("shifts")
     .update({ status: "published" })
     .eq("status", "concept")
     .gte("date", rangeStart).lte("date", rangeEnd);
 
   if (publishError) return NextResponse.json({ error: publishError.message }, { status: 500 });
-
-  // Admin client bypasses RLS — needed for notification inserts (no INSERT policy for regular users)
-  const adminClient = createAdminClient();
-
-  // Haal alle tappers op
-  const { data: allProfiles } = await adminClient.from("profiles").select("id, email, full_name");
 
   // Maak periode label van rangeStart/rangeEnd
   const startParts = rangeStart.split("-");
@@ -60,7 +94,6 @@ export async function POST(req: NextRequest) {
 
   const notifMessage = message || `Het rooster voor ${periodLabel} staat live. Bekijk jouw ingeplande diensten.`;
 
-  // Maak in-app notificaties voor ALLE tappers
   if (allProfiles && allProfiles.length > 0) {
     const { error: notifError } = await adminClient.from("notifications").insert(
       allProfiles.map(p => ({
@@ -74,14 +107,12 @@ export async function POST(req: NextRequest) {
     if (notifError) console.error("Notif insert error:", notifError.message);
   }
 
-  // Haal gepubliceerde shifts op voor de periode om per-persoon notificaties te sturen
   const { data: publishedShifts } = await supabase
     .from("shifts")
     .select("*, assignments:shift_assignments(user_id, profile:profiles(email, full_name))")
     .eq("status", "published")
     .gte("date", rangeStart).lte("date", rangeEnd);
 
-  // Stuur ook notificaties per dienst aan de ingeplande tappers
   if (publishedShifts && publishedShifts.length > 0) {
     const shiftNotifs: { user_id: string; type: string; title: string; message: string; shift_id: string; read: boolean }[] = [];
     for (const shift of publishedShifts) {
@@ -101,7 +132,6 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Verstuur e-mails (fire-and-forget)
   if (allProfiles) {
     await Promise.allSettled(allProfiles.map(p =>
       sendRosterPublishedEmail(p.email, p.full_name, message)

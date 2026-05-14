@@ -15,7 +15,7 @@ export default function AppleIcon() {
           justifyContent: "center",
           background: "#0f0d1a",
           borderRadius: 40,
-          border: "6px solid #00e5c3",
+          border: "12px solid #00e5c3",
           boxShadow: "0 0 40px rgba(0,229,195,0.25)",
           position: "relative",
           overflow: "hidden",

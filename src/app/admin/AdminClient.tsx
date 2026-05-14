@@ -7,19 +7,17 @@ import { HealthTab } from "./tabs/HealthTab";
 import { TappersTab } from "./tabs/TappersTab";
 import { RoosterTab } from "./tabs/RoosterTab";
 import { EventsTab } from "./tabs/EventsTab";
-import { PublishTab } from "./tabs/PublishTab";
 import { InviteTab } from "./tabs/InviteTab";
 import { MessagesTab } from "./tabs/MessagesTab";
 import { AddTapperModal } from "./components/AddTapperModal";
 
-type AdminTab = "health" | "tappers" | "rooster" | "events" | "publiceer" | "berichten" | "uitnodiging";
+type AdminTab = "health" | "tappers" | "rooster" | "events" | "berichten" | "uitnodiging";
 
 const TABS = [
   { id: "health",      icon: "📊", label: "Status" },
   { id: "tappers",     icon: "👥", label: "Tappers" },
   { id: "rooster",     icon: "📅", label: "Rooster" },
   { id: "events",      icon: "🎉", label: "Events" },
-  { id: "publiceer",   icon: "🚀", label: "Publiceer" },
   { id: "berichten",   icon: "📢", label: "Berichten" },
   { id: "uitnodiging", icon: "🔗", label: "Uitnodiging" },
 ] as const;
@@ -152,9 +150,8 @@ export default function AdminClient({
         <div style={{ flex:1, overflowY:"auto", padding:"16px 16px 40px" }}>
           {tab === "health"      && <HealthTab />}
           {tab === "tappers"     && <TappersTab />}
-          {tab === "rooster"     && <RoosterTab onGoToPublish={() => setTab("publiceer")} />}
+          {tab === "rooster"     && <RoosterTab />}
           {tab === "events"      && <EventsTab />}
-          {tab === "publiceer"   && <PublishTab />}
           {tab === "berichten"   && <MessagesTab />}
           {tab === "uitnodiging" && <InviteTab />}
         </div>
