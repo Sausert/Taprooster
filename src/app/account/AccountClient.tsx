@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Profile, Notification } from "@/types";
@@ -34,16 +34,6 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
     (profile as any).unavailable_months || []
   );
 
-  useEffect(() => {
-    if (tab === "notif") {
-      supabase.from("notifications").update({ read: true }).eq("user_id", profile.id).eq("read", false)
-        .then(() => {
-          setNotifs(n => n.map(x => ({ ...x, read: true })));
-          setUnreadCount(0);
-        });
-    }
-  }, [tab]);
-
   async function handleSavePersonal(e: React.FormEvent) {
     e.preventDefault();
     setSavingProfile(true);
@@ -71,6 +61,19 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
   async function handleLogout() {
     await supabase.auth.signOut();
     router.push("/login");
+  }
+
+  async function markRead(id: string) {
+    await supabase.from("notifications").update({ read: true }).eq("id", id);
+    setNotifs(n => n.map(x => x.id === id ? { ...x, read: true } : x));
+    const remaining = notifs.filter(n => !n.read && n.id !== id).length;
+    setUnreadCount(remaining);
+  }
+
+  async function markAllRead() {
+    await supabase.from("notifications").update({ read: true }).eq("user_id", profile.id).eq("read", false);
+    setNotifs(n => n.map(x => ({ ...x, read: true })));
+    setUnreadCount(0);
   }
 
   function toggleDay(day: string) {
@@ -175,10 +178,18 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
             <input type="range" min={1} max={20}
               value={profile.preferred_frequency}
               onChange={e => setProfile(p => ({ ...p, preferred_frequency: Number(e.target.value) }))}
-              style={{ width:"100%", accentColor:"#00e5c3" }} />
-            <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
-              <span style={{ fontSize:11, color:"#8b80b0" }}>1x per maand</span>
-              <span style={{ fontSize:11, color:"#8b80b0" }}>20x per maand</span>
+              style={{ width:"100%", accentColor:"#00e5c3" }}
+              list="freq-marks"
+            />
+            <datalist id="freq-marks">
+              {[1, 5, 10, 15, 20].map(v => <option key={v} value={v} />)}
+            </datalist>
+            <div style={{ display:"flex", justifyContent:"space-between", marginTop:2 }}>
+              <span style={{ fontSize:10, color:"#8b80b0" }}>1x</span>
+              <span style={{ fontSize:10, color:"#8b80b0" }}>5x</span>
+              <span style={{ fontSize:10, color:"#8b80b0" }}>10x</span>
+              <span style={{ fontSize:10, color:"#8b80b0" }}>15x</span>
+              <span style={{ fontSize:10, color:"#8b80b0" }}>20x</span>
             </div>
             <p style={{ fontSize:11, color:"#8b80b0", marginTop:8 }}>
               Dat zijn ongeveer {profile.preferred_frequency * 12}x per jaar
@@ -239,7 +250,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
           <div style={s.statGrid}>
             {[
               { val: myStats?.taps_this_year || 0, label: "Getapt" },
-              { val: `#${myStats?.rank || "-"}`, label: "Positie" },
+              { val: `#${myStats?.rank || "-"}`, label: `Positie · ${leaderboard.length} tappers` },
               { val: profile.preferred_frequency, label: "Doel/maand" },
               { val: Math.max(0, (profile.preferred_frequency * 12) - (myStats?.taps_this_year || 0)), label: "Nog nodig" },
             ].map(({ val, label }) => (
@@ -285,6 +296,13 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
       {/* ── NOTIFICATIES ── */}
       {tab === "notif" && (
         <>
+          {unreadNotifCount > 0 && (
+            <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:8 }}>
+              <button onClick={markAllRead} style={{ padding:"5px 14px", borderRadius:20, background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"'Exo 2',sans-serif" }}>
+                ✓ Alles gelezen
+              </button>
+            </div>
+          )}
           {notifs.length === 0 ? (
             <div style={{ textAlign:"center", padding:"40px 0", color:"#8b80b0" }}>Geen notificaties.</div>
           ) : (() => {
@@ -314,7 +332,13 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
                           {new Date(n.created_at).toLocaleTimeString("nl-NL", { hour:"2-digit", minute:"2-digit" })}
                         </p>
                       </div>
-                      {!n.read && <div style={{ width:8, height:8, borderRadius:"50%", background:"#ff4f6d", flexShrink:0, marginTop:4 }} />}
+                      {!n.read ? (
+                        <button onClick={() => markRead(n.id)} style={{ flexShrink:0, padding:"4px 10px", borderRadius:20, background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:11, fontWeight:700, cursor:"pointer", alignSelf:"flex-start", marginTop:2 }}>
+                          ✓
+                        </button>
+                      ) : (
+                        <span style={{ flexShrink:0, fontSize:14, color:"#2e2a4a", alignSelf:"flex-start", marginTop:2 }}>✓</span>
+                      )}
                     </div>
                   </div>
                 ))}

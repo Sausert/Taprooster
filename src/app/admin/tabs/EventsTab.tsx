@@ -15,6 +15,7 @@ export function EventsTab() {
   const [eventForm, setEventForm] = useState({ title: "", date: "", shifts: [emptyShift()] });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [eventError, setEventError] = useState("");
 
   function addShift() { setEventForm(f => ({ ...f, shifts: [...f.shifts, emptyShift()] })); }
   function removeShift(idx: number) { setEventForm(f => ({ ...f, shifts: f.shifts.filter((_, i) => i !== idx) })); }
@@ -34,7 +35,8 @@ export function EventsTab() {
       setTimeout(() => setSaved(false), 4000);
     } else {
       const errMsg = typeof data.error === "string" ? data.error : "Aanmaken mislukt. Controleer de invoer en probeer opnieuw.";
-      alert(`❌ ${errMsg}`);
+      setEventError(errMsg);
+      setTimeout(() => setEventError(""), 5000);
     }
     setSaving(false);
   }
@@ -42,6 +44,11 @@ export function EventsTab() {
   return (
     <>
       {saved && <div style={s.savedBanner}>✅ Feestje aangemaakt! Je vindt het in het Conceptrooster.</div>}
+      {eventError && (
+        <div style={{ background:"rgba(255,79,109,0.08)", border:"1px solid #ff4f6d", borderRadius:10, padding:"10px 14px", fontSize:13, color:"#ff4f6d", fontWeight:700, marginBottom:12 }}>
+          ❌ {eventError}
+        </div>
+      )}
       <p className={styles.sectionTitle}>Feestje aanmaken</p>
       <form onSubmit={handleSubmit}>
         <div className={styles.card} style={{ marginBottom: 12 }}>

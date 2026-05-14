@@ -66,10 +66,19 @@ export function RoosterTab({ onGoToPublish }: { onGoToPublish: () => void }) {
             <>
               <p className={styles.sectionTitle}>Conceptrooster ({conceptShifts.length} diensten)</p>
               {conceptShifts.map(shift => <AdminShiftCard key={shift.id} shift={shift as any} source="concept" />)}
-              <div className={styles.card} style={{ borderColor:"#00e5c3", marginTop:8, marginBottom:16 }}>
-                <p style={{ fontSize:13, color:"#8b80b0", marginBottom:12 }}>Tevreden? Zet het rooster live via "Publiceer".</p>
-                <button className={styles.btnPrimary} onClick={onGoToPublish}>🚀 Ga naar publiceren →</button>
-              </div>
+              {(() => {
+                const allAssigned = conceptShifts.flatMap((s: any) => (s.assignments || [])).filter((a: any) => a.status !== "declined");
+                const uniqueTapperCount = new Set(allAssigned.map((a: any) => a.user_id)).size;
+                return (
+                  <div className={styles.card} style={{ borderColor:"#00e5c3", marginTop:8, marginBottom:16 }}>
+                    <p style={{ fontSize:13, color:"#8b80b0", marginBottom:4 }}>Tevreden? Zet het rooster live via "Publiceer".</p>
+                    {uniqueTapperCount > 0 && (
+                      <p style={{ fontSize:12, color:"#ffb547", marginBottom:12 }}>📬 {uniqueTapperCount} tapper{uniqueTapperCount !== 1 ? "s" : ""} {uniqueTapperCount !== 1 ? "ontvangen" : "ontvangt"} een e-mailnotificatie bij publiceren.</p>
+                    )}
+                    <button className={styles.btnPrimary} onClick={onGoToPublish}>🚀 Ga naar publiceren →</button>
+                  </div>
+                );
+              })()}
             </>
           )}
           {conceptShifts.length === 0 && !generating && (

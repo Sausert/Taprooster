@@ -52,6 +52,7 @@ export default function RoosterClient({
   const [claimedIds, setClaimedIds] = useState<string[]>([]);
   const [declinedIds, setDeclinedIds] = useState<string[]>([]);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [listSearch, setListSearch] = useState("");
   const { loading, shiftAction } = useShiftApi();
 
   function prevMonth() {
@@ -217,7 +218,12 @@ export default function RoosterClient({
                   outline: today ? "2px solid rgba(0,229,195,0.4)" : "none", outlineOffset:2,
                 }}>
                   {day}
-                  {hasOpen && !myShiftIds.concat(claimedIds).some(id => dayShifts.some(s => s.id === id)) && (
+                  {dayShifts.length > 1 && (
+                    <span style={{ position:"absolute", bottom:1, left:"50%", transform:"translateX(-50%)", display:"flex", gap:2 }}>
+                      {dayShifts.slice(0, 3).map((_: any, i: number) => <span key={i} style={{ width:3, height:3, borderRadius:"50%", background:color, opacity:0.8, display:"block" }} />)}
+                    </span>
+                  )}
+                  {dayShifts.length === 1 && hasOpen && !myShiftIds.concat(claimedIds).some(id => dayShifts.some((s: any) => s.id === id)) && (
                     <span style={{ position:"absolute", top:1, right:2, fontSize:8, color }}>+</span>
                   )}
                 </div>
@@ -299,13 +305,31 @@ export default function RoosterClient({
       ) : (
         /* List view */
         <>
+          <input
+            style={{ boxSizing:"border-box" as const, width:"100%", background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:10, padding:"10px 14px", color:"#e8e0ff", fontFamily:"'Exo 2',sans-serif", fontSize:13, outline:"none", marginBottom:10, display:"block" }}
+            placeholder="🔍 Zoek op naam of datum..."
+            value={listSearch}
+            onChange={e => setListSearch(e.target.value)}
+          />
           {monthShifts.length === 0 ? (
             <div style={{ textAlign:"center", padding:"40px 20px", background:"#1a1730", borderRadius:16, border:"1px dashed #2e2a4a" }}>
               <div style={{ fontSize:40, marginBottom:12 }}>📅</div>
               <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff", margin:0 }}>Geen diensten</p>
               <p style={{ fontSize:12, color:"#8b80b0", marginTop:4 }}>Er zijn geen diensten gepland voor deze maand.</p>
             </div>
-          ) : monthShifts.map(shift => {
+          ) : monthShifts.filter(shift =>
+              !listSearch ||
+              shift.title?.toLowerCase().includes(listSearch.toLowerCase()) ||
+              shift.date?.includes(listSearch)
+            ).length === 0 ? (
+            <div style={{ textAlign:"center", padding:"32px 20px", background:"#1a1730", borderRadius:16, border:"1px dashed #2e2a4a" }}>
+              <p style={{ fontSize:13, color:"#8b80b0", margin:0 }}>Geen diensten gevonden voor "{listSearch}".</p>
+            </div>
+          ) : monthShifts.filter(shift =>
+              !listSearch ||
+              shift.title?.toLowerCase().includes(listSearch.toLowerCase()) ||
+              shift.date?.includes(listSearch)
+            ).map(shift => {
             const mine = isMyShift(shift);
             const isParty = shift.type === "feestje";
             const assignedBase = (shift.assignments || []).filter((a: any) => a.status !== "declined").length;

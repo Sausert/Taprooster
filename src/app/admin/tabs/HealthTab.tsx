@@ -44,6 +44,7 @@ const s: Record<string, React.CSSProperties> = {
 export function HealthTab() {
   const { shifts, conceptShifts, leaderboard, setAddTapperModal } = useAdminShell();
   const [statusMonthFilter, setStatusMonthFilter] = useState("");
+  const [healthFilter, setHealthFilter] = useState<"all" | "underfilled" | "unconfirmed">("all");
   const now = new Date();
 
   const allShifts = [...shifts, ...conceptShifts].sort((a, b) => a.date.localeCompare(b.date));
@@ -59,24 +60,48 @@ export function HealthTab() {
   return (
     <>
       <div style={s.statGrid}>
-        <div style={s.statCard}><p style={{ ...s.statVal, color:"#ff4f6d" }}>{underfilled.length}</p><p style={s.statLabel}>Onderbezet</p></div>
-        <div style={s.statCard}><p style={{ ...s.statVal, color:"#ffb547" }}>{unconfirmed.length}</p><p style={s.statLabel}>Onbevestigd</p></div>
+        <div
+          style={{ ...s.statCard, cursor:"pointer", borderColor: healthFilter === "underfilled" ? "#ff4f6d" : "#2e2a4a", transition:"border-color 0.15s" }}
+          onClick={() => setHealthFilter(f => f === "underfilled" ? "all" : "underfilled")}
+          title="Klik om te filteren op onderbezette diensten"
+        >
+          <p style={{ ...s.statVal, color:"#ff4f6d" }}>{underfilled.length}</p>
+          <p style={s.statLabel}>Onderbezet {healthFilter === "underfilled" && "▾"}</p>
+        </div>
+        <div
+          style={{ ...s.statCard, cursor:"pointer", borderColor: healthFilter === "unconfirmed" ? "#ffb547" : "#2e2a4a", transition:"border-color 0.15s" }}
+          onClick={() => setHealthFilter(f => f === "unconfirmed" ? "all" : "unconfirmed")}
+          title="Klik om te filteren op onbevestigde diensten"
+        >
+          <p style={{ ...s.statVal, color:"#ffb547" }}>{unconfirmed.length}</p>
+          <p style={s.statLabel}>Onbevestigd {healthFilter === "unconfirmed" && "▾"}</p>
+        </div>
       </div>
 
       <p className={styles.sectionTitle}>Dienststatus</p>
       <div style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap" }}>
         <button onClick={() => setStatusMonthFilter("")} style={{ padding:"5px 12px", borderRadius:20, fontSize:11, fontWeight:700, cursor:"pointer", background:statusMonthFilter === "" ? "rgba(0,229,195,0.1)" : "#221f38", color:statusMonthFilter === "" ? "#00e5c3" : "#8b80b0", border:`1px solid ${statusMonthFilter === "" ? "#00e5c3" : "#2e2a4a"}` }}>Alles</button>
-        {MONTH_NAMES_FULL.map((name, idx) => {
-          const key = `${now.getFullYear()}-${String(idx + 1).padStart(2, "0")}`;
-          if (!allShifts.some(s => s.date?.startsWith(key))) return null;
+        {[...new Set(allShifts.map(s => s.date?.slice(0, 7)).filter(Boolean))].sort().map(key => {
+          if (!key) return null;
+          const [year, month] = key.split("-");
+          const monthIdx = Number(month) - 1;
+          const yearSuffix = year !== String(now.getFullYear()) ? ` '${year.slice(2)}` : "";
           return (
-            <button key={idx} onClick={() => setStatusMonthFilter(key)} style={{ padding:"5px 12px", borderRadius:20, fontSize:11, fontWeight:700, cursor:"pointer", background:statusMonthFilter === key ? "rgba(0,229,195,0.1)" : "#221f38", color:statusMonthFilter === key ? "#00e5c3" : "#8b80b0", border:`1px solid ${statusMonthFilter === key ? "#00e5c3" : "#2e2a4a"}` }}>
-              {name.slice(0, 3)}
+            <button key={key} onClick={() => setStatusMonthFilter(key)} style={{ padding:"5px 12px", borderRadius:20, fontSize:11, fontWeight:700, cursor:"pointer", background:statusMonthFilter === key ? "rgba(0,229,195,0.1)" : "#221f38", color:statusMonthFilter === key ? "#00e5c3" : "#8b80b0", border:`1px solid ${statusMonthFilter === key ? "#00e5c3" : "#2e2a4a"}` }}>
+              {MONTH_NAMES_FULL[monthIdx].slice(0, 3)}{yearSuffix}
             </button>
           );
         })}
       </div>
 
+      {healthFilter !== "all" && (
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+          <span style={{ fontSize:12, color: healthFilter === "underfilled" ? "#ff4f6d" : "#ffb547" }}>
+            Filter: {healthFilter === "underfilled" ? "Onderbezet" : "Onbevestigd"}
+          </span>
+          <button onClick={() => setHealthFilter("all")} style={{ padding:"2px 10px", borderRadius:20, background:"none", border:`1px solid ${healthFilter === "underfilled" ? "#ff4f6d" : "#ffb547"}`, color: healthFilter === "underfilled" ? "#ff4f6d" : "#ffb547", fontSize:11, cursor:"pointer" }}>✕ Wis filter</button>
+        </div>
+      )}
       <div className={styles.card}>
         {allShifts.length === 0 && (
           <div style={{ textAlign:"center", padding:"32px 20px" }}>
@@ -85,7 +110,14 @@ export function HealthTab() {
             <p style={{ fontSize:12, color:"#8b80b0", marginTop:4 }}>Er zijn nog geen diensten aangemaakt.</p>
           </div>
         )}
-        {allShifts.filter(s => !statusMonthFilter || s.date?.startsWith(statusMonthFilter)).map(shift => {
+        {allShifts
+          .filter(s => {
+            if (healthFilter === "underfilled") return underfilled.includes(s);
+            if (healthFilter === "unconfirmed") return unconfirmed.includes(s);
+            return true;
+          })
+          .filter(s => !statusMonthFilter || s.date?.startsWith(statusMonthFilter))
+          .map(shift => {
           const isConcept = (shift as any).status === "concept";
           const color = getHealthColor(shift);
           const assigned = ((shift.assignments || []) as any[]).filter((a: any) => a.status !== "declined").length;

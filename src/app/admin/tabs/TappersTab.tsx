@@ -17,6 +17,9 @@ export function TappersTab() {
   const [editForm, setEditForm] = useState<Partial<Profile> & { first_name?: string; last_name?: string }>({});
   const [editTab, setEditTab] = useState<"info" | "voorkeuren">("info");
   const [savingTapper, setSavingTapper] = useState(false);
+  const [tapperSort, setTapperSort] = useState<"name" | "taps">("name");
+  const [confirmModal, setConfirmModal] = useState<{ title: string; message: string; onConfirm: () => Promise<void> } | null>(null);
+  const [feedbackMsg, setFeedbackMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
   function openEditTapper(p: Profile) {
     setEditingTapper(p);
@@ -59,7 +62,8 @@ export function TappersTab() {
     const res = await fetch(`/api/admin/tappers/${editingTapper.id}`, { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(saveData) });
     const data = await res.json();
     if (!res.ok) {
-      alert(`❌ Opslaan mislukt: ${data.error ?? "Probeer opnieuw."}`);
+      setFeedbackMsg({ text:`❌ Opslaan mislukt: ${data.error ?? "Probeer opnieuw."}`, ok:false });
+      setTimeout(() => setFeedbackMsg(null), 4000);
     } else {
       setProfiles(ps => ps.map(p => p.id === editingTapper.id ? { ...p, ...data.data } : p));
       setEditingTapper(null);
@@ -68,28 +72,70 @@ export function TappersTab() {
   }
 
   async function resetStats(tapperId: string, tapperName: string) {
-    if (!confirm(`Statistieken van ${tapperName} resetten?`)) return;
-    const res = await fetch(`/api/admin/tappers/${tapperId}/reset-stats`, { method:"POST" });
-    if (res.ok) alert(`✅ Statistieken van ${tapperName} gereset.`);
-    else { const d = await res.json().catch(() => ({})); alert(`❌ Resetten mislukt: ${d.error ?? "Probeer opnieuw."}`); }
+    setConfirmModal({
+      title: "Statistieken resetten",
+      message: `Weet je zeker dat je de statistieken van ${tapperName} wilt resetten?`,
+      onConfirm: async () => {
+        const res = await fetch(`/api/admin/tappers/${tapperId}/reset-stats`, { method:"POST" });
+        setConfirmModal(null);
+        if (res.ok) { setFeedbackMsg({ text:`✅ Statistieken van ${tapperName} gereset.`, ok:true }); setTimeout(() => setFeedbackMsg(null), 3000); }
+        else { const d = await res.json().catch(() => ({})); setFeedbackMsg({ text:`❌ Resetten mislukt: ${d.error ?? "Probeer opnieuw."}`, ok:false }); setTimeout(() => setFeedbackMsg(null), 4000); }
+      },
+    });
   }
 
   async function deleteTapper(tapperId: string, tapperName: string) {
-    if (!confirm(`Weet je zeker dat je ${tapperName} wilt verwijderen?`)) return;
-    const res = await fetch(`/api/admin/tappers/${tapperId}/delete`, { method:"DELETE" });
-    if (res.ok) { setProfiles(ps => ps.filter(p => p.id !== tapperId)); alert(`✅ ${tapperName} is verwijderd.`); }
-    else { const d = await res.json(); alert(`❌ ${d.error}`); }
+    setConfirmModal({
+      title: "Tapper verwijderen",
+      message: `Weet je zeker dat je ${tapperName} wilt verwijderen? Dit kan niet ongedaan worden gemaakt.`,
+      onConfirm: async () => {
+        const res = await fetch(`/api/admin/tappers/${tapperId}/delete`, { method:"DELETE" });
+        setConfirmModal(null);
+        if (res.ok) {
+          setProfiles(ps => ps.filter(p => p.id !== tapperId));
+          setEditingTapper(null);
+          setFeedbackMsg({ text:`✅ ${tapperName} is verwijderd.`, ok:true });
+          setTimeout(() => setFeedbackMsg(null), 3000);
+        } else {
+          const d = await res.json().catch(() => ({}));
+          setFeedbackMsg({ text:`❌ Verwijderen mislukt: ${d.error ?? "Probeer opnieuw."}`, ok:false });
+          setTimeout(() => setFeedbackMsg(null), 4000);
+        }
+      },
+    });
   }
 
-  const filteredProfiles = profiles.filter(p =>
-    p.full_name?.toLowerCase().includes(tapperSearch.toLowerCase()) ||
-    p.email?.toLowerCase().includes(tapperSearch.toLowerCase())
-  );
+  const filteredProfiles = profiles
+    .filter(p =>
+      p.full_name?.toLowerCase().includes(tapperSearch.toLowerCase()) ||
+      p.email?.toLowerCase().includes(tapperSearch.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (tapperSort === "taps") {
+        const aTaps = leaderboard.find(l => l.id === a.id)?.taps_this_year || 0;
+        const bTaps = leaderboard.find(l => l.id === b.id)?.taps_this_year || 0;
+        return bTaps - aTaps;
+      }
+      return (a.full_name || "").localeCompare(b.full_name || "");
+    });
 
   return (
     <>
+      {feedbackMsg && (
+        <div style={{ background: feedbackMsg.ok ? "rgba(0,229,195,0.08)" : "rgba(255,79,109,0.08)", border:`1px solid ${feedbackMsg.ok ? "#00e5c3" : "#ff4f6d"}`, borderRadius:10, padding:"10px 14px", fontSize:13, color: feedbackMsg.ok ? "#00e5c3" : "#ff4f6d", fontWeight:700, marginBottom:12 }}>
+          {feedbackMsg.text}
+        </div>
+      )}
       <p className={styles.sectionTitle}>Alle tappers ({profiles.length})</p>
       <input className={styles.input} placeholder="🔍 Zoek op naam of e-mail..." value={tapperSearch} onChange={e => setTapperSearch(e.target.value)} />
+      <div style={{ display:"flex", gap:6, marginBottom:10, alignItems:"center" }}>
+        <span style={{ fontSize:11, color:"#8b80b0" }}>Sorteer:</span>
+        {(["name","taps"] as const).map(opt => (
+          <button key={opt} onClick={() => setTapperSort(opt)} style={{ padding:"4px 12px", borderRadius:20, fontSize:11, fontWeight:700, cursor:"pointer", background: tapperSort === opt ? "rgba(0,229,195,0.1)" : "#221f38", color: tapperSort === opt ? "#00e5c3" : "#8b80b0", border:`1px solid ${tapperSort === opt ? "#00e5c3" : "#2e2a4a"}` }}>
+            {opt === "name" ? "Naam" : "Taps ↓"}
+          </button>
+        ))}
+      </div>
 
       {filteredProfiles.map(p => {
         const lb = leaderboard.find(l => l.id === p.id);
@@ -185,6 +231,18 @@ export function TappersTab() {
               <button className={styles.btnSecondary} style={{ color:"#ffb547", borderColor:"#ffb547", marginBottom:8 }} onClick={() => resetStats(editingTapper.id, editingTapper.full_name)}>🔄 Statistieken resetten</button>
               <button className={styles.btnSecondary} style={{ color:"#ff4f6d", borderColor:"#ff4f6d" }} onClick={() => deleteTapper(editingTapper.id, editingTapper.full_name)}>🗑 Tapper verwijderen</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {confirmModal && (
+        <div className={styles.overlay} onClick={() => setConfirmModal(null)}>
+          <div className={styles.sheet} onClick={e => e.stopPropagation()}>
+            <div className={styles.sheetHandle} />
+            <p className={styles.sheetTitle}>{confirmModal.title}</p>
+            <p style={{ fontSize:14, color:"#8b80b0", marginBottom:20, lineHeight:1.5 }}>{confirmModal.message}</p>
+            <button className={styles.btnPrimary} style={{ background:"linear-gradient(135deg,#ff4f6d,#cc3355)", boxShadow:"0 4px 20px rgba(255,79,109,0.3)" }} onClick={confirmModal.onConfirm}>Bevestigen</button>
+            <button className={styles.btnSecondary} style={{ marginTop:8 }} onClick={() => setConfirmModal(null)}>Annuleren</button>
           </div>
         </div>
       )}

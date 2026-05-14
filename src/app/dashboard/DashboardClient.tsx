@@ -59,6 +59,7 @@ export default function DashboardClient({
   const [confirmedIds, setConfirmedIds] = useState<string[]>([]);
   const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
   const { loading, error: fetchError, setError: setFetchError, shiftAction } = useShiftApi();
+  const [dismissedMessages, setDismissedMessages] = useState<Set<string>>(new Set());
 
   const firstName = profile?.full_name?.split(" ")[0] || "Tapper";
   const target = (profile?.preferred_frequency || 4) * 12;
@@ -209,20 +210,21 @@ export default function DashboardClient({
       )}
 
       {/* Admin berichten */}
-      {adminMessages.length > 0 && (
+      {adminMessages.filter(m => !dismissedMessages.has(m.id)).length > 0 && (
         <>
           <p className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px" }}>Berichten van admin</p>
-          {adminMessages.map((msg) => (
+          {adminMessages.filter(m => !dismissedMessages.has(m.id)).map((msg) => (
             <div key={msg.id} className={sharedStyles.card}>
               <div style={{ display:"flex", gap:10 }}>
                 <span style={{ fontSize:20 }}>📢</span>
-                <div>
+                <div style={{ flex:1 }}>
                   <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", marginBottom:4 }}>{msg.title}</p>
                   <p style={{ fontSize:12, color:"#8b80b0", lineHeight:1.5 }}>{msg.body}</p>
                   <p style={{ fontSize:11, color:"#8b80b0", marginTop:6 }}>
                     {new Date(msg.created_at).toLocaleString("nl-NL", { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" })}
                   </p>
                 </div>
+                <button onClick={() => setDismissedMessages(prev => new Set([...prev, msg.id]))} style={{ background:"none", border:"none", color:"#8b80b0", fontSize:16, cursor:"pointer", padding:"0 4px", flexShrink:0, alignSelf:"flex-start", lineHeight:1 }} title="Verbergen">✕</button>
               </div>
             </div>
           ))}
@@ -315,7 +317,7 @@ export default function DashboardClient({
       {claimable.length > 0 && (
         <>
           <p className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px" }}>Open diensten</p>
-          {claimable.map((shift) => {
+          {[...claimable].sort((a, b) => b.open_spots - a.open_spots).map((shift) => {
             const borderColor = openShiftBorderColor(shift);
             const bgGrad = openShiftBg(shift);
             const assignedNames = (shift as any).assignments?.filter((a: any) => a.status !== "declined") || [];
@@ -326,8 +328,8 @@ export default function DashboardClient({
                     <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff" }}>{shift.title}</p>
                     <p style={{ fontSize:13, fontWeight:700, color:"#e8e0ff", marginBottom:2, marginTop:2 }}>{formatDateShort(shift.date)}</p>
                     <p style={{ fontSize:12, color:"#8b80b0" }}>{formatTime(shift.start_time)}–{formatTime(shift.end_time)}</p>
-                    <p style={{ fontSize:11, color:"#8b80b0", marginTop:4 }}>
-                      {shift.open_spots} open plek{shift.open_spots > 1 ? "ken" : ""}
+                    <p style={{ fontSize:11, color: shift.open_spots >= shift.max_tappers ? "#ff4f6d" : shift.open_spots > 1 ? "#ffb547" : "#8b80b0", marginTop:4 }}>
+                      {shift.open_spots === shift.max_tappers ? "🔴 " : shift.open_spots > 1 ? "🟡 " : ""}{shift.open_spots} open plek{shift.open_spots > 1 ? "ken" : ""}
                     </p>
                     {assignedNames.length > 0 && (
                       <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginTop:6 }}>
