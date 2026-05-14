@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Profile, Notification } from "@/types";
@@ -33,6 +33,28 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
   const [unavailableMonths, setUnavailableMonths] = useState<number[]>(
     (profile as any).unavailable_months || []
   );
+
+  const [avatarUrl, setAvatarUrl] = useState<string>(profile.avatar_url || "");
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setAvatarError("Alleen afbeeldingen toegestaan."); return; }
+    if (file.size > 2 * 1024 * 1024) { setAvatarError("Maximaal 2 MB per afbeelding."); return; }
+    setAvatarUploading(true);
+    setAvatarError("");
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `${profile.id}/avatar.${ext}`;
+    const { error: uploadErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, contentType: file.type });
+    if (uploadErr) { setAvatarError("Upload mislukt. Probeer opnieuw."); setAvatarUploading(false); return; }
+    const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+    await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", profile.id);
+    setAvatarUrl(publicUrl);
+    setAvatarUploading(false);
+  }
 
   async function handleSavePersonal(e: React.FormEvent) {
     e.preventDefault();
@@ -111,10 +133,28 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
     <div style={s.page}>
       {/* Header */}
       <div style={s.profileHeader}>
-        <div style={s.avatar}>{(profile.full_name || "?").split(" ").map(n => n[0]).join("").slice(0,2)}</div>
-        <div>
+        <div
+          style={{ ...s.avatar, cursor:"pointer", position:"relative", overflow:"hidden", flexShrink:0 }}
+          onClick={() => fileInputRef.current?.click()}
+          title="Profielfoto wijzigen"
+        >
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="Profielfoto" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block", borderRadius:"inherit" }} />
+          ) : (
+            (profile.full_name || "?").split(" ").map(n => n[0]).join("").slice(0,2)
+          )}
+          {avatarUploading && (
+            <div style={{ position:"absolute", inset:0, background:"rgba(15,13,26,0.75)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <span style={{ fontSize:16, animation:"spin 1s linear infinite" }}>⏳</span>
+            </div>
+          )}
+          <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"3px 0", background:"rgba(0,229,195,0.18)", fontSize:9, color:"#00e5c3", textAlign:"center", fontWeight:700, letterSpacing:1 }}>📷</div>
+        </div>
+        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display:"none" }} />
+        <div style={{ flex:1, minWidth:0 }}>
           <p style={s.name}>{profile.full_name}</p>
           <p style={s.emailTxt}>{profile.email}</p>
+          {avatarError && <p style={{ fontSize:11, color:"#ff4f6d", marginTop:4 }}>{avatarError}</p>}
           {profile.role === "admin" && <span className={`${sharedStyles.badge} ${sharedStyles.badgeMint}`} style={{ marginTop:6, display:"inline-block" }}>⚡ Admin</span>}
         </div>
       </div>

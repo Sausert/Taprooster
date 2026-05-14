@@ -317,10 +317,11 @@ export default function DashboardClient({
       {claimable.length > 0 && (
         <>
           <p className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px" }}>Open diensten</p>
-          {[...claimable].sort((a, b) => b.open_spots - a.open_spots).map((shift) => {
+          {claimable.map((shift) => {
             const borderColor = openShiftBorderColor(shift);
             const bgGrad = openShiftBg(shift);
             const assignedNames = (shift as any).assignments?.filter((a: any) => a.status !== "declined") || [];
+            const isFull = assignedNames.length >= shift.max_tappers;
             return (
               <div key={shift.id} className={sharedStyles.card} style={{ borderLeft:`4px solid ${borderColor}`, background:`linear-gradient(90deg, ${bgGrad} 0%, #1a1730 40%)` }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
@@ -328,8 +329,8 @@ export default function DashboardClient({
                     <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff" }}>{shift.title}</p>
                     <p style={{ fontSize:13, fontWeight:700, color:"#e8e0ff", marginBottom:2, marginTop:2 }}>{formatDateShort(shift.date)}</p>
                     <p style={{ fontSize:12, color:"#8b80b0" }}>{formatTime(shift.start_time)}–{formatTime(shift.end_time)}</p>
-                    <p style={{ fontSize:11, color: shift.open_spots >= shift.max_tappers ? "#ff4f6d" : shift.open_spots > 1 ? "#ffb547" : "#8b80b0", marginTop:4 }}>
-                      {shift.open_spots === shift.max_tappers ? "🔴 " : shift.open_spots > 1 ? "🟡 " : ""}{shift.open_spots} open plek{shift.open_spots > 1 ? "ken" : ""}
+                    <p style={{ fontSize:11, color:"#8b80b0", marginTop:4 }}>
+                      {shift.open_spots} open plek{shift.open_spots > 1 ? "ken" : ""}
                     </p>
                     {assignedNames.length > 0 && (
                       <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginTop:6 }}>
@@ -341,9 +342,13 @@ export default function DashboardClient({
                       </div>
                     )}
                   </div>
-                  <button style={{ ...s.claimBtn, opacity: loading===shift.id ? 0.5 : 1 }} disabled={loading===shift.id} onClick={() => setClaimModal(shift)}>
-                    {loading===shift.id ? "..." : "Inschrijven"}
-                  </button>
+                  {isFull ? (
+                    <span style={{ fontSize:11, fontWeight:700, padding:"5px 10px", borderRadius:12, background:"rgba(0,229,195,0.08)", border:"1px solid #2e2a4a", color:"#8b80b0" }}>Vol</span>
+                  ) : (
+                    <button style={{ ...s.claimBtn, opacity: loading===shift.id ? 0.5 : 1 }} disabled={loading===shift.id} onClick={() => setClaimModal(shift)}>
+                      {loading===shift.id ? "..." : "Inschrijven"}
+                    </button>
+                  )}
                 </div>
               </div>
             );

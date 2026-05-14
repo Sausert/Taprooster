@@ -29,6 +29,7 @@ export interface Profile {
   language: "nl" | "en";
   phone?: string;
   unavailable_months?: number[];
+  avatar_url?: string;
   created_at: string;
   updated_at: string;
 }

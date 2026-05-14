@@ -71,19 +71,6 @@ export function TappersTab() {
     setSavingTapper(false);
   }
 
-  async function resetStats(tapperId: string, tapperName: string) {
-    setConfirmModal({
-      title: "Statistieken resetten",
-      message: `Weet je zeker dat je de statistieken van ${tapperName} wilt resetten?`,
-      onConfirm: async () => {
-        const res = await fetch(`/api/admin/tappers/${tapperId}/reset-stats`, { method:"POST" });
-        setConfirmModal(null);
-        if (res.ok) { setFeedbackMsg({ text:`✅ Statistieken van ${tapperName} gereset.`, ok:true }); setTimeout(() => setFeedbackMsg(null), 3000); }
-        else { const d = await res.json().catch(() => ({})); setFeedbackMsg({ text:`❌ Resetten mislukt: ${d.error ?? "Probeer opnieuw."}`, ok:false }); setTimeout(() => setFeedbackMsg(null), 4000); }
-      },
-    });
-  }
-
   async function deleteTapper(tapperId: string, tapperName: string) {
     setConfirmModal({
       title: "Tapper verwijderen",
@@ -228,7 +215,6 @@ export function TappersTab() {
             <button className={styles.btnSecondary} style={{ marginTop:8 }} onClick={() => setEditingTapper(null)}>Annuleren</button>
             <div style={{ borderTop:"1px solid #2e2a4a", paddingTop:16, marginTop:16 }}>
               <p style={{ fontSize:11, fontWeight:700, letterSpacing:2, color:"#ff4f6d", textTransform:"uppercase", marginBottom:10 }}>⚠️ Danger zone</p>
-              <button className={styles.btnSecondary} style={{ color:"#ffb547", borderColor:"#ffb547", marginBottom:8 }} onClick={() => resetStats(editingTapper.id, editingTapper.full_name)}>🔄 Statistieken resetten</button>
               <button className={styles.btnSecondary} style={{ color:"#ff4f6d", borderColor:"#ff4f6d" }} onClick={() => deleteTapper(editingTapper.id, editingTapper.full_name)}>🗑 Tapper verwijderen</button>
             </div>
           </div>
