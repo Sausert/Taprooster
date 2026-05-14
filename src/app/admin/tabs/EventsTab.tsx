@@ -129,11 +129,13 @@ export function EventsTab() {
 
         <p className={styles.sectionTitle}>Diensten</p>
         {eventForm.shifts.map((shift, idx) => (
-          <div key={idx} className={styles.card} style={{ marginBottom: 10 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-              <p style={{ fontSize:13, fontWeight:700, color:"#e8e0ff", margin:0 }}>Dienst {idx + 1}</p>
+          <div key={idx} className={styles.card} style={{ marginBottom: 10, borderLeft: `4px solid ${shift.role === "bonnenkassa" ? "#ffb547" : "#00e5c3"}` }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ fontSize:11, fontWeight:700, color: shift.role === "bonnenkassa" ? "#ffb547" : "#00e5c3", textTransform:"uppercase", letterSpacing:"0.08em" }}>Dienst {idx + 1}</span>
+              </div>
               {eventForm.shifts.length > 1 && (
-                <button type="button" style={{ ...s.iconBtn, color:"#ff4f6d" }} onClick={() => removeShift(idx)}>🗑</button>
+                <button type="button" style={{ ...s.iconBtn, color:"#ff4f6d", border:"1px solid rgba(255,79,109,0.3)" }} onClick={() => removeShift(idx)}>🗑</button>
               )}
             </div>
             <div style={{ display:"flex", gap:8, marginBottom:12 }}>
@@ -147,10 +149,13 @@ export function EventsTab() {
               <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Start</label><input className={styles.input} type="time" style={{ marginBottom:0 }} value={shift.start_time} onChange={e => updateShift(idx, "start_time", e.target.value)} required /></div>
               <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Eind</label><input className={styles.input} type="time" style={{ marginBottom:0 }} value={shift.end_time} onChange={e => updateShift(idx, "end_time", e.target.value)} required /></div>
             </div>
-            <label className={styles.label}>Aantal tappers</label>
+            <label className={styles.label}>Aantal personen</label>
             <div style={{ display:"flex", alignItems:"center", gap:12 }}>
               <button type="button" style={{ ...s.iconBtn, fontSize:18 }} onClick={() => updateShift(idx, "max_tappers", Math.max(1, shift.max_tappers - 1))}>−</button>
-              <span style={{ fontFamily:"monospace", fontSize:22, color:"#00e5c3", minWidth:32, textAlign:"center" }}>{shift.max_tappers}</span>
+              <div style={{ textAlign:"center", minWidth:40 }}>
+                <span style={{ fontFamily:"monospace", fontSize:22, color:"#00e5c3", display:"block", lineHeight:1 }}>{shift.max_tappers}</span>
+                <span style={{ fontSize:10, color:"#8b80b0", textTransform:"uppercase", letterSpacing:"0.08em" }}>personen</span>
+              </div>
               <button type="button" style={{ ...s.iconBtn, fontSize:18 }} onClick={() => updateShift(idx, "max_tappers", Math.min(20, shift.max_tappers + 1))}>+</button>
             </div>
           </div>

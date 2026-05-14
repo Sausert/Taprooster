@@ -119,7 +119,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
   }
 
   const myStats = leaderboard.find(l => l.id === profile.id);
-  const tapsPct = Math.min(100, Math.round(((myStats?.taps_this_year || 0) / Math.max(1, profile.preferred_frequency * 12)) * 100));
+  const tapsPct = Math.min(100, Math.round(((myStats?.taps_this_year || 0) / Math.max(1, profile.preferred_frequency * 4)) * 100));
 
   const unreadNotifCount = notifs.filter(n => !n.read).length;
   const TABS = [
@@ -193,13 +193,6 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
             </div>
           </form>
 
-          <p className={sharedStyles.sectionTitle}>Beveiliging</p>
-          <div className={sharedStyles.card}>
-            <button className={sharedStyles.btnSecondary} onClick={() => router.push("/reset-password")}>🔑 Wachtwoord wijzigen</button>
-            <p style={{fontSize:11, color:"#8b80b0", marginTop:6, marginBottom:0}}>
-              Je wordt doorgestuurd naar een externe beveiligingspagina.
-            </p>
-          </div>
           <button className={sharedStyles.btnSecondary} style={{ marginTop:12, color:"#ff4f6d", borderColor:"#ff4f6d" }} onClick={handleLogout}>Uitloggen</button>
         </>
       )}
@@ -212,27 +205,27 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
           <p className={sharedStyles.sectionTitle}>Tapfrequentie</p>
           <div className={sharedStyles.card}>
             <div style={{ display:"flex", justifyContent:"space-between", marginBottom:10 }}>
-              <span style={{ fontSize:14, color:"#e8e0ff" }}>Gewenste diensten per maand</span>
+              <span style={{ fontSize:14, color:"#e8e0ff" }}>Gewenste diensten per kwartaal</span>
               <span style={{ fontFamily:"monospace", fontSize:22, color:"#00e5c3" }}>{profile.preferred_frequency}x</span>
             </div>
-            <input type="range" min={1} max={20}
+            <input type="range" min={1} max={12}
               value={profile.preferred_frequency}
               onChange={e => setProfile(p => ({ ...p, preferred_frequency: Number(e.target.value) }))}
               style={{ width:"100%", accentColor:"#00e5c3" }}
               list="freq-marks"
             />
             <datalist id="freq-marks">
-              {[1, 5, 10, 15, 20].map(v => <option key={v} value={v} />)}
+              {[1, 3, 6, 9, 12].map(v => <option key={v} value={v} />)}
             </datalist>
             <div style={{ display:"flex", justifyContent:"space-between", marginTop:2 }}>
               <span style={{ fontSize:10, color:"#8b80b0" }}>1x</span>
-              <span style={{ fontSize:10, color:"#8b80b0" }}>5x</span>
-              <span style={{ fontSize:10, color:"#8b80b0" }}>10x</span>
-              <span style={{ fontSize:10, color:"#8b80b0" }}>15x</span>
-              <span style={{ fontSize:10, color:"#8b80b0" }}>20x</span>
+              <span style={{ fontSize:10, color:"#8b80b0" }}>3x</span>
+              <span style={{ fontSize:10, color:"#8b80b0" }}>6x</span>
+              <span style={{ fontSize:10, color:"#8b80b0" }}>9x</span>
+              <span style={{ fontSize:10, color:"#8b80b0" }}>12x</span>
             </div>
             <p style={{ fontSize:11, color:"#8b80b0", marginTop:8 }}>
-              Dat zijn ongeveer {profile.preferred_frequency * 12}x per jaar
+              Dat zijn ongeveer {profile.preferred_frequency * 4}x per jaar
             </p>
           </div>
 
@@ -291,8 +284,8 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
             {[
               { val: myStats?.taps_this_year || 0, label: "Getapt" },
               { val: `#${myStats?.rank || "-"}`, label: `Positie · ${leaderboard.length} tappers` },
-              { val: profile.preferred_frequency, label: "Doel/maand" },
-              { val: Math.max(0, (profile.preferred_frequency * 12) - (myStats?.taps_this_year || 0)), label: "Nog nodig" },
+              { val: profile.preferred_frequency, label: "Doel/kwartaal" },
+              { val: Math.max(0, (profile.preferred_frequency * 4) - (myStats?.taps_this_year || 0)), label: "Nog nodig" },
             ].map(({ val, label }) => (
               <div key={label} style={s.statCard}>
                 <p style={s.statVal}>{val}</p>
@@ -303,7 +296,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
 
           <div className={sharedStyles.card}>
             <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
-              <span style={{ fontSize:12, color:"#8b80b0" }}>Voortgang dit jaar ({myStats?.taps_this_year||0}/{profile.preferred_frequency*12})</span>
+              <span style={{ fontSize:12, color:"#8b80b0" }}>Voortgang dit jaar ({myStats?.taps_this_year||0}/{profile.preferred_frequency*4})</span>
               <span style={{ fontFamily:"monospace", fontSize:12, color:"#00e5c3" }}>{tapsPct}%</span>
             </div>
             <div style={s.progressWrap}><div style={{ ...s.progressFill, width:`${tapsPct}%` }} /></div>
@@ -323,7 +316,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
                 <div style={{ flex:1 }}>
                   <p style={{ fontSize:13, fontWeight:600, color:lb.id===profile.id?"#00e5c3":"#e8e0ff" }}>{lb.full_name}{lb.id===profile.id?" (jij)":""}</p>
                   <div style={{ ...s.progressWrap, margin:"4px 0 0", height:4 }}>
-                    <div style={{ ...s.progressFill, width:`${Math.min(100,Math.round((lb.taps_this_year/Math.max(1,lb.target*12))*100))}%`, height:"100%" }} />
+                    <div style={{ ...s.progressFill, width:`${Math.min(100,Math.round((lb.taps_this_year/Math.max(1,lb.target*4))*100))}%`, height:"100%" }} />
                   </div>
                 </div>
                 <span style={{ fontFamily:"monospace", fontSize:14, color:"#00e5c3" }}>{lb.taps_this_year}x</span>

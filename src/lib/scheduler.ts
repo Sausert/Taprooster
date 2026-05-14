@@ -55,6 +55,25 @@ function countUserShiftsInMonth(
   }).length;
 }
 
+function getQuarterKey(dateStr: string): string {
+  const d = parseLocalDate(dateStr);
+  const q = Math.floor(d.getMonth() / 3) + 1;
+  return `${d.getFullYear()}-Q${q}`;
+}
+
+function countUserShiftsInQuarter(
+  userId: string,
+  quarterKey: string,
+  assignments: ShiftAssignment[],
+  allShifts: Shift[]
+): number {
+  return assignments.filter(a => {
+    if (a.user_id !== userId || a.status === "declined") return false;
+    const shift = allShifts.find(s => s.id === a.shift_id);
+    return shift && getQuarterKey(shift.date) === quarterKey;
+  }).length;
+}
+
 function countUserShiftsThisYear(
   userId: string,
   assignments: ShiftAssignment[],
@@ -117,11 +136,11 @@ function isUserEligible(
     return { eligible: false, reason: "Geen bonnenkassa voorkeur" };
   }
 
-  // 5. Monthly frequency limit — HARD CAP (most important!)
-  const monthKey = getMonthKey(shift.date);
-  const shiftsThisMonth = countUserShiftsInMonth(user.id, monthKey, allAssignments, allShifts);
-  if (shiftsThisMonth >= user.preferred_frequency) {
-    return { eligible: false, reason: `Maandlimiet bereikt: ${shiftsThisMonth}/${user.preferred_frequency}` };
+  // 5. Quarterly frequency limit — HARD CAP (most important!)
+  const quarterKey = getQuarterKey(shift.date);
+  const shiftsThisQuarter = countUserShiftsInQuarter(user.id, quarterKey, allAssignments, allShifts);
+  if (shiftsThisQuarter >= user.preferred_frequency) {
+    return { eligible: false, reason: `Kwartaallimiet bereikt: ${shiftsThisQuarter}/${user.preferred_frequency}` };
   }
 
   // 6. No double-booking on same day
@@ -147,9 +166,9 @@ function scoreUser(
   const weekNum = getWeekNumber(shift.date);
 
   // Fairness: users with more remaining quota get priority
-  const monthKey = getMonthKey(shift.date);
-  const shiftsThisMonth = countUserShiftsInMonth(user.id, monthKey, allAssignments, allShifts);
-  const remaining = user.preferred_frequency - shiftsThisMonth;
+  const quarterKey = getQuarterKey(shift.date);
+  const shiftsThisQuarter = countUserShiftsInQuarter(user.id, quarterKey, allAssignments, allShifts);
+  const remaining = user.preferred_frequency - shiftsThisQuarter;
   score += remaining * 15; // More remaining = higher priority
 
   // Fairness: users who have tapped less this year get priority

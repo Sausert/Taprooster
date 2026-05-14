@@ -3,22 +3,62 @@ import { useState } from "react";
 import { useAdminShell } from "../AdminShellContext";
 import { AdminShiftCard } from "../components/AdminShiftCard";
 import { AddTapperModal } from "../components/AddTapperModal";
+import { parseLocalDate } from "@/lib/dates";
 import styles from "@/styles/shared.module.css";
 
+type DayKey = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
+type DayConfig = { enabled: boolean; start: string; end: string };
+
+const WEEK_DAYS: { key: DayKey; label: string }[] = [
+  { key: "monday",    label: "Maandag" },
+  { key: "tuesday",   label: "Dinsdag" },
+  { key: "wednesday", label: "Woensdag" },
+  { key: "thursday",  label: "Donderdag" },
+  { key: "friday",    label: "Vrijdag" },
+  { key: "saturday",  label: "Zaterdag" },
+  { key: "sunday",    label: "Zondag" },
+];
+
+const MONTH_NAMES_FULL = ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December"];
+
 const s: Record<string, React.CSSProperties> = {
-  chevronBtn: { background:"none", border:"none", cursor:"pointer", color:"#8b80b0", padding:"4px 8px", display:"flex", alignItems:"center", gap:6, fontFamily:"'Exo 2', sans-serif", fontWeight:700, fontSize:13 } as React.CSSProperties,
+  monthNavBtn: { background:"#221f38", border:"1px solid #2e2a4a", borderRadius:8, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:22, color:"#b8b0d4", fontWeight:700, lineHeight:1 },
 };
 
 export function RoosterTab() {
   const { dateFrom, dateTo, setDateFrom, setDateTo, published, conceptShifts, setConceptShifts, setPublished } = useAdminShell();
   const [rosterView, setRosterView] = useState<"published" | "concept">("published");
   const [generating, setGenerating] = useState(false);
-  const [showGenerator, setShowGenerator] = useState(conceptShifts.length === 0);
-  const [defaultShifts, setDefaultShifts] = useState({
-    wednesday: { enabled: true, start: "19:00", end: "23:00" },
-    friday:    { enabled: true, start: "20:00", end: "00:00" },
-    saturday:  { enabled: true, start: "20:00", end: "00:00" },
+  const [defaultShifts, setDefaultShifts] = useState<Record<DayKey, DayConfig>>({
+    monday:    { enabled: false, start: "19:00", end: "23:00" },
+    tuesday:   { enabled: false, start: "19:00", end: "23:00" },
+    wednesday: { enabled: true,  start: "19:00", end: "23:00" },
+    thursday:  { enabled: false, start: "19:00", end: "23:00" },
+    friday:    { enabled: true,  start: "20:00", end: "00:00" },
+    saturday:  { enabled: true,  start: "20:00", end: "00:00" },
+    sunday:    { enabled: false, start: "20:00", end: "00:00" },
   });
+
+  // Published month navigation
+  const now = new Date();
+  const [pubMonth, setPubMonth] = useState(now.getMonth());
+  const [pubYear, setPubYear] = useState(now.getFullYear());
+
+  const filteredPublished = published.filter(shift => {
+    try {
+      const d = parseLocalDate((shift as any).date);
+      return d.getMonth() === pubMonth && d.getFullYear() === pubYear;
+    } catch { return false; }
+  });
+
+  function prevPubMonth() {
+    if (pubMonth === 0) { setPubMonth(11); setPubYear(y => y - 1); }
+    else setPubMonth(m => m - 1);
+  }
+  function nextPubMonth() {
+    if (pubMonth === 11) { setPubMonth(0); setPubYear(y => y + 1); }
+    else setPubMonth(m => m + 1);
+  }
 
   // Inline publish state
   const [publishMsg, setPublishMsg] = useState("");
@@ -34,7 +74,6 @@ export function RoosterTab() {
     if (data.error) { alert("❌ " + data.error); setGenerating(false); return; }
     if (data.data?.shifts) {
       setConceptShifts(data.data.shifts);
-      setShowGenerator(false);
     } else {
       alert("Geen nieuwe diensten aangemaakt.");
     }
@@ -74,26 +113,32 @@ export function RoosterTab() {
 
       {rosterView === "published" && (
         <>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+            <button style={s.monthNavBtn} onClick={prevPubMonth}>‹</button>
+            <span style={{ fontSize:15, fontWeight:700, color:"#f0eeff", fontFamily:"'Exo 2', sans-serif" }}>
+              {MONTH_NAMES_FULL[pubMonth]} {pubYear}
+            </span>
+            <button style={s.monthNavBtn} onClick={nextPubMonth}>›</button>
+          </div>
           <p className={styles.sectionTitle}>Gepubliceerd rooster</p>
-          {published.length === 0 && (
+          {filteredPublished.length === 0 && (
             <div style={{ textAlign:"center", padding:"32px 20px" }}>
               <div style={{ fontSize:40, marginBottom:8 }}>📅</div>
-              <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", margin:0 }}>Geen diensten</p>
+              <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", margin:0 }}>Geen diensten in {MONTH_NAMES_FULL[pubMonth]}</p>
+              <p style={{ fontSize:12, color:"#8b80b0", marginTop:4 }}>Blader naar een andere maand of publiceer een conceptrooster.</p>
             </div>
           )}
-          {published.map(shift => <AdminShiftCard key={shift.id} shift={shift as any} source="published" />)}
+          {filteredPublished.map(shift => <AdminShiftCard key={shift.id} shift={shift as any} source="published" />)}
         </>
       )}
 
       {rosterView === "concept" && (
         <>
-          {/* 1. Concept shifts lijst bovenaan */}
           {conceptShifts.length > 0 && (
             <>
               <p className={styles.sectionTitle}>Conceptrooster ({conceptShifts.length} diensten)</p>
               {conceptShifts.map(shift => <AdminShiftCard key={shift.id} shift={shift as any} source="concept" />)}
 
-              {/* Inline publish form */}
               <div className={styles.card} style={{ borderColor:"#00e5c3", marginTop:8, marginBottom:16 }}>
                 {publishResult && (
                   <div style={{ background: publishResult.ok ? "rgba(0,229,195,0.08)" : "rgba(255,79,109,0.08)", border:`1px solid ${publishResult.ok ? "#00e5c3" : "#ff4f6d"}`, borderRadius:8, padding:"8px 12px", fontSize:13, color: publishResult.ok ? "#00e5c3" : "#ff4f6d", fontWeight:700, marginBottom:12 }}>
@@ -127,58 +172,52 @@ export function RoosterTab() {
               </div>
             </>
           )}
+
           {conceptShifts.length === 0 && !generating && (
             <div style={{ textAlign:"center", padding:"32px 20px" }}>
-              <div style={{ fontSize:40, marginBottom:8 }}>📅</div>
+              <div style={{ fontSize:40, marginBottom:8 }}>🗒</div>
               <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", margin:0 }}>Geen conceptdiensten</p>
-              <p style={{ fontSize:12, color:"#8b80b0", marginTop:4 }}>Genereer een rooster of maak een feestje aan via de Events-tab.</p>
+              <p style={{ fontSize:12, color:"#8b80b0", marginTop:4 }}>Genereer hieronder een rooster of maak een feestje aan via de Events-tab.</p>
             </div>
           )}
 
-          {/* 2. Inklapbare generator sectie onderaan */}
-          <div style={{ borderTop:"1px solid #2e2a4a", paddingTop:12, marginTop:4 }}>
-            <button style={s.chevronBtn} onClick={() => setShowGenerator(v => !v)}>
-              <span style={{ fontSize:11, transition:"transform 0.2s", display:"inline-block", transform: showGenerator ? "rotate(90deg)" : "rotate(0deg)" }}>▶</span>
-              Tapavonden genereren
-            </button>
-            {showGenerator && (
-              <>
-                <div className={styles.card} style={{ marginTop:10 }}>
-                  <div style={{ display:"flex", gap:10, marginBottom:14 }}>
-                    <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Van</label><input type="date" className={styles.input} value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></div>
-                    <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Tot en met</label><input type="date" className={styles.input} value={dateTo} onChange={e => setDateTo(e.target.value)} /></div>
-                  </div>
-                  <button className={styles.btnSecondary} onClick={handleGenerate} disabled={generating}>{generating ? "⏳ Genereren..." : "🤖 Genereer conceptrooster"}</button>
-                </div>
+          {/* Generator — altijd zichtbaar */}
+          <div style={{ borderTop: conceptShifts.length > 0 ? "1px solid #2e2a4a" : "none", paddingTop: conceptShifts.length > 0 ? 16 : 0, marginTop: conceptShifts.length > 0 ? 8 : 0 }}>
+            <p className={styles.sectionTitle}>Tapavonden genereren</p>
+            <div className={styles.card} style={{ marginBottom:12 }}>
+              <div style={{ display:"flex", gap:10, marginBottom:14 }}>
+                <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Van</label><input type="date" className={styles.input} value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></div>
+                <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Tot en met</label><input type="date" className={styles.input} value={dateTo} onChange={e => setDateTo(e.target.value)} /></div>
+              </div>
+              <button className={styles.btnSecondary} onClick={handleGenerate} disabled={generating}>{generating ? "⏳ Genereren..." : "🤖 Genereer conceptrooster"}</button>
+            </div>
 
-                <p className={styles.sectionTitle}>Standaard tapavonden</p>
-                <div className={styles.card}>
-                  {(["wednesday", "friday", "saturday"] as const).map(day => {
-                    const labels = { wednesday:"Woensdag", friday:"Vrijdag", saturday:"Zaterdag" };
-                    const cfg = defaultShifts[day];
-                    return (
-                      <div key={day} style={{ borderBottom:"1px solid #2e2a4a", paddingBottom:12, marginBottom:12 }}>
-                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:cfg.enabled ? 10 : 0 }}>
-                          <span style={{ fontSize:13, fontWeight:700, color:cfg.enabled ? "#e8e0ff" : "#8b80b0" }}>{labels[day]}</span>
-                          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                            <span style={{ fontSize:11, color:"#8b80b0" }}>{cfg.enabled ? "Aan" : "Uit"}</span>
-                            <div onClick={() => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], enabled: !d[day].enabled } }))} style={{ width:40, height:22, borderRadius:11, background:cfg.enabled ? "#00e5c3" : "#2e2a4a", cursor:"pointer", position:"relative", transition:"background 0.2s" }}>
-                              <div style={{ position:"absolute", top:3, left:cfg.enabled ? 20 : 3, width:16, height:16, borderRadius:"50%", background:"white", transition:"left 0.2s" }} />
-                            </div>
-                          </div>
+            <p className={styles.sectionTitle}>Standaard tapavonden</p>
+            <div className={styles.card}>
+              {WEEK_DAYS.map(({ key: day, label }, idx) => {
+                const cfg = defaultShifts[day];
+                const isLast = idx === WEEK_DAYS.length - 1;
+                return (
+                  <div key={day} style={{ borderBottom: isLast ? "none" : "1px solid #2e2a4a", paddingBottom: isLast ? 0 : 12, marginBottom: isLast ? 0 : 12 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: cfg.enabled ? 10 : 0 }}>
+                      <span style={{ fontSize:13, fontWeight:700, color: cfg.enabled ? "#e8e0ff" : "#8b80b0" }}>{label}</span>
+                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                        <span style={{ fontSize:11, color:"#8b80b0" }}>{cfg.enabled ? "Aan" : "Uit"}</span>
+                        <div onClick={() => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], enabled: !d[day].enabled } }))} style={{ width:40, height:22, borderRadius:11, background: cfg.enabled ? "#00e5c3" : "#2e2a4a", cursor:"pointer", position:"relative", transition:"background 0.2s" }}>
+                          <div style={{ position:"absolute", top:3, left: cfg.enabled ? 20 : 3, width:16, height:16, borderRadius:"50%", background:"white", transition:"left 0.2s" }} />
                         </div>
-                        {cfg.enabled && (
-                          <div style={{ display:"flex", gap:8 }}>
-                            <div style={{ flex:1, minWidth:0 }}><label className={styles.label} style={{ fontSize:10 }}>Start</label><input className={styles.input} style={{ marginBottom:0, padding:"8px 10px", fontSize:13 }} type="time" value={cfg.start} onChange={e => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], start: e.target.value } }))} /></div>
-                            <div style={{ flex:1, minWidth:0 }}><label className={styles.label} style={{ fontSize:10 }}>Eind</label><input className={styles.input} style={{ marginBottom:0, padding:"8px 10px", fontSize:13 }} type="time" value={cfg.end} onChange={e => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], end: e.target.value } }))} /></div>
-                          </div>
-                        )}
                       </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
+                    </div>
+                    {cfg.enabled && (
+                      <div style={{ display:"flex", gap:8 }}>
+                        <div style={{ flex:1, minWidth:0 }}><label className={styles.label} style={{ fontSize:10 }}>Start</label><input className={styles.input} style={{ marginBottom:0, padding:"8px 10px", fontSize:13 }} type="time" value={cfg.start} onChange={e => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], start: e.target.value } }))} /></div>
+                        <div style={{ flex:1, minWidth:0 }}><label className={styles.label} style={{ fontSize:10 }}>Eind</label><input className={styles.input} style={{ marginBottom:0, padding:"8px 10px", fontSize:13 }} type="time" value={cfg.end} onChange={e => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], end: e.target.value } }))} /></div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </>
       )}

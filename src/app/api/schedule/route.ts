@@ -24,11 +24,25 @@ export async function POST(req: NextRequest) {
   let body: any;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Ongeldige request body" }, { status: 400 }); }
 
+  const DAY_MAP: Record<string, { jsDay: number; title: string }> = {
+    monday:    { jsDay: 1, title: "Maandag" },
+    tuesday:   { jsDay: 2, title: "Dinsdag" },
+    wednesday: { jsDay: 3, title: "Woensdag" },
+    thursday:  { jsDay: 4, title: "Donderdag" },
+    friday:    { jsDay: 5, title: "Vrijdag" },
+    saturday:  { jsDay: 6, title: "Zaterdag" },
+    sunday:    { jsDay: 0, title: "Zondag" },
+  };
+
   // Default shift config (can be overridden by admin)
   const defaultShifts = body.defaultShifts || {
-    wednesday: { enabled: true, start: "19:00", end: "23:00" },
-    friday:    { enabled: true, start: "20:00", end: "00:00" },
-    saturday:  { enabled: true, start: "20:00", end: "00:00" },
+    monday:    { enabled: false, start: "19:00", end: "23:00" },
+    tuesday:   { enabled: false, start: "19:00", end: "23:00" },
+    wednesday: { enabled: true,  start: "19:00", end: "23:00" },
+    thursday:  { enabled: false, start: "19:00", end: "23:00" },
+    friday:    { enabled: true,  start: "20:00", end: "00:00" },
+    saturday:  { enabled: true,  start: "20:00", end: "00:00" },
+    sunday:    { enabled: false, start: "20:00", end: "00:00" },
   };
 
   // Support both date range (from/to) and months array
@@ -68,35 +82,14 @@ export async function POST(req: NextRequest) {
 
   const shiftsToCreate: any[] = [];
 
-  // Woensdag: open tapavonden (geen automatische inplanning)
-  if (defaultShifts.wednesday?.enabled !== false) {
-    const cfg = defaultShifts.wednesday || { start:"19:00", end:"23:00" };
-    for (const d of getDatesForDayInRange(3, rangeStart, rangeEnd)) {
+  // Generate shifts for all enabled days
+  for (const [dayName, { jsDay, title }] of Object.entries(DAY_MAP)) {
+    const cfg = defaultShifts[dayName];
+    if (!cfg || cfg.enabled === false) continue;
+    for (const d of getDatesForDayInRange(jsDay, rangeStart, rangeEnd)) {
       const dateStr = toLocalDateStr(d);
       if (!existingKeys.has(`${dateStr}-tapavond-tapper`)) {
-        shiftsToCreate.push({ title:"Tapavond Woensdag", date:dateStr, start_time:cfg.start, end_time:cfg.end, type:"tapavond", role:"tapper", max_tappers:2, status:"concept", created_by:user.id });
-      }
-    }
-  }
-
-  // Vrijdag: 2 tappers automatisch inplannen
-  if (defaultShifts.friday?.enabled !== false) {
-    const cfg = defaultShifts.friday || { start:"20:00", end:"00:00" };
-    for (const d of getDatesForDayInRange(5, rangeStart, rangeEnd)) {
-      const dateStr = toLocalDateStr(d);
-      if (!existingKeys.has(`${dateStr}-tapavond-tapper`)) {
-        shiftsToCreate.push({ title:"Tapavond Vrijdag", date:dateStr, start_time:cfg.start, end_time:cfg.end, type:"tapavond", role:"tapper", max_tappers:2, status:"concept", created_by:user.id });
-      }
-    }
-  }
-
-  // Zaterdag: 2 tappers automatisch inplannen
-  if (defaultShifts.saturday?.enabled !== false) {
-    const cfg = defaultShifts.saturday || { start:"20:00", end:"00:00" };
-    for (const d of getDatesForDayInRange(6, rangeStart, rangeEnd)) {
-      const dateStr = toLocalDateStr(d);
-      if (!existingKeys.has(`${dateStr}-tapavond-tapper`)) {
-        shiftsToCreate.push({ title:"Tapavond Zaterdag", date:dateStr, start_time:cfg.start, end_time:cfg.end, type:"tapavond", role:"tapper", max_tappers:2, status:"concept", created_by:user.id });
+        shiftsToCreate.push({ title:`Tapavond ${title}`, date:dateStr, start_time:cfg.start, end_time:cfg.end, type:"tapavond", role:"tapper", max_tappers:2, status:"concept", created_by:user.id });
       }
     }
   }
