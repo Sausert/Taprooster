@@ -397,7 +397,6 @@ const s: Record<string, React.CSSProperties> = {
   avatar: { width:56, height:56, borderRadius:12, background:"linear-gradient(135deg, #3b2f6e, #5a4a9e)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:20, color:"#00e5c3", flexShrink:0 },
   name: { fontSize:17, fontWeight:700, color:"#f0eeff", fontFamily:"'Exo 2', sans-serif" },
   emailTxt: { fontSize:12, color:"#8b80b0", marginTop:2 },
-  adminBtn: { width:"100%", padding:"12px 16px", borderRadius:12, background:"rgba(0,229,195,0.06)", border:"1px solid #00e5c3", color:"#00e5c3", fontFamily:"'Exo 2', sans-serif", fontWeight:700, fontSize:14, cursor:"pointer", marginBottom:4, textAlign:"left" },
   tabBar: { display:"flex", borderBottom:"1px solid #2e2a4a", marginBottom:16, marginTop:8, overflowX:"auto" },
   tab: { flex:1, minWidth:70, padding:"10px 4px", background:"none", border:"none", fontFamily:"'Exo 2', sans-serif", fontWeight:700, fontSize:11, cursor:"pointer", textAlign:"center", whiteSpace:"nowrap" },
   savedBanner: { background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", borderRadius:10, padding:"10px 14px", fontSize:13, color:"#00e5c3", fontWeight:700, textAlign:"center", marginBottom:12 },

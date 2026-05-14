@@ -39,6 +39,7 @@ export async function GET(req: NextRequest) {
 
       for (const a of (shift.assignments || [])) {
         if (a.status === "declined") continue;
+        if (!a.profile?.email) continue;
         if (await alreadySent(a.user_id, type, shift.id)) continue;
 
         await supabase.from("notifications").insert({
@@ -50,8 +51,8 @@ export async function GET(req: NextRequest) {
 
         try {
           await sendShiftReminderEmail(a.profile.email, a.profile.full_name, shift.title, dateLabel, timeLabel, weeks);
+          sent++;
         } catch(e) { console.error(`Email ${weeks}w failed:`, e); }
-        sent++;
       }
     }
   }

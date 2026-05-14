@@ -11,6 +11,7 @@ export type NotificationType =
   | "roster_published"
   | "reminder_2weeks"
   | "reminder_1week"
+  | "unconfirmed_reminder"
   | "open_shift"
   | "shift_claimed"
   | "shift_cancelled"

@@ -98,7 +98,7 @@ export async function PATCH(req: NextRequest) {
     .from("invite_tokens")
     .update({ status: "used", used_at: new Date().toISOString() })
     .eq("token", token)
-    .eq("status", "active");
+    .eq("status", "pending");
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ data: { marked: true } });

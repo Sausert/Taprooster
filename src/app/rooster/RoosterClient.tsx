@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { APP_CONFIG } from "@/lib/config";
 import { parseLocalDate, formatDate, formatDateShort, formatTime } from "@/lib/dates";
 import { useShiftApi } from "@/hooks/useShiftApi";
 
@@ -443,7 +442,7 @@ const s: Record<string, React.CSSProperties> = {
   icalBtnSm: { padding:"5px 8px", borderRadius:8, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", fontSize:14, cursor:"pointer" },
   overlay: { position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", backdropFilter:"blur(6px)", zIndex:100, display:"flex", alignItems:"flex-end", justifyContent:"center" },
   sheet: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:"24px 24px 0 0", padding:"24px 20px 40px", width:"100%", maxWidth:430 },
-  sheetHandle: { width:48, height:5, background:"#5a4a9e", borderRadius:3, margin:"0 auto 20px" },
+  sheetHandle: { width:48, height:5, background:"#9b87f0", borderRadius:3, margin:"0 auto 20px" },
   sheetTitle: { fontSize:18, fontWeight:700, color:"#f0eeff", marginBottom:8, fontFamily:"'Exo 2',sans-serif" },
   btnPrimary: { width:"100%", padding:14, borderRadius:12, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", fontFamily:"'Exo 2',sans-serif", fontSize:14, fontWeight:700, border:"none", cursor:"pointer", textTransform:"uppercase", display:"block" },
   btnSecondary: { width:"100%", padding:14, borderRadius:12, background:"#221f38", color:"#e8e0ff", fontFamily:"'Exo 2',sans-serif", fontSize:14, fontWeight:700, border:"1px solid #2e2a4a", cursor:"pointer", textTransform:"uppercase", display:"block" },
