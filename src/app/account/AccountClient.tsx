@@ -332,7 +332,7 @@ const s: Record<string, React.CSSProperties> = {
   tab: { flex:1, minWidth:70, padding:"10px 4px", background:"none", border:"none", fontFamily:"'Exo 2', sans-serif", fontWeight:700, fontSize:11, cursor:"pointer", textAlign:"center", whiteSpace:"nowrap" },
   savedBanner: { background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", borderRadius:10, padding:"10px 14px", fontSize:13, color:"#00e5c3", fontWeight:700, textAlign:"center", marginBottom:12 },
   statGrid: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 },
-  statCard: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:14, padding:16, textAlign:"center" },
+  statCard: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:16, padding:16, textAlign:"center" },
   statVal: { fontFamily:"monospace", fontSize:28, fontWeight:700, color:"#00e5c3", margin:0 },
   statLabel: { fontSize:10, color:"#8b80b0", letterSpacing:1, textTransform:"uppercase", marginTop:4, margin:0 },
   progressWrap: { background:"#2e2a4a", borderRadius:4, height:6, overflow:"hidden" },

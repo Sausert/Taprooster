@@ -143,7 +143,7 @@ export default function AdminClient({
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id as AdminTab)} style={{ flex:1, minWidth:80, padding:"12px 4px", background:"none", border:"none", fontFamily:"'Exo 2', sans-serif", fontWeight:tab === t.id ? 900 : 600, fontSize:11, cursor:"pointer", whiteSpace:"nowrap", display:"flex", flexDirection:"column", alignItems:"center", gap:2, color:tab === t.id ? "#00e5c3" : "#8b80b0", borderBottom:`2px solid ${tab === t.id ? "#00e5c3" : "transparent"}` }}>
               <span style={{ fontSize:16 }}>{t.icon}</span>
-              <span style={{ fontSize:9, letterSpacing:0.5, textTransform:"uppercase" }}>{t.label}</span>
+              <span style={{ fontSize:10, letterSpacing:0.5, textTransform:"uppercase" }}>{t.label}</span>
             </button>
           ))}
         </nav>

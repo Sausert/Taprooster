@@ -24,7 +24,7 @@ export function AdminShiftCard({ shift, source }: { shift: Shift & Record<string
   const list = source === "concept" ? conceptShifts : published;
   const assigned = ((shift.assignments as any[]) || []).filter((a: any) => a.status !== "declined");
   const open = shift.max_tappers - assigned.length;
-  const accentColor = shift.type === "feestje" ? "#3b82f6" : "#00e5c3";
+  const accentColor = shift.type === "feestje" ? "#a896ff" : "#00e5c3";
 
   return (
     <div style={{ background:"#1a1730", borderLeft:`3px solid ${accentColor}`, borderTop:"1px solid #2e2a4a", borderRight:"1px solid #2e2a4a", borderBottom:"1px solid #2e2a4a", borderRadius:16, padding:16, marginBottom:10 }}>
@@ -58,7 +58,7 @@ export function AdminShiftCard({ shift, source }: { shift: Shift & Record<string
             </div>
             <p style={{ fontSize:12, color:"#8b80b0" }}>{formatDate(shift.date)} · {shift.start_time}–{shift.end_time}</p>
             <p style={{ fontSize:11, color:open > 0 ? "#ffb547" : "#00e5c3", marginTop:2 }}>{assigned.length}/{shift.max_tappers}{open > 0 ? ` · ${open} open` : ""}</p>
-            {shift.admin_note && <p style={{ fontSize:11, color:"#3b82f6", marginTop:4 }}>📌 {shift.admin_note as string}</p>}
+            {shift.admin_note && <p style={{ fontSize:11, color:"#8b80b0", marginTop:4 }}>📌 {shift.admin_note as string}</p>}
             <div style={{ display:"flex", gap:4, marginTop:8, flexWrap:"wrap" }}>
               {assigned.map((a: any) => (
                 <div key={a.user_id} style={{ display:"flex", alignItems:"center", gap:4, background:"#221f38", borderRadius:20, padding:"3px 8px 3px 10px", border:"1px solid #2e2a4a" }}>

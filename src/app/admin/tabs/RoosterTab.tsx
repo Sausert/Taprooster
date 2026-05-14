@@ -51,7 +51,7 @@ export function RoosterTab({ onGoToPublish }: { onGoToPublish: () => void }) {
           <p className={styles.sectionTitle}>Gepubliceerd rooster</p>
           {published.length === 0 && (
             <div style={{ textAlign:"center", padding:"32px 20px" }}>
-              <div style={{ fontSize:36, marginBottom:8 }}>📅</div>
+              <div style={{ fontSize:40, marginBottom:8 }}>📅</div>
               <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", margin:0 }}>Geen diensten</p>
             </div>
           )}
@@ -74,7 +74,7 @@ export function RoosterTab({ onGoToPublish }: { onGoToPublish: () => void }) {
           )}
           {conceptShifts.length === 0 && !generating && (
             <div style={{ textAlign:"center", padding:"32px 20px" }}>
-              <div style={{ fontSize:36, marginBottom:8 }}>📅</div>
+              <div style={{ fontSize:40, marginBottom:8 }}>📅</div>
               <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", margin:0 }}>Geen conceptdiensten</p>
               <p style={{ fontSize:12, color:"#8b80b0", marginTop:4 }}>Genereer een rooster of maak een feestje aan via de Events-tab.</p>
             </div>

@@ -6,7 +6,7 @@
   border: 1px solid #2e2a4a;
   border-radius: 16px;
   padding: 16px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 /* Badges */
@@ -14,7 +14,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 9px;
+  padding: 2px 10px;
   border-radius: 20px;
   font-size: 10px;
   font-weight: 700;
@@ -24,7 +24,7 @@
 .badgeMint  { background: rgba(0,229,195,0.12);  color: #00e5c3; border-color: #00e5c3; }
 .badgeAmber { background: rgba(255,181,71,0.12); color: #ffb547; border-color: #ffb547; }
 .badgeRed   { background: rgba(255,79,109,0.12); color: #ff4f6d; border-color: #ff4f6d; }
-.badgeBlue  { background: rgba(59,130,246,0.12); color: #3b82f6; border-color: #3b82f6; }
+.badgeBlue  { background: rgba(0,229,195,0.08);  color: #8b80b0; border-color: #2e2a4a; }
 .badgeViolet{ background: rgba(90,74,158,0.20);  color: #a896ff; border-color: #5a4a9e; }
 
 /* Buttons */
@@ -49,7 +49,7 @@
 
 .btnSecondary {
   width: 100%;
-  padding: 13px 14px;
+  padding: 14px;
   border-radius: 12px;
   background: #221f38;
   color: #e8e0ff;
@@ -79,7 +79,7 @@
   font-size: 14px;
   outline: none;
   display: block;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .label {
@@ -125,7 +125,7 @@
 .sheetHandle {
   width: 48px;
   height: 5px;
-  background: #3b2f6e;
+  background: #5a4a9e;
   border-radius: 3px;
   margin: 0 auto 20px;
 }

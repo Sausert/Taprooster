@@ -122,13 +122,13 @@ export default function DashboardClient({
   }
 
   function openShiftBorderColor(shift: ClaimableShift) {
-    if (shift.type === "feestje") return "#3b82f6";
+    if (shift.type === "feestje") return "#a896ff";
     const filled = (shift as any).assignments?.filter((a: any) => a.status !== "declined").length || 0;
     return filled > 0 ? "#ffb547" : "#00e5c3";
   }
 
   function openShiftBg(shift: ClaimableShift) {
-    if (shift.type === "feestje") return "rgba(59,130,246,0.04)";
+    if (shift.type === "feestje") return "rgba(168,150,255,0.04)";
     const filled = (shift as any).assignments?.filter((a: any) => a.status !== "declined").length || 0;
     return filled > 0 ? "rgba(255,181,71,0.04)" : "rgba(0,229,195,0.04)";
   }
@@ -269,8 +269,8 @@ export default function DashboardClient({
             const daysUntil = Math.ceil((parseLocalDate(sh.date).getTime() - Date.now()) / (1000*60*60*24));
             const urgentUnconfirmed = !isConfirmed && daysUntil >= 0 && daysUntil < 3;
             const filledCount = (sh as any).assignments?.filter((a: any) => a.status !== "declined").length ?? -1;
-            const accentColor = sh.type === "feestje" ? "#3b82f6" : (filledCount >= 0 && filledCount < (sh.max_tappers || 2)) ? "#ffb547" : "#00e5c3";
-            const rgbAccent = sh.type === "feestje" ? "59,130,246" : (filledCount >= 0 && filledCount < (sh.max_tappers || 2)) ? "255,181,71" : "0,229,195";
+            const accentColor = sh.type === "feestje" ? "#a896ff" : (filledCount >= 0 && filledCount < (sh.max_tappers || 2)) ? "#ffb547" : "#00e5c3";
+            const rgbAccent = sh.type === "feestje" ? "168,150,255" : (filledCount >= 0 && filledCount < (sh.max_tappers || 2)) ? "255,181,71" : "0,229,195";
             return (
               <div key={a.shift_id} className={sharedStyles.card} style={{ borderLeft:`4px solid ${accentColor}`, background:`linear-gradient(90deg, rgba(${rgbAccent},0.04) 0%, #1a1730 40%)` }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
@@ -283,7 +283,7 @@ export default function DashboardClient({
                     </div>
                     <p style={{ fontSize:13, fontWeight:700, color:"#e8e0ff", marginBottom:2 }}>{formatDateShort(sh.date)}</p>
                     <p style={{ fontSize:12, color:"#8b80b0" }}>{formatTime(sh.start_time)}–{formatTime(sh.end_time)}</p>
-                    {sh.admin_note && <p style={{ fontSize:11, color:"#3b82f6", marginTop:4 }}>📌 {sh.admin_note}</p>}
+                    {sh.admin_note && <p style={{ fontSize:11, color:"#8b80b0", marginTop:4 }}>📌 {sh.admin_note}</p>}
                   </div>
                   <div style={{ display:"flex", flexDirection:"column", gap:6, alignItems:"flex-end" }}>
                     {isConfirmed
@@ -437,5 +437,5 @@ const s: Record<string, React.CSSProperties> = {
   btnYesSmall: { fontSize:11, fontWeight:700, padding:"5px 10px", borderRadius:12, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", cursor:"pointer" },
   agendaBtn: { fontSize:14, padding:"4px 8px", borderRadius:8, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", cursor:"pointer" },
   declineBtn: { fontSize:11, fontWeight:700, padding:"5px 10px", borderRadius:12, background:"rgba(255,79,109,0.08)", border:"1px solid #ff4f6d", color:"#ff4f6d", cursor:"pointer", fontFamily:"'Exo 2',sans-serif" },
-  claimBtn: { padding:"9px 14px", borderRadius:12, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", border:"none", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:12, letterSpacing:1, cursor:"pointer", textTransform:"uppercase", flexShrink:0 },
+  claimBtn: { padding:"9px 14px", borderRadius:12, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", border:"none", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, letterSpacing:1, cursor:"pointer", textTransform:"uppercase", flexShrink:0 },
 };
