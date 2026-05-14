@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import type { Profile, Shift, ShiftAssignment, AdminMessage } from "@/types";
 import { APP_CONFIG } from "@/lib/config";
@@ -52,6 +52,7 @@ export default function DashboardClient({
 }: Props) {
   const router = useRouter();
   const mijnDienstenRef = useRef<HTMLDivElement>(null);
+  const openDienstenRef = useRef<HTMLDivElement>(null);
   const [upcoming, setUpcoming] = useState<ShiftAssignment[]>(myUpcoming);
   const [claimable, setClaimable] = useState<ClaimableShift[]>(claimableShifts);
   const [claimModal, setClaimModal] = useState<ClaimableShift | null>(null);
@@ -205,7 +206,13 @@ export default function DashboardClient({
         <div style={{textAlign:"center", padding:"32px 20px", background:"#1a1730", borderRadius:16, border:"1px solid #2e2a4a"}}>
           <div style={{fontSize:40, marginBottom:10}}>🍺</div>
           <p style={{fontSize:14, fontWeight:700, color:"#f0eeff", margin:0}}>Geen geplande diensten</p>
-          <p style={{fontSize:12, color:"#8b80b0", marginTop:4, margin:"4px 0 0"}}>Je staat nog nergens ingepland.</p>
+          <p style={{fontSize:12, color:"#8b80b0", margin:"4px 0 0", marginBottom: claimable.length > 0 ? 12 : 0}}>Je staat nog nergens ingepland.</p>
+          {claimable.length > 0 && (
+            <button
+              style={{ padding:"8px 18px", borderRadius:20, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:12, cursor:"pointer" }}
+              onClick={() => openDienstenRef.current?.scrollIntoView({ behavior:"smooth", block:"start" })}
+            >Bekijk open diensten ↓</button>
+          )}
         </div>
       )}
 
@@ -234,11 +241,11 @@ export default function DashboardClient({
       {/* Stats */}
       <p className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px" }}>Jouw statistieken</p>
       <div style={s.statRow}>
-        <div style={s.statCard}>
+        <div style={{ ...s.statCard, cursor:"pointer" }} onClick={() => router.push("/account")}>
           <p style={s.statVal}>{tapsThisYear}</p>
           <p style={s.statLabel}>Getapt dit jaar</p>
         </div>
-        <div style={s.statCard}>
+        <div style={{ ...s.statCard, cursor:"pointer" }} onClick={() => mijnDienstenRef.current?.scrollIntoView({ behavior:"smooth", block:"start" })}>
           <p style={s.statVal}>{incomingPlanned}</p>
           <p style={s.statLabel}>Ingeplande diensten</p>
         </div>
@@ -263,9 +270,17 @@ export default function DashboardClient({
       {upcoming.length > 0 && (
         <>
           <p ref={mijnDienstenRef} className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px" }}>Mijn diensten</p>
-          {upcoming.map((a) => {
+          {upcoming.flatMap((a, idx): React.ReactNode[] => {
             const sh = a.shift;
-            if (!sh) return null;
+            if (!sh) return [];
+            const monthKey = sh.date.slice(0, 7);
+            const prevMonthKey = idx > 0 ? (upcoming[idx - 1]?.shift?.date.slice(0, 7) ?? null) : null;
+            const showMonthHeader = monthKey !== prevMonthKey;
+            const [mYear, mMonth] = monthKey.split("-");
+            const monthLabel = new Date(Number(mYear), Number(mMonth) - 1, 1).toLocaleDateString("nl-NL", {
+              month: "long",
+              ...(Number(mYear) !== new Date().getFullYear() ? { year: "numeric" } : {}),
+            });
             const isFirst = a === nextAssignment;
             const isConfirmed = confirmedIds.includes(a.shift_id) || a.status === "confirmed";
             const daysUntil = Math.ceil((parseLocalDate(sh.date).getTime() - Date.now()) / (1000*60*60*24));
@@ -273,7 +288,7 @@ export default function DashboardClient({
             const filledCount = (sh as any).assignments?.filter((a: any) => a.status !== "declined").length ?? -1;
             const accentColor = sh.type === "feestje" ? "#a896ff" : (filledCount >= 0 && filledCount < (sh.max_tappers || 2)) ? "#ffb547" : "#00e5c3";
             const rgbAccent = sh.type === "feestje" ? "168,150,255" : (filledCount >= 0 && filledCount < (sh.max_tappers || 2)) ? "255,181,71" : "0,229,195";
-            return (
+            const card = (
               <div key={a.shift_id} className={sharedStyles.card} style={{ borderLeft:`4px solid ${accentColor}`, background:`linear-gradient(90deg, rgba(${rgbAccent},0.04) 0%, #1a1730 40%)` }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                   <div style={{ flex:1 }}>
@@ -309,6 +324,15 @@ export default function DashboardClient({
                 </div>
               </div>
             );
+            if (showMonthHeader) {
+              return [
+                <p key={`mhdr-${monthKey}`} style={{ fontSize:10, fontWeight:700, letterSpacing:2, color:"#8b80b0", textTransform:"uppercase", margin:"16px 0 6px", paddingLeft:2 }}>
+                  {monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)}
+                </p>,
+                card,
+              ];
+            }
+            return [card];
           })}
         </>
       )}
@@ -316,7 +340,7 @@ export default function DashboardClient({
       {/* Open diensten */}
       {claimable.length > 0 && (
         <>
-          <p className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px" }}>Open diensten</p>
+          <p ref={openDienstenRef} className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px" }}>Open diensten</p>
           {claimable.map((shift) => {
             const borderColor = openShiftBorderColor(shift);
             const bgGrad = openShiftBg(shift);

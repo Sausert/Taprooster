@@ -9,7 +9,7 @@ const DAY_LABELS = ["Ma","Di","Wo","Do","Vr","Za","Zo"];
 
 // Color constants
 const C = {
-  myShift:   "#5a4a9e", // Paars — mijn dienst
+  myShift:   "#c4b5fd", // Lavender — mijn dienst
   party:     "#a896ff", // Violet — feestje/evenement
   full:      "#00e5c3", // Groen — alle plaatsen gevuld
   partial:   "#ffb547", // Oranje — niet alle plaatsen gevuld
@@ -25,7 +25,7 @@ function getDayColor(dayShifts: any[], myShiftIds: string[]): { bg: string; colo
   const isMe = dayShifts.some(s => myShiftIds.includes(s.id));
   const isParty = dayShifts.every(s => s.type === "feestje");
 
-  if (isMe) return { bg: `rgba(90,74,158,0.25)`, color: C.myShift, borderColor: C.myShift };
+  if (isMe) return { bg: `rgba(90,74,158,0.45)`, color: C.myShift, borderColor: "#9b87f0" };
   if (isParty) return { bg: `rgba(168,150,255,0.12)`, color: C.party, borderColor: C.party };
 
   // Occupancy-based color for tapavonden
@@ -56,10 +56,12 @@ export default function RoosterClient({
   const { loading, shiftAction } = useShiftApi();
 
   function prevMonth() {
+    setSelectedShifts([]);
     if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); }
     else setViewMonth(m => m - 1);
   }
   function nextMonth() {
+    setSelectedShifts([]);
     if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); }
     else setViewMonth(m => m + 1);
   }
@@ -175,7 +177,7 @@ export default function RoosterClient({
           {/* Legenda */}
           <div style={{ display:"flex", gap:10, marginBottom:12, flexWrap:"wrap" }}>
             {[
-              { color: C.myShift, bg: "rgba(90,74,158,0.2)", label: "Mijn dienst" },
+              { color: C.myShift, bg: "rgba(90,74,158,0.45)", label: "Mijn dienst" },
               { color: C.full,    bg: "rgba(0,229,195,0.1)", label: "Vol" },
               { color: C.partial, bg: "rgba(255,181,71,0.1)", label: "Niet vol" },
               { color: C.empty,   bg: "rgba(255,79,109,0.1)", label: "Leeg" },
@@ -209,6 +211,7 @@ export default function RoosterClient({
 
               const { bg, color, borderColor } = getDayColor(dayShifts, myShiftIds.concat(claimedIds));
               const hasOpen = dayShifts.some(s => canClaim(s));
+              const isMineDay = myShiftIds.concat(claimedIds).some(id => dayShifts.some((s: any) => s.id === id));
 
               return (
                 <div key={day} onClick={() => setSelectedShifts(dayShifts)} style={{
@@ -216,14 +219,16 @@ export default function RoosterClient({
                   fontSize:12, fontWeight:700, borderRadius:8, cursor:"pointer", position:"relative",
                   background: bg, color, borderWidth:1, borderStyle:"solid", borderColor,
                   outline: today ? "2px solid rgba(0,229,195,0.4)" : "none", outlineOffset:2,
+                  boxShadow: isMineDay ? "0 0 0 2px #9b87f0, 0 0 10px rgba(155,135,240,0.35)" : undefined,
                 }}>
                   {day}
+                  {isMineDay && <span style={{ position:"absolute", top:1, left:2, fontSize:7, color:"#c4b5fd", lineHeight:1 }}>★</span>}
                   {dayShifts.length > 1 && (
                     <span style={{ position:"absolute", bottom:1, left:"50%", transform:"translateX(-50%)", display:"flex", gap:2 }}>
                       {dayShifts.slice(0, 3).map((_: any, i: number) => <span key={i} style={{ width:3, height:3, borderRadius:"50%", background:color, opacity:0.8, display:"block" }} />)}
                     </span>
                   )}
-                  {dayShifts.length === 1 && hasOpen && !myShiftIds.concat(claimedIds).some(id => dayShifts.some((s: any) => s.id === id)) && (
+                  {dayShifts.length === 1 && hasOpen && !isMineDay && (
                     <span style={{ position:"absolute", top:1, right:2, fontSize:8, color }}>+</span>
                   )}
                 </div>
@@ -267,10 +272,10 @@ export default function RoosterClient({
                       {assigned.map((a: any) => (
                         <div key={a.user_id} style={{
                           padding:"3px 10px", borderRadius:20, fontSize:12, fontWeight:600,
-                          background: a.user_id===userId ? "rgba(90,74,158,0.2)" : "#221f38",
+                          background: a.user_id===userId ? "rgba(90,74,158,0.35)" : "#221f38",
                           color: a.user_id===userId ? C.myShift : "#e8e0ff",
                           borderWidth:1, borderStyle:"solid",
-                          borderColor: a.user_id===userId ? C.myShift : "#2e2a4a",
+                          borderColor: a.user_id===userId ? "#9b87f0" : "#2e2a4a",
                         }}>
                           {a.profile?.full_name?.split(" ")[0] || "?"}{a.user_id===userId ? " (jij)" : ""}
                         </div>
@@ -335,21 +340,23 @@ export default function RoosterClient({
             const assignedBase = (shift.assignments || []).filter((a: any) => a.status !== "declined").length;
             const assigned = assignedBase + (claimedIds.includes(shift.id) ? 1 : 0);
             const accentColor = mine ? C.myShift : isParty ? C.party : assigned >= shift.max_tappers ? C.full : assigned === 0 ? C.empty : C.partial;
+            const isPast = parseLocalDate(shift.date) < new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
             return (
-              <div key={shift.id} style={{ background:"#1a1730", borderRadius:16, padding:16, marginBottom:10, borderLeft:`3px solid ${accentColor}`, borderTop:"1px solid #2e2a4a", borderRight:"1px solid #2e2a4a", borderBottom:"1px solid #2e2a4a" }}>
+              <div key={shift.id} style={{ background:"#1a1730", borderRadius:16, padding:16, marginBottom:10, borderLeft:`3px solid ${accentColor}`, borderTop:"1px solid #2e2a4a", borderRight:"1px solid #2e2a4a", borderBottom:"1px solid #2e2a4a", opacity: isPast ? 0.45 : 1 }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                   <div style={{ flex:1 }}>
-                    <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:4 }}>
+                    <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:4, flexWrap:"wrap" }}>
                       <p style={{ fontSize:15, fontWeight:700, color:"#f0eeff" }}>{shift.title}</p>
                       {mine && <span style={s.myBadge}>Jij</span>}
                       {isParty && <span style={s.warnBadge}>Feestje</span>}
+                      {isPast && <span style={{ fontSize:10, padding:"1px 6px", borderRadius:8, background:"rgba(255,255,255,0.05)", color:"#8b80b0", border:"1px solid #2e2a4a" }}>Verstreken</span>}
                     </div>
                     <p style={{ fontSize:12, color:"#8b80b0" }}>{formatDateShort(shift.date)}</p>
                     <p style={{ fontSize:12, color:"#8b80b0" }}>{formatTime(shift.start_time)}–{formatTime(shift.end_time)}</p>
                     <div style={{ display:"flex", gap:4, marginTop:6, flexWrap:"wrap" }}>
                       {(shift.assignments || []).filter((a: any) => a.status !== "declined").map((a: any) => (
-                        <span key={a.user_id} style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:a.user_id===userId?"rgba(90,74,158,0.2)":"#221f38", color:a.user_id===userId?C.myShift:"#8b80b0", borderWidth:1, borderStyle:"solid", borderColor:a.user_id===userId?C.myShift:"#2e2a4a" }}>
+                        <span key={a.user_id} style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:a.user_id===userId?"rgba(90,74,158,0.35)":"#221f38", color:a.user_id===userId?C.myShift:"#8b80b0", borderWidth:1, borderStyle:"solid", borderColor:a.user_id===userId?"#9b87f0":"#2e2a4a" }}>
                           {a.profile?.full_name?.split(" ")[0] || "?"}
                         </span>
                       ))}
@@ -427,7 +434,7 @@ const s: Record<string, React.CSSProperties> = {
   dayHeader: { textAlign:"center", fontSize:12, fontWeight:700, color:"#8b80b0", padding:"4px 0" },
   closeBtn: { background:"none", border:"none", color:"#8b80b0", fontSize:16, cursor:"pointer", padding:4, flexShrink:0 },
   warnBadge: { background:"rgba(168,150,255,0.12)", borderWidth:1, borderStyle:"solid", borderColor:"#a896ff", color:"#a896ff", fontSize:10, fontWeight:700, padding:"2px 10px", borderRadius:20 },
-  myBadge: { background:"rgba(90,74,158,0.2)", borderWidth:1, borderStyle:"solid", borderColor:"#5a4a9e", color:"#a896ff", fontSize:10, fontWeight:700, padding:"2px 10px", borderRadius:20 },
+  myBadge: { background:"rgba(90,74,158,0.35)", borderWidth:1, borderStyle:"solid", borderColor:"#9b87f0", color:"#c4b5fd", fontSize:10, fontWeight:700, padding:"2px 10px", borderRadius:20 },
   claimBtn: { padding:"10px 14px", borderRadius:10, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", border:"none", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", textTransform:"uppercase" },
   claimBtnSm: { padding:"5px 10px", borderRadius:8, background:"rgba(0,229,195,0.1)", borderWidth:1, borderStyle:"solid", borderColor:"#00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer" },
   declineBtn: { padding:"10px 14px", borderRadius:10, background:"rgba(255,79,109,0.1)", borderWidth:1, borderStyle:"solid", borderColor:"#ff4f6d", color:"#ff4f6d", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", textTransform:"uppercase" },
