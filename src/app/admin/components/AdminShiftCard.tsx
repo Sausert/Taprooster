@@ -5,7 +5,6 @@ import { useAdminShell } from "../AdminShellContext";
 import styles from "@/styles/shared.module.css";
 
 const s: Record<string, React.CSSProperties> = {
-  iconBtn: { background:"#221f38", border:"1px solid #2e2a4a", borderRadius:8, width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:14, color:"#e8e0ff" },
   addTapperBtn: { padding:"4px 10px", borderRadius:20, background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"'Exo 2', sans-serif" },
 };
 
@@ -52,26 +51,27 @@ export function AdminShiftCard({ shift, source }: { shift: Shift & Record<string
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
           <div style={{ flex:1 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4, flexWrap:"wrap" }}>
-              <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff" }}>{shift.title}</p>
-              {shift.type === "feestje" && <span className={`${styles.badge} ${styles.badgeViolet}`}>Feestje</span>}
-              {shift.role === "bonnenkassa" && <span className={`${styles.badge} ${styles.badgeViolet}`}>Kassa</span>}
+              <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff", margin:0 }}>{shift.title}</p>
+              {shift.type === "feestje" && <span className={`${styles.badge} ${styles.badgeViolet}`}>🎉 Feestje</span>}
+              {shift.role === "bonnenkassa" && <span className={`${styles.badge} ${styles.badgeViolet}`}>🎟 Kassa</span>}
+              {source === "concept" && <span className={`${styles.badge} ${styles.badgeMuted}`}>Concept</span>}
             </div>
-            <p style={{ fontSize:12, color:"#8b80b0" }}>{formatDate(shift.date)} · {shift.start_time}–{shift.end_time}</p>
-            <p style={{ fontSize:11, color:open > 0 ? "#ffb547" : "#00e5c3", marginTop:2 }}>{assigned.length}/{shift.max_tappers}{open > 0 ? ` · ${open} open` : ""}</p>
-            {shift.admin_note && <p style={{ fontSize:11, color:"#8b80b0", marginTop:4 }}>📌 {shift.admin_note as string}</p>}
+            <p style={{ fontSize:12, color:"#b8b0d4", lineHeight:1.5 }}>{formatDate(shift.date)} · {shift.start_time}–{shift.end_time}</p>
+            <p style={{ fontSize:12, fontWeight:700, color:open > 0 ? "#ffb547" : "#00e5c3", marginTop:2 }}>{assigned.length}/{shift.max_tappers}{open > 0 ? ` · ${open} open` : ""}</p>
+            {shift.admin_note && <p style={{ fontSize:11, color:"#b8b0d4", marginTop:4, lineHeight:1.5 }}>📌 {shift.admin_note as string}</p>}
             <div style={{ display:"flex", gap:4, marginTop:8, flexWrap:"wrap" }}>
               {assigned.map((a: any) => (
                 <div key={a.user_id} style={{ display:"flex", alignItems:"center", gap:4, background:"#221f38", borderRadius:20, padding:"3px 8px 3px 10px", border:"1px solid #2e2a4a" }}>
                   <span style={{ fontSize:12, color:"#e8e0ff" }}>{a.profile?.full_name?.split(" ")[0] || "?"}</span>
-                  <button style={{ background:"none", border:"none", color:"#ff4f6d", cursor:"pointer", fontSize:13, padding:"0 2px", lineHeight:1 }} onClick={() => handleRemoveTapper(shift.id, a.user_id)}>✕</button>
+                  <button className={styles.removePill} onClick={() => handleRemoveTapper(shift.id, a.user_id)}>×</button>
                 </div>
               ))}
               {open > 0 && <button style={s.addTapperBtn} onClick={() => setAddTapperModal(shift as unknown as import("@/types").Shift)}>+ Tapper</button>}
             </div>
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:6, marginLeft:10 }}>
-            <button style={s.iconBtn} onClick={() => setEditingShiftId(shift.id)}>✏️</button>
-            <button style={{ ...s.iconBtn, color:"#ff4f6d" }} onClick={() => handleDeleteShift(shift.id, source)}>🗑</button>
+            <button className={styles.iconBtn} onClick={() => setEditingShiftId(shift.id)}>✏️</button>
+            <button className={`${styles.iconBtn} ${styles.iconBtnDanger}`} onClick={() => handleDeleteShift(shift.id, source)}>🗑</button>
           </div>
         </div>
       )}

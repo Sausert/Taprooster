@@ -5,20 +5,13 @@ import styles from "@/styles/shared.module.css";
 
 const emptyShift = () => ({ role: "tapper" as "tapper" | "bonnenkassa", start_time: "20:00", end_time: "02:00", max_tappers: 2 });
 
-const s: Record<string, React.CSSProperties> = {
-  iconBtn: { background:"#221f38", border:"1px solid #2e2a4a", borderRadius:8, width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:14, color:"#e8e0ff" },
-};
-
 export function EventsTab() {
   const { setConceptShifts, setPublished } = useAdminShell();
   const [eventForm, setEventForm] = useState({ title: "", date: "", shifts: [emptyShift()] });
   const [saving, setSaving] = useState(false);
   const [eventError, setEventError] = useState("");
 
-  // State for the created feestje (pending publish)
   const [createdFeestje, setCreatedFeestje] = useState<{ title: string; shiftIds: string[]; shifts: any[] } | null>(null);
-
-  // Inline publish state for the created feestje
   const [publishMsg, setPublishMsg] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [publishResult, setPublishResult] = useState<{ ok: boolean; text: string } | null>(null);
@@ -37,11 +30,7 @@ export function EventsTab() {
     if (res.ok && data.data?.shifts) {
       const shifts = data.data.shifts;
       setConceptShifts(cs => [...cs, ...shifts]);
-      setCreatedFeestje({
-        title: eventForm.title,
-        shiftIds: shifts.map((s: any) => s.id),
-        shifts,
-      });
+      setCreatedFeestje({ title: eventForm.title, shiftIds: shifts.map((s: any) => s.id), shifts });
       setEventForm({ title: "", date: "", shifts: [emptyShift()] });
       setPublishMsg("");
       setPublishResult(null);
@@ -66,7 +55,6 @@ export function EventsTab() {
     if (res.ok) {
       const notified = data.data?.notified || 0;
       setPublishResult({ ok: true, text: `🎉 Feestje gepubliceerd! ${notified} tapper${notified !== 1 ? "s" : ""} genotificeerd.` });
-      // Move the shifts from concept to published
       setConceptShifts(cs => cs.filter(s => !createdFeestje.shiftIds.includes(s.id)));
       setPublished(ps => [...ps, ...createdFeestje.shifts.map((s: any) => ({ ...s, status: "published" }))]);
       setCreatedFeestje(null);
@@ -79,20 +67,19 @@ export function EventsTab() {
   return (
     <>
       {eventError && (
-        <div style={{ background:"rgba(255,79,109,0.08)", border:"1px solid #ff4f6d", borderRadius:10, padding:"10px 14px", fontSize:13, color:"#ff4f6d", fontWeight:700, marginBottom:12 }}>
+        <div className={styles.bannerIn} style={{ background:"rgba(255,79,109,0.08)", border:"1px solid #ff4f6d", borderRadius:10, padding:"10px 14px", fontSize:13, color:"#ff4f6d", fontWeight:700, marginBottom:12 }}>
           ❌ {eventError}
         </div>
       )}
 
-      {/* Created feestje — publish prompt */}
       {createdFeestje && (
-        <div className={styles.card} style={{ borderColor:"#a896ff", marginBottom:16 }}>
-          <p style={{ fontSize:13, fontWeight:700, color:"#a896ff", marginBottom:4 }}>🎉 {createdFeestje.title} aangemaakt!</p>
-          <p style={{ fontSize:12, color:"#8b80b0", marginBottom:12 }}>
+        <div className={`${styles.card} ${styles.bannerIn}`} style={{ borderColor:"#00e5c3", marginBottom:16 }}>
+          <p style={{ fontSize:13, fontWeight:700, color:"#00e5c3", marginBottom:4 }}>🎉 {createdFeestje.title} aangemaakt!</p>
+          <p style={{ fontSize:12, color:"#b8b0d4", marginBottom:12, lineHeight:1.5 }}>
             {createdFeestje.shiftIds.length} dienst{createdFeestje.shiftIds.length !== 1 ? "en" : ""} staan als concept klaar. Publiceer nu om alle tappers te notificeren.
           </p>
           {publishResult && (
-            <div style={{ background: publishResult.ok ? "rgba(0,229,195,0.08)" : "rgba(255,79,109,0.08)", border:`1px solid ${publishResult.ok ? "#00e5c3" : "#ff4f6d"}`, borderRadius:8, padding:"8px 12px", fontSize:13, color: publishResult.ok ? "#00e5c3" : "#ff4f6d", fontWeight:700, marginBottom:12 }}>
+            <div className={styles.bannerIn} style={{ background: publishResult.ok ? "rgba(0,229,195,0.08)" : "rgba(255,79,109,0.08)", border:`1px solid ${publishResult.ok ? "#00e5c3" : "#ff4f6d"}`, borderRadius:8, padding:"8px 12px", fontSize:13, color: publishResult.ok ? "#00e5c3" : "#ff4f6d", fontWeight:700, marginBottom:12 }}>
               {publishResult.text}
             </div>
           )}
@@ -120,7 +107,7 @@ export function EventsTab() {
 
       <p className={styles.sectionTitle}>Feestje aanmaken</p>
       <form onSubmit={handleSubmit}>
-        <div className={styles.card} style={{ marginBottom: 12 }}>
+        <div className={styles.card} style={{ marginBottom:12 }}>
           <label className={styles.label}>Naam</label>
           <input className={styles.input} value={eventForm.title} onChange={e => setEventForm(f => ({ ...f, title: e.target.value }))} placeholder="Bijv. Oud & Nieuw..." required />
           <label className={styles.label}>Datum</label>
@@ -129,13 +116,13 @@ export function EventsTab() {
 
         <p className={styles.sectionTitle}>Diensten</p>
         {eventForm.shifts.map((shift, idx) => (
-          <div key={idx} className={styles.card} style={{ marginBottom: 10, borderLeft: `4px solid ${shift.role === "bonnenkassa" ? "#ffb547" : "#00e5c3"}` }}>
+          <div key={idx} className={styles.card} style={{ marginBottom:10, borderLeft:`4px solid ${shift.role === "bonnenkassa" ? "#ffb547" : "#00e5c3"}` }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                <span style={{ fontSize:11, fontWeight:700, color: shift.role === "bonnenkassa" ? "#ffb547" : "#00e5c3", textTransform:"uppercase", letterSpacing:"0.08em" }}>Dienst {idx + 1}</span>
-              </div>
+              <span style={{ fontSize:11, fontWeight:700, color: shift.role === "bonnenkassa" ? "#ffb547" : "#00e5c3", textTransform:"uppercase", letterSpacing:"0.12em" }}>
+                {shift.role === "bonnenkassa" ? "🎟" : "🍺"} Dienst {idx + 1}
+              </span>
               {eventForm.shifts.length > 1 && (
-                <button type="button" style={{ ...s.iconBtn, color:"#ff4f6d", border:"1px solid rgba(255,79,109,0.3)" }} onClick={() => removeShift(idx)}>🗑</button>
+                <button type="button" className={`${styles.iconBtn} ${styles.iconBtnDanger}`} onClick={() => removeShift(idx)}>🗑</button>
               )}
             </div>
             <div style={{ display:"flex", gap:8, marginBottom:12 }}>
@@ -151,18 +138,20 @@ export function EventsTab() {
             </div>
             <label className={styles.label}>Aantal personen</label>
             <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-              <button type="button" style={{ ...s.iconBtn, fontSize:18 }} onClick={() => updateShift(idx, "max_tappers", Math.max(1, shift.max_tappers - 1))}>−</button>
+              <button type="button" className={styles.iconBtn} style={{ fontSize:18 }} onClick={() => updateShift(idx, "max_tappers", Math.max(1, shift.max_tappers - 1))}>−</button>
               <div style={{ textAlign:"center", minWidth:40 }}>
                 <span style={{ fontFamily:"monospace", fontSize:22, color:"#00e5c3", display:"block", lineHeight:1 }}>{shift.max_tappers}</span>
-                <span style={{ fontSize:10, color:"#8b80b0", textTransform:"uppercase", letterSpacing:"0.08em" }}>personen</span>
+                <span style={{ fontSize:10, color:"#b8b0d4", textTransform:"uppercase", letterSpacing:"0.08em" }}>personen</span>
               </div>
-              <button type="button" style={{ ...s.iconBtn, fontSize:18 }} onClick={() => updateShift(idx, "max_tappers", Math.min(20, shift.max_tappers + 1))}>+</button>
+              <button type="button" className={styles.iconBtn} style={{ fontSize:18 }} onClick={() => updateShift(idx, "max_tappers", Math.min(20, shift.max_tappers + 1))}>+</button>
             </div>
           </div>
         ))}
 
-        <button type="button" className={styles.btnSecondary} style={{ marginBottom:12 }} onClick={addShift}>+ Dienst toevoegen</button>
-        <button type="submit" className={styles.btnPrimary} disabled={saving}>{saving ? "Aanmaken..." : "✅ Feestje aanmaken"}</button>
+        <div style={{ borderTop:"1px solid #2e2a4a", marginTop:4, paddingTop:12 }}>
+          <button type="button" className={styles.btnSecondary} style={{ marginBottom:10 }} onClick={addShift}>+ Dienst toevoegen</button>
+          <button type="submit" className={styles.btnPrimary} disabled={saving}>{saving ? "Aanmaken..." : "✅ Feestje aanmaken"}</button>
+        </div>
       </form>
     </>
   );

@@ -21,9 +21,27 @@ const WEEK_DAYS: { key: DayKey; label: string }[] = [
 
 const MONTH_NAMES_FULL = ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December"];
 
-const s: Record<string, React.CSSProperties> = {
-  monthNavBtn: { background:"#221f38", border:"1px solid #2e2a4a", borderRadius:8, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:22, color:"#b8b0d4", fontWeight:700, lineHeight:1 },
-};
+const CalendarIcon = () => (
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#3e3a5a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2"/>
+    <line x1="16" y1="2" x2="16" y2="6"/>
+    <line x1="8" y1="2" x2="8" y2="6"/>
+    <line x1="3" y1="10" x2="21" y2="10"/>
+    <circle cx="8" cy="15" r="0.8" fill="#3e3a5a" stroke="none"/>
+    <circle cx="12" cy="15" r="0.8" fill="#3e3a5a" stroke="none"/>
+    <circle cx="16" cy="15" r="0.8" fill="#3e3a5a" stroke="none"/>
+  </svg>
+);
+
+const DocumentIcon = () => (
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#3e3a5a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+    <polyline points="14 2 14 8 20 8"/>
+    <line x1="16" y1="13" x2="8" y2="13"/>
+    <line x1="16" y1="17" x2="8" y2="17"/>
+    <line x1="10" y1="9" x2="8" y2="9"/>
+  </svg>
+);
 
 export function RoosterTab() {
   const { dateFrom, dateTo, setDateFrom, setDateTo, published, conceptShifts, setConceptShifts, setPublished } = useAdminShell();
@@ -39,7 +57,6 @@ export function RoosterTab() {
     sunday:    { enabled: false, start: "20:00", end: "00:00" },
   });
 
-  // Published month navigation
   const now = new Date();
   const [pubMonth, setPubMonth] = useState(now.getMonth());
   const [pubYear, setPubYear] = useState(now.getFullYear());
@@ -60,7 +77,6 @@ export function RoosterTab() {
     else setPubMonth(m => m + 1);
   }
 
-  // Inline publish state
   const [publishMsg, setPublishMsg] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [publishResult, setPublishResult] = useState<{ ok: boolean; text: string } | null>(null);
@@ -114,18 +130,17 @@ export function RoosterTab() {
       {rosterView === "published" && (
         <>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
-            <button style={s.monthNavBtn} onClick={prevPubMonth}>‹</button>
-            <span style={{ fontSize:15, fontWeight:700, color:"#f0eeff", fontFamily:"'Exo 2', sans-serif" }}>
+            <button className={styles.navMonthBtn} onClick={prevPubMonth}>‹</button>
+            <span style={{ fontSize:16, fontWeight:700, color:"#f0eeff", fontFamily:"'Exo 2', sans-serif" }}>
               {MONTH_NAMES_FULL[pubMonth]} {pubYear}
             </span>
-            <button style={s.monthNavBtn} onClick={nextPubMonth}>›</button>
+            <button className={styles.navMonthBtn} onClick={nextPubMonth}>›</button>
           </div>
-          <p className={styles.sectionTitle}>Gepubliceerd rooster</p>
           {filteredPublished.length === 0 && (
-            <div style={{ textAlign:"center", padding:"32px 20px" }}>
-              <div style={{ fontSize:40, marginBottom:8 }}>📅</div>
-              <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", margin:0 }}>Geen diensten in {MONTH_NAMES_FULL[pubMonth]}</p>
-              <p style={{ fontSize:12, color:"#8b80b0", marginTop:4 }}>Blader naar een andere maand of publiceer een conceptrooster.</p>
+            <div className={styles.fadeIn} style={{ textAlign:"center", padding:"40px 20px" }}>
+              <CalendarIcon />
+              <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", margin:"12px 0 0" }}>Geen diensten in {MONTH_NAMES_FULL[pubMonth]}</p>
+              <p style={{ fontSize:12, color:"#b8b0d4", marginTop:6, lineHeight:1.5 }}>Blader naar een andere maand of publiceer een conceptrooster.</p>
             </div>
           )}
           {filteredPublished.map(shift => <AdminShiftCard key={shift.id} shift={shift as any} source="published" />)}
@@ -141,13 +156,13 @@ export function RoosterTab() {
 
               <div className={styles.card} style={{ borderColor:"#00e5c3", marginTop:8, marginBottom:16 }}>
                 {publishResult && (
-                  <div style={{ background: publishResult.ok ? "rgba(0,229,195,0.08)" : "rgba(255,79,109,0.08)", border:`1px solid ${publishResult.ok ? "#00e5c3" : "#ff4f6d"}`, borderRadius:8, padding:"8px 12px", fontSize:13, color: publishResult.ok ? "#00e5c3" : "#ff4f6d", fontWeight:700, marginBottom:12 }}>
+                  <div className={styles.bannerIn} style={{ background: publishResult.ok ? "rgba(0,229,195,0.08)" : "rgba(255,79,109,0.08)", border:`1px solid ${publishResult.ok ? "#00e5c3" : "#ff4f6d"}`, borderRadius:8, padding:"8px 12px", fontSize:13, color: publishResult.ok ? "#00e5c3" : "#ff4f6d", fontWeight:700, marginBottom:12 }}>
                     {publishResult.text}
                   </div>
                 )}
                 {!publishResult?.ok && (
                   <>
-                    <p style={{ fontSize:13, color:"#8b80b0", marginBottom:8 }}>Tevreden? Zet het rooster live.</p>
+                    <p style={{ fontSize:14, color:"#e8e0ff", marginBottom:8, lineHeight:1.5 }}>Tevreden? Zet het rooster live.</p>
                     {(() => {
                       const allAssigned = conceptShifts.flatMap((s: any) => (s.assignments || [])).filter((a: any) => a.status !== "declined");
                       const uniqueTapperCount = new Set(allAssigned.map((a: any) => a.user_id)).size;
@@ -174,16 +189,16 @@ export function RoosterTab() {
           )}
 
           {conceptShifts.length === 0 && !generating && (
-            <div style={{ textAlign:"center", padding:"32px 20px" }}>
-              <div style={{ fontSize:40, marginBottom:8 }}>🗒</div>
-              <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", margin:0 }}>Geen conceptdiensten</p>
-              <p style={{ fontSize:12, color:"#8b80b0", marginTop:4 }}>Genereer hieronder een rooster of maak een feestje aan via de Events-tab.</p>
+            <div className={styles.fadeIn} style={{ textAlign:"center", padding:"40px 20px" }}>
+              <DocumentIcon />
+              <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", margin:"12px 0 0" }}>Geen conceptdiensten</p>
+              <p style={{ fontSize:12, color:"#b8b0d4", marginTop:6, lineHeight:1.5 }}>Genereer hieronder een rooster of maak een feestje aan via de Events-tab.</p>
             </div>
           )}
 
-          {/* Generator — altijd zichtbaar */}
-          <div style={{ borderTop: conceptShifts.length > 0 ? "1px solid #2e2a4a" : "none", paddingTop: conceptShifts.length > 0 ? 16 : 0, marginTop: conceptShifts.length > 0 ? 8 : 0 }}>
-            <p className={styles.sectionTitle}>Tapavonden genereren</p>
+          {/* Generator — altijd zichtbaar, vaste marginTop */}
+          <div style={{ borderTop: conceptShifts.length > 0 ? "1px solid #2e2a4a" : "none", paddingTop: conceptShifts.length > 0 ? 16 : 0, marginTop:24 }}>
+            <p className={styles.actionHeader}>Tapavonden genereren</p>
             <div className={styles.card} style={{ marginBottom:12 }}>
               <div style={{ display:"flex", gap:10, marginBottom:14 }}>
                 <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Van</label><input type="date" className={styles.input} value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></div>
@@ -198,14 +213,19 @@ export function RoosterTab() {
                 const cfg = defaultShifts[day];
                 const isLast = idx === WEEK_DAYS.length - 1;
                 return (
-                  <div key={day} style={{ borderBottom: isLast ? "none" : "1px solid #2e2a4a", paddingBottom: isLast ? 0 : 12, marginBottom: isLast ? 0 : 12 }}>
+                  <div key={day} style={{ borderBottom: isLast ? "none" : "1px solid #2e2a4a", paddingBottom: isLast ? 0 : 8, marginBottom: isLast ? 0 : 8 }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: cfg.enabled ? 10 : 0 }}>
                       <span style={{ fontSize:13, fontWeight:700, color: cfg.enabled ? "#e8e0ff" : "#8b80b0" }}>{label}</span>
                       <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                         <span style={{ fontSize:11, color:"#8b80b0" }}>{cfg.enabled ? "Aan" : "Uit"}</span>
-                        <div onClick={() => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], enabled: !d[day].enabled } }))} style={{ width:40, height:22, borderRadius:11, background: cfg.enabled ? "#00e5c3" : "#2e2a4a", cursor:"pointer", position:"relative", transition:"background 0.2s" }}>
-                          <div style={{ position:"absolute", top:3, left: cfg.enabled ? 20 : 3, width:16, height:16, borderRadius:"50%", background:"white", transition:"left 0.2s" }} />
-                        </div>
+                        <button
+                          role="switch"
+                          aria-checked={cfg.enabled}
+                          onClick={() => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], enabled: !d[day].enabled } }))}
+                          style={{ width:40, height:22, borderRadius:11, background: cfg.enabled ? "#00e5c3" : "#2e2a4a", cursor:"pointer", position:"relative", transition:"background 0.2s cubic-bezier(0.4,0,0.2,1)", border:"none", padding:0, flexShrink:0 }}
+                        >
+                          <div style={{ position:"absolute", top:3, left: cfg.enabled ? 20 : 3, width:16, height:16, borderRadius:"50%", background:"white", transition:"left 0.2s cubic-bezier(0.4,0,0.2,1)" }} />
+                        </button>
                       </div>
                     </div>
                     {cfg.enabled && (

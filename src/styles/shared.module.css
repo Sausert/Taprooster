@@ -196,3 +196,91 @@
 .chip:hover { border-color: #5a4a9e; color: #c4b5fd; }
 .chipActive      { background: rgba(0,229,195,0.1);  border-color: #00e5c3; color: #00e5c3; }
 .chipUnavailable { background: rgba(255,79,109,0.1); border-color: #ff4f6d; color: #ff4f6d; }
+
+/* Icon action buttons — replaces inline s.iconBtn in AdminShiftCard & EventsTab */
+.iconBtn {
+  background: #221f38;
+  border: 1px solid #2e2a4a;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  color: #e8e0ff;
+  flex-shrink: 0;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.iconBtn:hover { background: #2e2a4a; border-color: #5a4a9e; }
+
+.iconBtnDanger { color: #ff4f6d; }
+.iconBtnDanger:hover { background: rgba(255,79,109,0.1); border-color: #ff4f6d; }
+
+/* Tapper remove pill (× button inside name chip) */
+.removePill {
+  background: none;
+  border: none;
+  color: #ff4f6d;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.removePill:hover { color: #ff2244; background: rgba(255,79,109,0.15); }
+
+/* Month navigation arrows */
+.navMonthBtn {
+  background: #221f38;
+  border: 1px solid #2e2a4a;
+  border-radius: 8px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 22px;
+  color: #b8b0d4;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+.navMonthBtn:hover { background: #2e2a4a; border-color: #5a4a9e; color: #f0eeff; }
+.navMonthBtn:active { transform: scale(0.92); }
+
+/* Action-initiating section header (distinct from informational sectionTitle) */
+.actionHeader {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f0eeff;
+  margin: 16px 0 8px;
+  padding-left: 10px;
+  border-left: 2px solid #00e5c3;
+  font-family: 'Exo 2', sans-serif;
+  letter-spacing: 0.02em;
+}
+
+/* Entrance animations */
+@keyframes bannerIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.bannerIn { animation: bannerIn 0.25s ease both; }
+.fadeIn   { animation: fadeUp 0.2s ease both; }
