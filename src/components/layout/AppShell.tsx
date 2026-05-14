@@ -199,7 +199,7 @@ const s: Record<string, React.CSSProperties> = {
     borderTop: "1px solid #2e2a4a",
     display: "flex",
     zIndex: 50,
-    paddingBottom: "env(safe-area-inset-bottom, 0px)",
+    paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))",
   },
   navItem: {
     flex: 1,
