@@ -22,7 +22,6 @@ export default function LoginPage() {
       setError("Onjuist e-mailadres of wachtwoord.");
     } else {
       router.push("/dashboard");
-      router.refresh();
     }
     setLoading(false);
   }

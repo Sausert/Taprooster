@@ -107,7 +107,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
     <div style={s.page}>
       {/* Header */}
       <div style={s.profileHeader}>
-        <div style={s.avatar}>{profile.full_name.split(" ").map(n => n[0]).join("").slice(0,2)}</div>
+        <div style={s.avatar}>{(profile.full_name || "?").split(" ").map(n => n[0]).join("").slice(0,2)}</div>
         <div>
           <p style={s.name}>{profile.full_name}</p>
           <p style={s.emailTxt}>{profile.email}</p>
@@ -262,7 +262,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
                 <span style={{ fontSize:lb.rank<=3?20:16, fontFamily:"monospace", width:28, textAlign:"center", color:lb.rank<=3?undefined:"#8b80b0" }}>
                   {lb.rank<=3?MEDALS[lb.rank-1]:lb.rank}
                 </span>
-                <div style={s.avatarSm}>{lb.full_name.split(" ").map((n: string) => n[0]).join("").slice(0,2)}</div>
+                <div style={s.avatarSm}>{(lb.full_name || "?").split(" ").map((n: string) => n[0]).join("").slice(0,2)}</div>
                 <div style={{ flex:1 }}>
                   <p style={{ fontSize:13, fontWeight:600, color:lb.id===profile.id?"#00e5c3":"#e8e0ff" }}>{lb.full_name}{lb.id===profile.id?" (jij)":""}</p>
                   <div style={{ ...s.progressWrap, margin:"4px 0 0", height:4 }}>
