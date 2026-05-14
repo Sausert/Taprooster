@@ -142,11 +142,6 @@ export function TappersTab() {
                     </div>
                   ))}
                 </div>
-                <div style={{ borderTop:"1px solid #2e2a4a", paddingTop:16, marginTop:8 }}>
-                  <p style={{ fontSize:11, fontWeight:700, letterSpacing:2, color:"#ff4f6d", textTransform:"uppercase", marginBottom:10 }}>⚠️ Danger zone</p>
-                  <button className={styles.btnSecondary} style={{ color:"#ffb547", borderColor:"#ffb547", marginBottom:8 }} onClick={() => resetStats(editingTapper.id, editingTapper.full_name)}>🔄 Statistieken resetten</button>
-                  <button className={styles.btnSecondary} style={{ color:"#ff4f6d", borderColor:"#ff4f6d" }} onClick={() => deleteTapper(editingTapper.id, editingTapper.full_name)}>🗑 Tapper verwijderen</button>
-                </div>
               </>
             )}
 
@@ -185,6 +180,11 @@ export function TappersTab() {
 
             <button className={styles.btnPrimary} onClick={saveTapper} disabled={savingTapper}>{savingTapper ? "Opslaan..." : "💾 Opslaan"}</button>
             <button className={styles.btnSecondary} style={{ marginTop:8 }} onClick={() => setEditingTapper(null)}>Annuleren</button>
+            <div style={{ borderTop:"1px solid #2e2a4a", paddingTop:16, marginTop:16 }}>
+              <p style={{ fontSize:11, fontWeight:700, letterSpacing:2, color:"#ff4f6d", textTransform:"uppercase", marginBottom:10 }}>⚠️ Danger zone</p>
+              <button className={styles.btnSecondary} style={{ color:"#ffb547", borderColor:"#ffb547", marginBottom:8 }} onClick={() => resetStats(editingTapper.id, editingTapper.full_name)}>🔄 Statistieken resetten</button>
+              <button className={styles.btnSecondary} style={{ color:"#ff4f6d", borderColor:"#ff4f6d" }} onClick={() => deleteTapper(editingTapper.id, editingTapper.full_name)}>🗑 Tapper verwijderen</button>
+            </div>
           </div>
         </div>
       )}

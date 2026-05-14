@@ -332,7 +332,7 @@ export default function RoosterClient({
                     </div>
                   </div>
                   <div style={{ textAlign:"right", display:"flex", flexDirection:"column", gap:6, alignItems:"flex-end" }}>
-                    <p style={{ fontSize:11, color: accentColor }}>{assigned}/{shift.max_tappers}</p>
+                    <p style={{ fontSize:11, color: accentColor }}>{assigned}/{shift.max_tappers}{assigned >= shift.max_tappers && <span style={{ marginLeft:5, fontSize:10, fontWeight:700, color:"#00e5c3", background:"rgba(0,229,195,0.12)", padding:"1px 6px", borderRadius:10 }}>VOL</span>}</p>
                     <a href={`/api/shifts/${shift.id}/ical`} style={{ ...s.icalBtnSm, textDecoration:"none" }}>📅</a>
                     {canClaim(shift) && <button style={s.claimBtnSm} onClick={() => setClaimModal(shift)}>Inschrijven</button>}
                     {mine && <button style={s.declineBtnSm} onClick={() => handleDecline(shift.id)}>Afmelden</button>}

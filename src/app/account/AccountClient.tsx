@@ -241,7 +241,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
               { val: myStats?.taps_this_year || 0, label: "Getapt" },
               { val: `#${myStats?.rank || "-"}`, label: "Positie" },
               { val: profile.preferred_frequency, label: "Doel/maand" },
-              { val: Math.max(0, (profile.preferred_frequency * 12) - (myStats?.taps_this_year || 0)), label: "Te gaan" },
+              { val: Math.max(0, (profile.preferred_frequency * 12) - (myStats?.taps_this_year || 0)), label: "Nog nodig" },
             ].map(({ val, label }) => (
               <div key={label} style={s.statCard}>
                 <p style={s.statVal}>{val}</p>

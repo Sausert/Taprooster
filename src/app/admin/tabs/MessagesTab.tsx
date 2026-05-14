@@ -61,8 +61,10 @@ export function MessagesTab() {
             value={body}
             onChange={e => setBody(e.target.value)}
             placeholder="Schrijf hier je bericht voor alle tappers..."
+            maxLength={500}
             required
           />
+          <p style={{ fontSize:11, color: body.length > 450 ? "#ffb547" : "#8b80b0", marginTop:-10, marginBottom:8, textAlign:"right" }}>{body.length}/500</p>
           {error && <p style={{ fontSize:12, color:"#ff4f6d", marginTop:4 }}>{error}</p>}
           <button className={styles.btnPrimary} type="submit" disabled={sending}>
             {sending ? "Verzenden..." : "📢 Bericht versturen"}
