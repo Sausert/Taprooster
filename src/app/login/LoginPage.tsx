@@ -78,7 +78,7 @@ export default function LoginPage() {
             />
 
             <div style={{ textAlign: "right", marginBottom: 20 }}>
-              <button type="button" style={{ ...s.link, background:"none", border:"none", padding:0, cursor:"pointer" }} onClick={() => setMode("forgot")}>
+              <button type="button" style={{ ...s.link, background:"none", border:"none", padding:0, cursor:"pointer", fontFamily:"'Exo 2', sans-serif" }} onClick={() => setMode("forgot")}>
                 Wachtwoord vergeten?
               </button>
             </div>
@@ -87,12 +87,6 @@ export default function LoginPage() {
               {loading ? "Bezig..." : "Inloggen →"}
             </button>
 
-            <p style={s.registerNote}>
-              Geen account?{" "}
-              <a href="/register" style={s.link}>
-                Registreer via uitnodigingslink
-              </a>
-            </p>
           </form>
         ) : (
           <form onSubmit={handleForgot}>

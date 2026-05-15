@@ -46,13 +46,12 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
     if (file.size > 2 * 1024 * 1024) { setAvatarError("Maximaal 2 MB per afbeelding."); return; }
     setAvatarUploading(true);
     setAvatarError("");
-    const ext = file.name.split(".").pop() || "jpg";
-    const path = `${profile.id}/avatar.${ext}`;
-    const { error: uploadErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, contentType: file.type });
-    if (uploadErr) { setAvatarError("Upload mislukt. Probeer opnieuw."); setAvatarUploading(false); return; }
-    const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
-    await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", profile.id);
-    setAvatarUrl(publicUrl);
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch("/api/avatar", { method: "POST", body: formData });
+    const data = await res.json();
+    if (!res.ok) { setAvatarError(data.error || "Upload mislukt. Probeer opnieuw."); setAvatarUploading(false); return; }
+    setAvatarUrl(data.url);
     setAvatarUploading(false);
   }
 
@@ -99,17 +98,21 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
   }
 
   function toggleDay(day: string) {
-    const days = profile.preferred_days.includes(day as any)
-      ? profile.preferred_days.filter(d => d !== day)
-      : [...profile.preferred_days, day as any];
-    setProfile(p => ({ ...p, preferred_days: days }));
+    setProfile(p => {
+      const days = p.preferred_days.includes(day as any)
+        ? p.preferred_days.filter(d => d !== day)
+        : [...p.preferred_days, day as any];
+      return { ...p, preferred_days: days };
+    });
   }
 
   function toggleRole(role: string) {
-    const roles = profile.preferred_roles.includes(role as any)
-      ? profile.preferred_roles.filter(r => r !== role)
-      : [...profile.preferred_roles, role as any];
-    setProfile(p => ({ ...p, preferred_roles: roles }));
+    setProfile(p => {
+      const roles = p.preferred_roles.includes(role as any)
+        ? p.preferred_roles.filter(r => r !== role)
+        : [...p.preferred_roles, role as any];
+      return { ...p, preferred_roles: roles };
+    });
   }
 
   function toggleMonth(monthIdx: number) {
@@ -315,9 +318,6 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
                 <div style={s.avatarSm}>{(lb.full_name || "?").split(" ").map((n: string) => n[0]).join("").slice(0,2)}</div>
                 <div style={{ flex:1 }}>
                   <p style={{ fontSize:13, fontWeight:600, color:lb.id===profile.id?"#00e5c3":"#e8e0ff" }}>{lb.full_name}{lb.id===profile.id?" (jij)":""}</p>
-                  <div style={{ ...s.progressWrap, margin:"4px 0 0", height:4 }}>
-                    <div style={{ ...s.progressFill, width:`${Math.min(100,Math.round((lb.taps_this_year/Math.max(1,lb.target*4))*100))}%`, height:"100%" }} />
-                  </div>
                 </div>
                 <span style={{ fontFamily:"monospace", fontSize:14, color:"#00e5c3" }}>{lb.taps_this_year}x</span>
               </div>
@@ -353,7 +353,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
               <div key={group.label}>
                 <p style={{ fontSize:10, fontWeight:700, letterSpacing:2, textTransform:"uppercase", color:"#8b80b0", margin:"12px 0 6px" }}>{group.label}</p>
                 {group.items.map(n => (
-                  <div key={n.id} className={sharedStyles.card} style={{ opacity:n.read?0.55:1, borderLeft:`3px solid ${n.read ? "#2e2a4a" : n.type.includes("open")||n.type.includes("reminder") ? "#ffb547" : "#00e5c3"}` }}>
+                  <div key={n.id} className={sharedStyles.card} style={{ opacity:n.read?0.72:1, borderLeft:`3px solid ${n.read ? "#2e2a4a" : n.type.includes("open")||n.type.includes("reminder") ? "#ffb547" : "#00e5c3"}` }}>
                     <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
                       <div style={{ width:36, height:36, borderRadius:10, flexShrink:0, background:n.read ? "rgba(255,255,255,0.03)" : "rgba(0,229,195,0.08)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>
                         {n.type==="roster_published"?"📅":n.type.includes("reminder")?"⏰":n.type==="open_shift"?"🔓":"📢"}

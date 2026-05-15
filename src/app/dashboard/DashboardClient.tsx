@@ -8,6 +8,9 @@ import { useShiftApi } from "@/hooks/useShiftApi";
 import sharedStyles from "@/styles/shared.module.css";
 
 type ClaimableShift = Shift & { open_spots: number };
+type AdminMessageWithSender = AdminMessage & { sender?: { full_name: string } };
+
+const MONTH_NL = ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December"];
 
 interface Props {
   profile: Profile | null;
@@ -16,15 +19,12 @@ interface Props {
   tapsThisYear: number;
   incomingPlanned: number;
   myRank: number;
-  adminMessages: AdminMessage[];
+  adminMessages: AdminMessageWithSender[];
 }
 
-// Platform detection for agenda link
 function getAgendaLink(shift: Shift): { url: string; type: "ical" | "google" } {
   const isAndroid = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
-
   if (isAndroid) {
-    // Google Calendar deep link
     const parseLocal = (d: string) => { const [y,m,day] = d.split("-").map(Number); return new Date(y,m-1,day); };
     const start = parseLocal(shift.date);
     const [sh, sm] = shift.start_time.split(":").map(Number);
@@ -42,8 +42,6 @@ function getAgendaLink(shift: Shift): { url: string; type: "ical" | "google" } {
     });
     return { url: `https://calendar.google.com/calendar/render?${params}`, type: "google" };
   }
-
-  // iOS + desktop: .ics download
   return { url: `/api/shifts/${shift.id}/ical`, type: "ical" };
 }
 
@@ -62,8 +60,41 @@ export default function DashboardClient({
   const { loading, error: fetchError, setError: setFetchError, shiftAction } = useShiftApi();
   const [dismissedMessages, setDismissedMessages] = useState<Set<string>>(new Set());
 
+  // Month navigation for mijn diensten
+  const [myMonth, setMyMonth] = useState(() => {
+    const first = myUpcoming[0]?.shift;
+    return first ? parseLocalDate(first.date).getMonth() : new Date().getMonth();
+  });
+  const [myYear, setMyYear] = useState(() => {
+    const first = myUpcoming[0]?.shift;
+    return first ? parseLocalDate(first.date).getFullYear() : new Date().getFullYear();
+  });
+
+  // Month navigation for open diensten
+  const [openMonth, setOpenMonth] = useState(() => {
+    const first = claimableShifts[0];
+    return first ? parseLocalDate(first.date).getMonth() : new Date().getMonth();
+  });
+  const [openYear, setOpenYear] = useState(() => {
+    const first = claimableShifts[0];
+    return first ? parseLocalDate(first.date).getFullYear() : new Date().getFullYear();
+  });
+
+  function prevMyMonth() {
+    if (myMonth === 0) { setMyMonth(11); setMyYear(y => y - 1); } else setMyMonth(m => m - 1);
+  }
+  function nextMyMonth() {
+    if (myMonth === 11) { setMyMonth(0); setMyYear(y => y + 1); } else setMyMonth(m => m + 1);
+  }
+  function prevOpenMonth() {
+    if (openMonth === 0) { setOpenMonth(11); setOpenYear(y => y - 1); } else setOpenMonth(m => m - 1);
+  }
+  function nextOpenMonth() {
+    if (openMonth === 11) { setOpenMonth(0); setOpenYear(y => y + 1); } else setOpenMonth(m => m + 1);
+  }
+
   const firstName = profile?.full_name?.split(" ")[0] || "Tapper";
-  const target = (profile?.preferred_frequency || 4) * 12;
+  const target = (profile?.preferred_frequency || 4) * 4;
   const pct = Math.min(100, Math.round((tapsThisYear / Math.max(target, 1)) * 100));
 
   const nextAssignment = upcoming[0];
@@ -72,10 +103,21 @@ export default function DashboardClient({
     ? Math.ceil((parseLocalDate(nextShift.date).getTime() - Date.now()) / (1000*60*60*24))
     : null;
 
+  const filteredUpcoming = upcoming.filter(a => {
+    if (!a.shift?.date) return false;
+    const d = parseLocalDate(a.shift.date);
+    return d.getMonth() === myMonth && d.getFullYear() === myYear;
+  });
+
+  const filteredClaimable = claimable.filter(s => {
+    const d = parseLocalDate(s.date);
+    return d.getMonth() === openMonth && d.getFullYear() === openYear;
+  });
+
   async function handleConfirm(shiftId: string) {
-    setConfirmedIds(p => [...p, shiftId]); // optimistic
+    setConfirmedIds(p => [...p, shiftId]);
     const ok = await shiftAction(shiftId, "confirm");
-    if (!ok) setConfirmedIds(p => p.filter(id => id !== shiftId)); // rollback
+    if (!ok) setConfirmedIds(p => p.filter(id => id !== shiftId));
   }
 
   async function handleClaim(shift: ClaimableShift) {
@@ -124,13 +166,13 @@ export default function DashboardClient({
   }
 
   function openShiftBorderColor(shift: ClaimableShift) {
-    if (shift.type === "feestje") return "#a896ff";
+    if (shift.type === "feestje") return "#f472b6";
     const filled = (shift as any).assignments?.filter((a: any) => a.status !== "declined").length || 0;
     return filled > 0 ? "#ffb547" : "#00e5c3";
   }
 
   function openShiftBg(shift: ClaimableShift) {
-    if (shift.type === "feestje") return "rgba(168,150,255,0.04)";
+    if (shift.type === "feestje") return "rgba(244,114,182,0.04)";
     const filled = (shift as any).assignments?.filter((a: any) => a.status !== "declined").length || 0;
     return filled > 0 ? "rgba(255,181,71,0.04)" : "rgba(0,229,195,0.04)";
   }
@@ -147,6 +189,7 @@ export default function DashboardClient({
           ✅ Ingeschreven voor {claimSuccess}!
         </div>
       )}
+
       {/* Greeting */}
       <div style={{ marginBottom:20 }}>
         <p style={{ fontSize:13, color:"#8b80b0", marginBottom:4 }}>Welkom terug,</p>
@@ -160,37 +203,40 @@ export default function DashboardClient({
       {nextShift ? (
         <div style={s.heroCard}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
-            <div style={{ flex:1 }}>
+            <div style={{ flex:1, minWidth:0 }}>
               <p style={s.heroLabel}>Volgende dienst</p>
               <h2 style={s.heroTitle}>{nextShift.title}</h2>
               <p style={s.heroSub}>{formatDate(nextShift.date)} · {formatTime(nextShift.start_time)}–{formatTime(nextShift.end_time)}</p>
             </div>
             {daysUntilNext !== null && (
-              <div style={{ textAlign:"center", minWidth:64 }}>
+              <div style={{ textAlign:"center", background:"rgba(0,229,195,0.06)", border:"1px solid rgba(0,229,195,0.2)", borderRadius:10, padding:"8px 12px", marginLeft:12, flexShrink:0 }}>
                 {daysUntilNext === 0 ? (
-                  <p style={{ ...s.countdown, fontSize:22, color:"#00e5c3" }}>Vandaag! 🔥</p>
+                  <>
+                    <p style={{ fontFamily:"'Exo 2',sans-serif", fontSize:11, fontWeight:700, color:"#00e5c3", textTransform:"uppercase", letterSpacing:"0.1em", margin:0 }}>Vandaag</p>
+                    <p style={{ fontSize:18, margin:"4px 0 0" }}>🔥</p>
+                  </>
                 ) : daysUntilNext === 1 ? (
                   <>
-                    <p style={{ ...s.countdown, fontSize:20, color:"#00e5c3" }}>Morgen!</p>
-                    <p style={{ fontSize:10, color:"#8b80b0", letterSpacing:1, textTransform:"uppercase", margin:0 }}>🍺</p>
+                    <p style={{ fontFamily:"'Exo 2',sans-serif", fontSize:11, fontWeight:700, color:"#00e5c3", textTransform:"uppercase", letterSpacing:"0.1em", margin:0 }}>Morgen</p>
+                    <p style={{ fontSize:18, margin:"4px 0 0" }}>🍺</p>
                   </>
                 ) : (
                   <>
-                    <p style={s.countdown}>{daysUntilNext}</p>
-                    <p style={{ fontSize:10, color:"#8b80b0", letterSpacing:1, textTransform:"uppercase", margin:0 }}>dagen</p>
+                    <p style={{ fontFamily:"monospace", fontSize:26, fontWeight:700, color:"#00e5c3", lineHeight:1, margin:0 }}>{daysUntilNext}</p>
+                    <p style={{ fontFamily:"'Exo 2',sans-serif", fontSize:10, fontWeight:700, color:"#8b80b0", textTransform:"uppercase", letterSpacing:"0.1em", margin:"2px 0 0" }}>dagen</p>
                   </>
                 )}
               </div>
             )}
           </div>
           {confirmedIds.includes(nextAssignment.shift_id) || nextAssignment.status === "confirmed" ? (
-            <div style={s.confirmedBanner}>
-              ✅ Bevestigd!{" "}
+            <div style={{ display:"flex", gap:8 }}>
+              <div style={{ flex:1, padding:"10px 12px", borderRadius:12, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, textAlign:"center" }}>✅ Bevestigd</div>
               <a
                 href={`/api/shifts/${nextShift.id}/ical`}
-                style={{ color:"inherit", textDecoration:"underline", cursor:"pointer" }}
+                style={{ flex:1, padding:"10px 12px", borderRadius:12, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, textAlign:"center", textDecoration:"none", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}
                 onClick={(e) => { if (typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent)) { e.preventDefault(); handleAgenda(nextShift); } }}
-              >Zet direct in agenda →</a>
+              >📅 Agenda</a>
             </div>
           ) : (
             <div style={s.confirmBox}>
@@ -220,21 +266,22 @@ export default function DashboardClient({
       {adminMessages.filter(m => !dismissedMessages.has(m.id)).length > 0 && (
         <>
           <p className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px" }}>Berichten van admin</p>
-          {adminMessages.filter(m => !dismissedMessages.has(m.id)).map((msg) => (
-            <div key={msg.id} className={sharedStyles.card}>
-              <div style={{ display:"flex", gap:10 }}>
-                <span style={{ fontSize:20 }}>📢</span>
-                <div style={{ flex:1 }}>
-                  <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", marginBottom:4 }}>{msg.title}</p>
-                  <p style={{ fontSize:12, color:"#8b80b0", lineHeight:1.5 }}>{msg.body}</p>
-                  <p style={{ fontSize:11, color:"#8b80b0", marginTop:6 }}>
-                    {new Date(msg.created_at).toLocaleString("nl-NL", { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" })}
-                  </p>
+          {adminMessages.filter(m => !dismissedMessages.has(m.id)).map((msg) => {
+            const senderName = msg.sender?.full_name?.split(" ")[0] || "Admin";
+            return (
+              <div key={msg.id} className={sharedStyles.card}>
+                <div style={{ display:"flex", gap:10 }}>
+                  <span style={{ fontSize:20 }}>📢</span>
+                  <div style={{ flex:1 }}>
+                    <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", marginBottom:2 }}>{msg.title}</p>
+                    <p style={{ fontSize:11, color:"#8b80b0", marginBottom:6 }}>van {senderName} · {new Date(msg.created_at).toLocaleString("nl-NL", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })}</p>
+                    <p style={{ fontSize:12, color:"#b8b0d4", lineHeight:1.5 }}>{msg.body}</p>
+                  </div>
+                  <button onClick={() => setDismissedMessages(prev => new Set([...prev, msg.id]))} style={{ background:"none", border:"none", color:"#8b80b0", fontSize:16, cursor:"pointer", padding:"0 4px", flexShrink:0, alignSelf:"flex-start", lineHeight:1 }} title="Verbergen">✕</button>
                 </div>
-                <button onClick={() => setDismissedMessages(prev => new Set([...prev, msg.id]))} style={{ background:"none", border:"none", color:"#8b80b0", fontSize:16, cursor:"pointer", padding:"0 4px", flexShrink:0, alignSelf:"flex-start", lineHeight:1 }} title="Verbergen">✕</button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </>
       )}
 
@@ -260,41 +307,45 @@ export default function DashboardClient({
           <div style={{ position:"absolute", top:0, left:"50%", transform:"translateX(-50%)", width:1, height:"100%", background:"rgba(255,255,255,0.25)" }}/>
         </div>
         {myRank > 0 && <p style={{ fontSize:11, color:"#8b80b0", marginTop:6 }}>Je staat op plek <strong style={{ color:"#00e5c3" }}>#{myRank}</strong> dit jaar 🏆</p>}
-        {tapsThisYear >= Math.round((new Date().getMonth() + 1) / 12 * target)
-          ? <p style={{fontSize:11, color:"#00e5c3", textAlign:"center", margin:"4px 0 0"}}>Je ligt op koers ✓</p>
-          : <p style={{fontSize:11, color:"#ffb547", textAlign:"center", margin:"4px 0 0"}}>Je loopt iets achter</p>
-        }
+        {tapsThisYear >= Math.round((new Date().getMonth() + 1) / 12 * target) && (
+          <p style={{fontSize:11, color:"#00e5c3", textAlign:"center", margin:"4px 0 0"}}>Je ligt op koers ✓</p>
+        )}
       </div>
 
-      {/* All upcoming shifts */}
+      {/* Mijn diensten */}
       {upcoming.length > 0 && (
         <>
-          <p ref={mijnDienstenRef} className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px" }}>Mijn diensten</p>
-          {upcoming.flatMap((a, idx): React.ReactNode[] => {
+          <div ref={mijnDienstenRef} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", margin:"20px 0 8px" }}>
+            <p className={sharedStyles.sectionTitle} style={{ margin:0 }}>Mijn diensten</p>
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <button onClick={prevMyMonth} style={s.navArrowSm}>‹</button>
+              <span style={{ fontSize:12, fontWeight:700, color:"#e8e0ff", minWidth:82, textAlign:"center" }}>
+                {MONTH_NL[myMonth]} {myYear}
+              </span>
+              <button onClick={nextMyMonth} style={s.navArrowSm}>›</button>
+            </div>
+          </div>
+          {filteredUpcoming.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"24px 20px", background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:12, color:"#8b80b0", fontSize:12 }}>
+              Geen diensten in {MONTH_NL[myMonth]}.
+            </div>
+          ) : filteredUpcoming.map((a): React.ReactNode => {
             const sh = a.shift;
-            if (!sh) return [];
-            const monthKey = sh.date.slice(0, 7);
-            const prevMonthKey = idx > 0 ? (upcoming[idx - 1]?.shift?.date.slice(0, 7) ?? null) : null;
-            const showMonthHeader = monthKey !== prevMonthKey;
-            const [mYear, mMonth] = monthKey.split("-");
-            const monthLabel = new Date(Number(mYear), Number(mMonth) - 1, 1).toLocaleDateString("nl-NL", {
-              month: "long",
-              ...(Number(mYear) !== new Date().getFullYear() ? { year: "numeric" } : {}),
-            });
+            if (!sh) return null;
             const isFirst = a === nextAssignment;
             const isConfirmed = confirmedIds.includes(a.shift_id) || a.status === "confirmed";
             const daysUntil = Math.ceil((parseLocalDate(sh.date).getTime() - Date.now()) / (1000*60*60*24));
             const urgentUnconfirmed = !isConfirmed && daysUntil >= 0 && daysUntil < 3;
             const filledCount = (sh as any).assignments?.filter((a: any) => a.status !== "declined").length ?? -1;
-            const accentColor = sh.type === "feestje" ? "#a896ff" : (filledCount >= 0 && filledCount < (sh.max_tappers || 2)) ? "#ffb547" : "#00e5c3";
-            const rgbAccent = sh.type === "feestje" ? "168,150,255" : (filledCount >= 0 && filledCount < (sh.max_tappers || 2)) ? "255,181,71" : "0,229,195";
-            const card = (
+            const accentColor = sh.type === "feestje" ? "#f472b6" : (filledCount >= 0 && filledCount < (sh.max_tappers || 2)) ? "#ffb547" : "#00e5c3";
+            const rgbAccent = sh.type === "feestje" ? "244,114,182" : (filledCount >= 0 && filledCount < (sh.max_tappers || 2)) ? "255,181,71" : "0,229,195";
+            return (
               <div key={a.shift_id} className={sharedStyles.card} style={{ borderLeft:`4px solid ${accentColor}`, background:`linear-gradient(90deg, rgba(${rgbAccent},0.04) 0%, #1a1730 40%)` }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                  <div style={{ flex:1 }}>
+                  <div style={{ flex:1, minWidth:0, marginRight:8 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4, flexWrap:"wrap" }}>
-                      <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff" }}>{sh.title}</p>
-                      {sh.type==="feestje" && <span className={`${sharedStyles.badge} ${sharedStyles.badgeViolet}`}>Feestje</span>}
+                      <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff", margin:0 }}>{sh.title}</p>
+                      {sh.type==="feestje" && <span className={`${sharedStyles.badge} ${sharedStyles.badgeParty}`}>Feestje</span>}
                       {isFirst && <span className={`${sharedStyles.badge} ${sharedStyles.badgeMint}`}>Eerstvolgende</span>}
                       {urgentUnconfirmed && <span className={`${sharedStyles.badge} ${sharedStyles.badgeAmber}`}>⏰ Bevestig — nog {daysUntil === 0 ? "vandaag" : `${daysUntil} dag${daysUntil !== 1 ? "en" : ""}`}</span>}
                     </div>
@@ -302,20 +353,21 @@ export default function DashboardClient({
                     <p style={{ fontSize:12, color:"#8b80b0" }}>{formatTime(sh.start_time)}–{formatTime(sh.end_time)}</p>
                     {sh.admin_note && <p style={{ fontSize:11, color:"#8b80b0", marginTop:4 }}>📌 {sh.admin_note}</p>}
                   </div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:6, alignItems:"flex-end" }}>
-                    {isConfirmed
-                      ? <span className={`${sharedStyles.badge} ${sharedStyles.badgeMint}`}>✓ Bevestigd</span>
-                      : <button style={{ ...s.btnYesSmall, opacity: loading===a.shift_id ? 0.5 : 1 }} disabled={loading===a.shift_id} onClick={() => handleConfirm(a.shift_id)}>✅ Bevestigen</button>
-                    }
-                    <button style={{ ...s.declineBtn, opacity: loading===a.shift_id ? 0.5 : 1 }} disabled={loading===a.shift_id} onClick={() => setDeclineModal(a)}>Afmelden</button>
+                  <div style={{ display:"flex", flexDirection:"column", gap:6, alignItems:"stretch", minWidth:88 }}>
+                    {isConfirmed ? (
+                      <div style={s.actionBtnConfirmed}>✅ Bevestigd</div>
+                    ) : (
+                      <button style={{ ...s.actionBtn, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", opacity: loading===a.shift_id ? 0.5 : 1 }} disabled={loading===a.shift_id} onClick={() => handleConfirm(a.shift_id)}>✅ Bevestigen</button>
+                    )}
+                    <button style={{ ...s.actionBtn, background:"rgba(255,79,109,0.08)", border:"1px solid #ff4f6d", color:"#ff4f6d", opacity: loading===a.shift_id ? 0.5 : 1 }} disabled={loading===a.shift_id} onClick={() => setDeclineModal(a)}>Afmelden</button>
                     <div style={{ display:"flex", gap:4 }}>
                       <a
                         href={`/api/shifts/${sh.id}/ical`}
-                        style={{ ...s.agendaBtn, textDecoration:"none", display:"inline-flex", alignItems:"center", gap:4, fontSize:11 }}
+                        style={{ ...s.iconSmBtn, textDecoration:"none", flex:1 }}
                         onClick={(e) => { if (/Android/i.test(navigator.userAgent)) { e.preventDefault(); handleAgenda(sh); } }}
                       >📅</a>
                       {typeof navigator !== "undefined" && "share" in navigator && (
-                        <button style={s.agendaBtn} onClick={() => handleShare(sh)} title="Deel dienst">
+                        <button style={{ ...s.iconSmBtn, flex:1 }} onClick={() => handleShare(sh)} title="Deel dienst">
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
                         </button>
                       )}
@@ -324,15 +376,6 @@ export default function DashboardClient({
                 </div>
               </div>
             );
-            if (showMonthHeader) {
-              return [
-                <p key={`mhdr-${monthKey}`} style={{ fontSize:10, fontWeight:700, letterSpacing:2, color:"#8b80b0", textTransform:"uppercase", margin:"16px 0 6px", paddingLeft:2 }}>
-                  {monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)}
-                </p>,
-                card,
-              ];
-            }
-            return [card];
           })}
         </>
       )}
@@ -340,8 +383,21 @@ export default function DashboardClient({
       {/* Open diensten */}
       {claimable.length > 0 && (
         <>
-          <p ref={openDienstenRef} className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px", color:"#ffb547" }}>● Open diensten</p>
-          {claimable.map((shift) => {
+          <div ref={openDienstenRef} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", margin:"20px 0 8px" }}>
+            <p className={sharedStyles.sectionTitle} style={{ margin:0, color:"#ffb547" }}>● Open diensten</p>
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <button onClick={prevOpenMonth} style={s.navArrowSm}>‹</button>
+              <span style={{ fontSize:12, fontWeight:700, color:"#e8e0ff", minWidth:82, textAlign:"center" }}>
+                {MONTH_NL[openMonth]} {openYear}
+              </span>
+              <button onClick={nextOpenMonth} style={s.navArrowSm}>›</button>
+            </div>
+          </div>
+          {filteredClaimable.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"24px 20px", background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:12, color:"#8b80b0", fontSize:12 }}>
+              Geen open diensten in {MONTH_NL[openMonth]}.
+            </div>
+          ) : filteredClaimable.map((shift) => {
             const borderColor = openShiftBorderColor(shift);
             const bgGrad = openShiftBg(shift);
             const assignedNames = (shift as any).assignments?.filter((a: any) => a.status !== "declined") || [];
@@ -350,7 +406,7 @@ export default function DashboardClient({
               <div key={shift.id} className={sharedStyles.card} style={{ borderLeft:`4px solid ${borderColor}`, background:`linear-gradient(90deg, ${bgGrad} 0%, #1a1730 40%)` }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                   <div style={{ flex:1 }}>
-                    <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff" }}>{shift.title}</p>
+                    <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff", margin:0 }}>{shift.title}</p>
                     <p style={{ fontSize:13, fontWeight:700, color:"#e8e0ff", marginBottom:2, marginTop:2 }}>{formatDateShort(shift.date)}</p>
                     <p style={{ fontSize:12, color:"#8b80b0" }}>{formatTime(shift.start_time)}–{formatTime(shift.end_time)}</p>
                     <p style={{ fontSize:11, color:"#8b80b0", marginTop:4 }}>
@@ -454,9 +510,7 @@ const s: Record<string, React.CSSProperties> = {
   heroLabel: { fontSize:11, fontWeight:700, letterSpacing:2, color:"#00e5c3", textTransform:"uppercase", marginBottom:4 },
   heroTitle: { fontSize:20, fontWeight:900, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif", margin:0 },
   heroSub: { fontSize:13, color:"#8b80b0", marginTop:2 },
-  countdown: { fontFamily:"monospace", fontSize:34, fontWeight:700, color:"#00e5c3", lineHeight:1, margin:0 },
   confirmBox: { background:"#221f38", borderRadius:16, padding:12 },
-  confirmedBanner: { background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", borderRadius:16, padding:"10px 14px", fontSize:13, color:"#00e5c3", fontWeight:700, textAlign:"center" },
   btnYes: { flex:1, padding:10, borderRadius:12, background:"rgba(0,229,195,0.1)", color:"#00e5c3", border:"1px solid #00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer" },
   btnNo: { flex:1, padding:10, borderRadius:12, background:"rgba(255,79,109,0.1)", color:"#ff4f6d", border:"1px solid #ff4f6d", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer" },
   statRow: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 },
@@ -465,8 +519,10 @@ const s: Record<string, React.CSSProperties> = {
   statLabel: { fontSize:10, fontWeight:700, color:"#8b80b0", letterSpacing:1, textTransform:"uppercase", marginTop:4, margin:0 },
   progressWrap: { background:"#2e2a4a", borderRadius:4, height:6, overflow:"hidden" },
   progressFill: { height:"100%", borderRadius:4, background:"linear-gradient(90deg,#00e5c3,#00b89c)", transition:"width 0.6s ease" },
-  btnYesSmall: { fontSize:11, fontWeight:700, padding:"5px 10px", borderRadius:12, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", cursor:"pointer" },
-  agendaBtn: { fontSize:14, padding:"4px 8px", borderRadius:8, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", cursor:"pointer" },
-  declineBtn: { fontSize:11, fontWeight:700, padding:"5px 10px", borderRadius:12, background:"rgba(255,79,109,0.08)", border:"1px solid #ff4f6d", color:"#ff4f6d", cursor:"pointer", fontFamily:"'Exo 2',sans-serif" },
-  claimBtn: { padding:"9px 14px", borderRadius:12, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", border:"none", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, letterSpacing:1, cursor:"pointer", textTransform:"uppercase", flexShrink:0 },
+  // Consistent action buttons for mijn diensten
+  actionBtn: { fontSize:11, fontWeight:700, padding:"6px 8px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", cursor:"pointer", textAlign:"center" as const, width:"100%" },
+  actionBtnConfirmed: { fontSize:11, fontWeight:700, padding:"6px 8px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", textAlign:"center" as const, width:"100%", background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3" },
+  iconSmBtn: { fontSize:14, padding:"5px 8px", borderRadius:8, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", height:28, boxSizing:"border-box" as const },
+  navArrowSm: { background:"#221f38", border:"1px solid #2e2a4a", borderRadius:6, width:28, height:28, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:16, color:"#b8b0d4", flexShrink:0, padding:0 },
+  claimBtn: { padding:"9px 14px", borderRadius:12, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", border:"none", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, letterSpacing:1, cursor:"pointer", textTransform:"uppercase" as const, flexShrink:0 },
 };

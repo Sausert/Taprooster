@@ -6,18 +6,16 @@ import { AdminShellContext, type LeaderboardEntry } from "./AdminShellContext";
 import { HealthTab } from "./tabs/HealthTab";
 import { TappersTab } from "./tabs/TappersTab";
 import { RoosterTab } from "./tabs/RoosterTab";
-import { EventsTab } from "./tabs/EventsTab";
 import { InviteTab } from "./tabs/InviteTab";
 import { MessagesTab } from "./tabs/MessagesTab";
 import { AddTapperModal } from "./components/AddTapperModal";
 
-type AdminTab = "health" | "tappers" | "rooster" | "events" | "berichten" | "uitnodiging";
+type AdminTab = "health" | "tappers" | "rooster" | "berichten" | "uitnodiging";
 
 const TABS = [
   { id: "health",      icon: "📊", label: "Status" },
   { id: "tappers",     icon: "👥", label: "Tappers" },
   { id: "rooster",     icon: "📅", label: "Rooster" },
-  { id: "events",      icon: "🎉", label: "Events" },
   { id: "berichten",   icon: "📢", label: "Berichten" },
   { id: "uitnodiging", icon: "🔗", label: "Uitnodiging" },
 ] as const;
@@ -151,7 +149,6 @@ export default function AdminClient({
           {tab === "health"      && <HealthTab />}
           {tab === "tappers"     && <TappersTab />}
           {tab === "rooster"     && <RoosterTab />}
-          {tab === "events"      && <EventsTab />}
           {tab === "berichten"   && <MessagesTab />}
           {tab === "uitnodiging" && <InviteTab />}
         </div>

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useAdminShell } from "../AdminShellContext";
 import { AdminShiftCard } from "../components/AdminShiftCard";
 import { AddTapperModal } from "../components/AddTapperModal";
+import { EventsTab } from "./EventsTab";
 import { parseLocalDate } from "@/lib/dates";
 import styles from "@/styles/shared.module.css";
 
@@ -45,7 +46,7 @@ const DocumentIcon = () => (
 
 export function RoosterTab() {
   const { dateFrom, dateTo, setDateFrom, setDateTo, published, conceptShifts, setConceptShifts, setPublished } = useAdminShell();
-  const [rosterView, setRosterView] = useState<"published" | "concept">("published");
+  const [rosterView, setRosterView] = useState<"published" | "concept" | "events">("published");
   const [generating, setGenerating] = useState(false);
   const [defaultShifts, setDefaultShifts] = useState<Record<DayKey, DayConfig>>({
     monday:    { enabled: false, start: "19:00", end: "23:00" },
@@ -120,9 +121,13 @@ export function RoosterTab() {
   return (
     <>
       <div style={{ display:"flex", gap:8, marginBottom:16 }}>
-        {(["published", "concept"] as const).map(v => (
-          <button key={v} onClick={() => setRosterView(v)} style={{ flex:1, padding:"10px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", background:rosterView === v ? "rgba(0,229,195,0.1)" : "#221f38", color:rosterView === v ? "#00e5c3" : "#8b80b0", borderWidth:1, borderStyle:"solid", borderColor:rosterView === v ? "#00e5c3" : "#2e2a4a" }}>
-            {v === "published" ? "📋 Gepubliceerd" : "🗒 Concept"}
+        {([
+          { id: "published", label: "📋 Gepubliceerd" },
+          { id: "concept",   label: "🗒 Concept" },
+          { id: "events",    label: "🎉 Events" },
+        ] as const).map(v => (
+          <button key={v.id} onClick={() => setRosterView(v.id)} style={{ flex:1, padding:"10px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:12, cursor:"pointer", background:rosterView === v.id ? "rgba(0,229,195,0.1)" : "#221f38", color:rosterView === v.id ? "#00e5c3" : "#8b80b0", borderWidth:1, borderStyle:"solid", borderColor:rosterView === v.id ? "#00e5c3" : "#2e2a4a" }}>
+            {v.label}
           </button>
         ))}
       </div>
@@ -241,6 +246,8 @@ export function RoosterTab() {
           </div>
         </>
       )}
+
+      {rosterView === "events" && <EventsTab />}
 
       <AddTapperModal />
     </>

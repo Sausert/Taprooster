@@ -85,7 +85,7 @@ export default async function DashboardPage() {
   const myRank = leaderboard?.find((l: any) => l.id === user.id)?.rank || 0;
 
   const { data: adminMessages } = await supabase
-    .from("admin_messages").select("*")
+    .from("admin_messages").select("*, sender:profiles!created_by(full_name)")
     .order("created_at", { ascending: false }).limit(3);
 
   return (
