@@ -70,15 +70,14 @@ export default async function DashboardPage() {
     .eq("status", "published")
     .gte("date", today)
     .order("date", { ascending: true })
-    .limit(20);
+    .limit(100);
 
   const claimableShifts = (openShiftsRaw || [])
     .map((s: any) => {
       const filled = (s.assignments || []).filter((a: any) => a.status !== "declined").length;
       return { ...s, open_spots: Math.max(0, s.max_tappers - filled) };
     })
-    .filter((s: any) => s.open_spots > 0 && !myShiftIds.includes(s.id))
-    .slice(0, 10);
+    .filter((s: any) => s.open_spots > 0 && !myShiftIds.includes(s.id));
 
   const { data: leaderboard } = await supabase
     .from("leaderboard").select("*").order("rank", { ascending: true });
@@ -86,7 +85,7 @@ export default async function DashboardPage() {
 
   const { data: adminMessages } = await supabase
     .from("admin_messages").select("*, sender:profiles!created_by(full_name)")
-    .order("created_at", { ascending: false }).limit(3);
+    .order("created_at", { ascending: false }).limit(1);
 
   return (
     <DashboardClient

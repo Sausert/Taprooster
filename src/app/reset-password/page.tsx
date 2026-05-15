@@ -14,16 +14,20 @@ function ResetPasswordContent() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
+  const [tokenExpired, setTokenExpired] = useState(false);
 
   useEffect(() => {
-    // Supabase sends the user back with a token_hash in the URL for PKCE flow
-    // The client automatically exchanges it on load
+    // Check if Supabase returned an error in the URL (e.g. expired token)
+    const urlError = searchParams.get("error");
+    const urlErrorCode = searchParams.get("error_code");
+    if (urlError || urlErrorCode === "otp_expired") {
+      setTokenExpired(true);
+      return;
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
-        setSessionReady(true);
-      }
+      if (event === "PASSWORD_RECOVERY") setSessionReady(true);
     });
-    // Also check if user already has a session (tab reload case)
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) setSessionReady(true);
     });
@@ -53,6 +57,23 @@ function ResetPasswordContent() {
       setTimeout(() => router.push("/dashboard"), 2000);
     }
     setLoading(false);
+  }
+
+  if (tokenExpired) {
+    return (
+      <div style={s.screen}>
+        <div style={{ ...s.logoMark, background:"rgba(255,79,109,0.1)", borderColor:"#ff4f6d", boxShadow:"0 0 40px rgba(255,79,109,0.15)" }}>⏰</div>
+        <h1 style={{ ...s.title, fontSize:20 }}>Link verlopen</h1>
+        <p style={{ color:"#8b80b0", textAlign:"center", marginTop:8, fontSize:13, lineHeight:1.6, maxWidth:320 }}>
+          De wachtwoord-reset link is verlopen (geldig voor 24 uur). Vraag hieronder een nieuwe aan.
+        </p>
+        <div style={{ marginTop:20 }}>
+          <a href="/login" style={{ display:"block", padding:"12px 24px", borderRadius:12, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:14, textDecoration:"none", textAlign:"center" }}>
+            🔑 Nieuwe reset-link aanvragen
+          </a>
+        </div>
+      </div>
+    );
   }
 
   if (success) {

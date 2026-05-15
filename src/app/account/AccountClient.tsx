@@ -43,7 +43,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) { setAvatarError("Alleen afbeeldingen toegestaan."); return; }
-    if (file.size > 2 * 1024 * 1024) { setAvatarError("Maximaal 2 MB per afbeelding."); return; }
+    if (file.size > 4 * 1024 * 1024) { setAvatarError("Maximaal 4 MB per afbeelding."); return; }
     setAvatarUploading(true);
     setAvatarError("");
     const formData = new FormData();
@@ -142,7 +142,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
           title="Profielfoto wijzigen"
         >
           {avatarUrl ? (
-            <img src={avatarUrl} alt="Profielfoto" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block", borderRadius:"inherit" }} />
+            <img src={avatarUrl} alt="Profielfoto" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block", borderRadius:"inherit" }} onError={() => setAvatarUrl("")} />
           ) : (
             (profile.full_name || "?").split(" ").map(n => n[0]).join("").slice(0,2)
           )}
@@ -352,8 +352,11 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
             return groups.map(group => (
               <div key={group.label}>
                 <p style={{ fontSize:10, fontWeight:700, letterSpacing:2, textTransform:"uppercase", color:"#8b80b0", margin:"12px 0 6px" }}>{group.label}</p>
-                {group.items.map(n => (
-                  <div key={n.id} className={sharedStyles.card} style={{ opacity:n.read?0.72:1, borderLeft:`3px solid ${n.read ? "#2e2a4a" : n.type.includes("open")||n.type.includes("reminder") ? "#ffb547" : "#00e5c3"}` }}>
+                {group.items.map(n => {
+                  const notifHref = n.type === "admin_message" ? "/dashboard" : "/rooster";
+                  return (
+                  <div key={n.id} className={sharedStyles.card} style={{ opacity:n.read?0.72:1, borderLeft:`3px solid ${n.read ? "#2e2a4a" : n.type.includes("open")||n.type.includes("reminder") ? "#ffb547" : "#00e5c3"}`, cursor:"pointer" }}
+                    onClick={() => { markRead(n.id); router.push(notifHref); }}>
                     <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
                       <div style={{ width:36, height:36, borderRadius:10, flexShrink:0, background:n.read ? "rgba(255,255,255,0.03)" : "rgba(0,229,195,0.08)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>
                         {n.type==="roster_published"?"📅":n.type.includes("reminder")?"⏰":n.type==="open_shift"?"🔓":"📢"}
@@ -366,7 +369,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
                         </p>
                       </div>
                       {!n.read ? (
-                        <button onClick={() => markRead(n.id)} style={{ flexShrink:0, padding:"4px 10px", borderRadius:20, background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:11, fontWeight:700, cursor:"pointer", alignSelf:"flex-start", marginTop:2 }}>
+                        <button onClick={(e) => { e.stopPropagation(); markRead(n.id); }} style={{ flexShrink:0, padding:"4px 10px", borderRadius:20, background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:11, fontWeight:700, cursor:"pointer", alignSelf:"flex-start", marginTop:2 }}>
                           ✓
                         </button>
                       ) : (
@@ -374,7 +377,8 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
                       )}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             ));
           })()}

@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { parseLocalDate, formatDate, formatDateShort, formatTime } from "@/lib/dates";
 import { useShiftApi } from "@/hooks/useShiftApi";
+import { createClient } from "@/lib/supabase";
 
 const MONTH_NAMES = ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December"];
 const DAY_LABELS = ["Ma","Di","Wo","Do","Vr","Za","Zo"];
@@ -42,6 +43,7 @@ export default function RoosterClient({
 }: {
   shifts: any[]; myShiftIds: string[]; userId: string; userAssignments: any[]; isAdmin?: boolean;
 }) {
+  const [liveShifts, setLiveShifts] = useState<any[]>(shifts);
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth());
@@ -53,6 +55,42 @@ export default function RoosterClient({
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [listSearch, setListSearch] = useState("");
   const { loading, shiftAction } = useShiftApi();
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("rooster-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "shift_assignments" }, (payload) => {
+        setLiveShifts(prev => prev.map(s => {
+          if (payload.eventType === "INSERT" && s.id === payload.new.shift_id) {
+            const exists = (s.assignments || []).some((a: any) => a.user_id === payload.new.user_id);
+            if (exists) return s;
+            return { ...s, assignments: [...(s.assignments || []), payload.new] };
+          }
+          if (payload.eventType === "UPDATE" && s.id === payload.new.shift_id) {
+            return { ...s, assignments: (s.assignments || []).map((a: any) => a.user_id === payload.new.user_id ? { ...a, status: payload.new.status } : a) };
+          }
+          if (payload.eventType === "DELETE" && s.id === payload.old.shift_id) {
+            return { ...s, assignments: (s.assignments || []).filter((a: any) => a.user_id !== payload.old.user_id) };
+          }
+          return s;
+        }));
+        // Sync selectedShifts
+        setSelectedShifts(prev => {
+          if (payload.eventType === "INSERT" && prev.some(s => s.id === payload.new.shift_id)) {
+            return prev.map(s => {
+              if (s.id !== payload.new.shift_id) return s;
+              const exists = (s.assignments || []).some((a: any) => a.user_id === payload.new.user_id);
+              if (exists) return s;
+              return { ...s, assignments: [...(s.assignments || []), payload.new] };
+            });
+          }
+          return prev;
+        });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   function prevMonth() {
     setSelectedShifts([]);
@@ -68,7 +106,7 @@ export default function RoosterClient({
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const offset = getMondayOffset(viewYear, viewMonth);
 
-  const monthShifts = shifts.filter(s => {
+  const monthShifts = liveShifts.filter(s => {
     const d = parseLocalDate(s.date);
     return d.getFullYear() === viewYear && d.getMonth() === viewMonth;
   });

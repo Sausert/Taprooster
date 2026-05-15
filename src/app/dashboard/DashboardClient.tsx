@@ -55,10 +55,16 @@ export default function DashboardClient({
   const [claimable, setClaimable] = useState<ClaimableShift[]>(claimableShifts);
   const [claimModal, setClaimModal] = useState<ClaimableShift | null>(null);
   const [declineModal, setDeclineModal] = useState<ShiftAssignment | null>(null);
-  const [confirmedIds, setConfirmedIds] = useState<string[]>([]);
+  const [heroIndex, setHeroIndex] = useState(0);
+  const [confirmedIds, setConfirmedIds] = useState<string[]>(
+    myUpcoming.filter(a => a.status === "confirmed").map(a => a.shift_id)
+  );
   const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
   const { loading, error: fetchError, setError: setFetchError, shiftAction } = useShiftApi();
-  const [dismissedMessages, setDismissedMessages] = useState<Set<string>>(new Set());
+  const [dismissedMessages, setDismissedMessages] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try { return new Set(JSON.parse(localStorage.getItem("dismissedMessages") || "[]")); } catch { return new Set(); }
+  });
 
   // Month navigation for mijn diensten
   const [myMonth, setMyMonth] = useState(() => {
@@ -97,7 +103,7 @@ export default function DashboardClient({
   const target = (profile?.preferred_frequency || 4) * 4;
   const pct = Math.min(100, Math.round((tapsThisYear / Math.max(target, 1)) * 100));
 
-  const nextAssignment = upcoming[0];
+  const nextAssignment = upcoming[Math.min(heroIndex, Math.max(0, upcoming.length - 1))];
   const nextShift = nextAssignment?.shift;
   const daysUntilNext = nextShift
     ? Math.ceil((parseLocalDate(nextShift.date).getTime() - Date.now()) / (1000*60*60*24))
@@ -138,7 +144,7 @@ export default function DashboardClient({
 
   async function handleDecline(assignment: ShiftAssignment) {
     const ok = await shiftAction(assignment.shift_id, "decline");
-    if (ok) setUpcoming(u => u.filter(a => a.shift_id !== assignment.shift_id));
+    if (ok) { setUpcoming(u => u.filter(a => a.shift_id !== assignment.shift_id)); setHeroIndex(0); }
     setDeclineModal(null);
   }
 
@@ -202,50 +208,69 @@ export default function DashboardClient({
       {/* Next shift hero */}
       {nextShift ? (
         <div style={s.heroCard}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
-            <div style={{ flex:1, minWidth:0 }}>
-              <p style={s.heroLabel}>Volgende dienst</p>
-              <h2 style={s.heroTitle}>{nextShift.title}</h2>
-              <p style={s.heroSub}>{formatDate(nextShift.date)} · {formatTime(nextShift.start_time)}–{formatTime(nextShift.end_time)}</p>
+          {/* Navigation when multiple shifts */}
+          {upcoming.length > 1 && (
+            <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:10, gap:6, alignItems:"center" }}>
+              <button onClick={() => setHeroIndex(i => Math.max(0, i - 1))} style={{ ...s.navArrowSm, opacity: heroIndex === 0 ? 0.35 : 1 }}>‹</button>
+              <span style={{ fontSize:11, color:"#8b80b0", fontFamily:"monospace", minWidth:28, textAlign:"center" }}>{heroIndex + 1}/{upcoming.length}</span>
+              <button onClick={() => setHeroIndex(i => Math.min(upcoming.length - 1, i + 1))} style={{ ...s.navArrowSm, opacity: heroIndex === upcoming.length - 1 ? 0.35 : 1 }}>›</button>
             </div>
-            {daysUntilNext !== null && (
-              <div style={{ textAlign:"center", background:"rgba(0,229,195,0.06)", border:"1px solid rgba(0,229,195,0.2)", borderRadius:10, padding:"8px 12px", marginLeft:12, flexShrink:0 }}>
-                {daysUntilNext === 0 ? (
-                  <>
-                    <p style={{ fontFamily:"'Exo 2',sans-serif", fontSize:11, fontWeight:700, color:"#00e5c3", textTransform:"uppercase", letterSpacing:"0.1em", margin:0 }}>Vandaag</p>
-                    <p style={{ fontSize:18, margin:"4px 0 0" }}>🔥</p>
-                  </>
-                ) : daysUntilNext === 1 ? (
-                  <>
-                    <p style={{ fontFamily:"'Exo 2',sans-serif", fontSize:11, fontWeight:700, color:"#00e5c3", textTransform:"uppercase", letterSpacing:"0.1em", margin:0 }}>Morgen</p>
-                    <p style={{ fontSize:18, margin:"4px 0 0" }}>🍺</p>
-                  </>
-                ) : (
-                  <>
-                    <p style={{ fontFamily:"monospace", fontSize:26, fontWeight:700, color:"#00e5c3", lineHeight:1, margin:0 }}>{daysUntilNext}</p>
-                    <p style={{ fontFamily:"'Exo 2',sans-serif", fontSize:10, fontWeight:700, color:"#8b80b0", textTransform:"uppercase", letterSpacing:"0.1em", margin:"2px 0 0" }}>dagen</p>
-                  </>
+          )}
+          {confirmedIds.includes(nextAssignment.shift_id) || nextAssignment.status === "confirmed" ? (
+            <>
+              <div style={{ marginBottom:12 }}>
+                <p style={s.heroLabel}>Volgende dienst</p>
+                <h2 style={s.heroTitle}>{nextShift.title}</h2>
+                <p style={s.heroSub}>{formatDate(nextShift.date)} · {formatTime(nextShift.start_time)}–{formatTime(nextShift.end_time)}</p>
+              </div>
+              <div style={{ display:"flex", gap:8 }}>
+                {/* Days pill — same width as Agenda */}
+                {daysUntilNext !== null ? (
+                  <div style={{ flex:1, textAlign:"center", background:"rgba(0,229,195,0.06)", border:"1px solid rgba(0,229,195,0.2)", borderRadius:12, padding:"8px 12px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+                    {daysUntilNext === 0 ? (
+                      <><p style={{ fontFamily:"'Exo 2',sans-serif", fontSize:11, fontWeight:700, color:"#00e5c3", textTransform:"uppercase", letterSpacing:"0.1em", margin:0 }}>Vandaag</p><p style={{ fontSize:18, margin:"4px 0 0" }}>🔥</p></>
+                    ) : daysUntilNext === 1 ? (
+                      <><p style={{ fontFamily:"'Exo 2',sans-serif", fontSize:11, fontWeight:700, color:"#00e5c3", textTransform:"uppercase", letterSpacing:"0.1em", margin:0 }}>Morgen</p><p style={{ fontSize:18, margin:"4px 0 0" }}>🍺</p></>
+                    ) : (
+                      <><p style={{ fontFamily:"monospace", fontSize:26, fontWeight:700, color:"#00e5c3", lineHeight:1, margin:0 }}>{daysUntilNext}</p><p style={{ fontFamily:"'Exo 2',sans-serif", fontSize:10, fontWeight:700, color:"#8b80b0", textTransform:"uppercase", letterSpacing:"0.1em", margin:"2px 0 0" }}>dagen</p></>
+                    )}
+                  </div>
+                ) : <div style={{ flex:1, textAlign:"center", background:"rgba(0,229,195,0.06)", border:"1px solid rgba(0,229,195,0.2)", borderRadius:12, padding:"8px 12px", display:"flex", alignItems:"center", justifyContent:"center" }}><span style={{ fontSize:11, color:"#00e5c3", fontWeight:700 }}>✅ Bevestigd</span></div>}
+                <a
+                  href={`/api/shifts/${nextShift.id}/ical`}
+                  style={{ flex:1, padding:"10px 12px", borderRadius:12, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, textAlign:"center", textDecoration:"none", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}
+                  onClick={(e) => { if (typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent)) { e.preventDefault(); handleAgenda(nextShift); } }}
+                >📅 Agenda</a>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <p style={s.heroLabel}>Volgende dienst</p>
+                  <h2 style={s.heroTitle}>{nextShift.title}</h2>
+                  <p style={s.heroSub}>{formatDate(nextShift.date)} · {formatTime(nextShift.start_time)}–{formatTime(nextShift.end_time)}</p>
+                </div>
+                {daysUntilNext !== null && (
+                  <div style={{ textAlign:"center", background:"rgba(0,229,195,0.06)", border:"1px solid rgba(0,229,195,0.2)", borderRadius:10, padding:"8px 12px", marginLeft:12, flexShrink:0 }}>
+                    {daysUntilNext === 0 ? (
+                      <><p style={{ fontFamily:"'Exo 2',sans-serif", fontSize:11, fontWeight:700, color:"#00e5c3", textTransform:"uppercase", letterSpacing:"0.1em", margin:0 }}>Vandaag</p><p style={{ fontSize:18, margin:"4px 0 0" }}>🔥</p></>
+                    ) : daysUntilNext === 1 ? (
+                      <><p style={{ fontFamily:"'Exo 2',sans-serif", fontSize:11, fontWeight:700, color:"#00e5c3", textTransform:"uppercase", letterSpacing:"0.1em", margin:0 }}>Morgen</p><p style={{ fontSize:18, margin:"4px 0 0" }}>🍺</p></>
+                    ) : (
+                      <><p style={{ fontFamily:"monospace", fontSize:26, fontWeight:700, color:"#00e5c3", lineHeight:1, margin:0 }}>{daysUntilNext}</p><p style={{ fontFamily:"'Exo 2',sans-serif", fontSize:10, fontWeight:700, color:"#8b80b0", textTransform:"uppercase", letterSpacing:"0.1em", margin:"2px 0 0" }}>dagen</p></>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-          {confirmedIds.includes(nextAssignment.shift_id) || nextAssignment.status === "confirmed" ? (
-            <div style={{ display:"flex", gap:8 }}>
-              <div style={{ flex:1, padding:"10px 12px", borderRadius:12, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, textAlign:"center" }}>✅ Bevestigd</div>
-              <a
-                href={`/api/shifts/${nextShift.id}/ical`}
-                style={{ flex:1, padding:"10px 12px", borderRadius:12, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, textAlign:"center", textDecoration:"none", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}
-                onClick={(e) => { if (typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent)) { e.preventDefault(); handleAgenda(nextShift); } }}
-              >📅 Agenda</a>
-            </div>
-          ) : (
-            <div style={s.confirmBox}>
-              <p style={{ fontSize:12, color:"#8b80b0", marginBottom:8 }}>Ben jij erbij?</p>
-              <div style={{ display:"flex", gap:8 }}>
-                <button style={{ ...s.btnYes, opacity: loading===nextAssignment.shift_id ? 0.5 : 1 }} disabled={loading===nextAssignment.shift_id} onClick={() => handleConfirm(nextAssignment.shift_id)}>✅ Ik ben erbij</button>
-                <button style={s.btnNo} onClick={() => setDeclineModal(nextAssignment)}>🔴 Ik kan niet</button>
+              <div style={s.confirmBox}>
+                <p style={{ fontSize:12, color:"#8b80b0", marginBottom:8 }}>Ben jij erbij?</p>
+                <div style={{ display:"flex", gap:8 }}>
+                  <button style={{ ...s.btnYes, opacity: loading===nextAssignment.shift_id ? 0.5 : 1 }} disabled={loading===nextAssignment.shift_id} onClick={() => handleConfirm(nextAssignment.shift_id)}>✅ Ik ben erbij</button>
+                  <button style={s.btnNo} onClick={() => setDeclineModal(nextAssignment)}>🔴 Ik kan niet</button>
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
       ) : (
@@ -277,7 +302,11 @@ export default function DashboardClient({
                     <p style={{ fontSize:11, color:"#8b80b0", marginBottom:6 }}>van {senderName} · {new Date(msg.created_at).toLocaleString("nl-NL", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })}</p>
                     <p style={{ fontSize:12, color:"#b8b0d4", lineHeight:1.5 }}>{msg.body}</p>
                   </div>
-                  <button onClick={() => setDismissedMessages(prev => new Set([...prev, msg.id]))} style={{ background:"none", border:"none", color:"#8b80b0", fontSize:16, cursor:"pointer", padding:"0 4px", flexShrink:0, alignSelf:"flex-start", lineHeight:1 }} title="Verbergen">✕</button>
+                  <button onClick={() => {
+                    const next = new Set([...dismissedMessages, msg.id]);
+                    setDismissedMessages(next);
+                    try { localStorage.setItem("dismissedMessages", JSON.stringify([...next])); } catch {}
+                  }} style={{ background:"none", border:"none", color:"#8b80b0", fontSize:16, cursor:"pointer", padding:"0 4px", flexShrink:0, alignSelf:"flex-start", lineHeight:1 }} title="Verbergen">✕</button>
                 </div>
               </div>
             );
@@ -316,7 +345,10 @@ export default function DashboardClient({
       {upcoming.length > 0 && (
         <>
           <div ref={mijnDienstenRef} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", margin:"20px 0 8px" }}>
-            <p className={sharedStyles.sectionTitle} style={{ margin:0 }}>Mijn diensten</p>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <p className={sharedStyles.sectionTitle} style={{ margin:0 }}>Mijn diensten</p>
+              <a href="/api/shifts/my-ical" title="Exporteer alle diensten naar agenda" style={{ fontSize:14, color:"#8b80b0", textDecoration:"none", lineHeight:1 }}>📅</a>
+            </div>
             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
               <button onClick={prevMyMonth} style={s.navArrowSm}>‹</button>
               <span style={{ fontSize:12, fontWeight:700, color:"#e8e0ff", minWidth:82, textAlign:"center" }}>
@@ -332,7 +364,7 @@ export default function DashboardClient({
           ) : filteredUpcoming.map((a): React.ReactNode => {
             const sh = a.shift;
             if (!sh) return null;
-            const isFirst = a === nextAssignment;
+            const isFirst = a === upcoming[0];
             const isConfirmed = confirmedIds.includes(a.shift_id) || a.status === "confirmed";
             const daysUntil = Math.ceil((parseLocalDate(sh.date).getTime() - Date.now()) / (1000*60*60*24));
             const urgentUnconfirmed = !isConfirmed && daysUntil >= 0 && daysUntil < 3;
