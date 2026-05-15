@@ -14,6 +14,7 @@ export type NotificationType =
   | "unconfirmed_reminder"
   | "open_shift"
   | "shift_claimed"
+  | "shift_assigned"
   | "shift_cancelled"
   | "admin_message";
 export type InviteStatus = "pending" | "used" | "expired";

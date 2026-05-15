@@ -32,7 +32,7 @@ function ResetPasswordContent() {
       if (session) setSessionReady(true);
     });
     return () => subscription.unsubscribe();
-  }, []);
+  }, [searchParams]);
 
   function validatePassword(pw: string): string[] {
     const errors: string[] = [];
@@ -64,7 +64,7 @@ function ResetPasswordContent() {
       <div style={s.screen}>
         <div style={{ ...s.logoMark, background:"rgba(255,79,109,0.1)", borderColor:"#ff4f6d", boxShadow:"0 0 40px rgba(255,79,109,0.15)" }}>⏰</div>
         <h1 style={{ ...s.title, fontSize:20 }}>Link verlopen</h1>
-        <p style={{ color:"#8b80b0", textAlign:"center", marginTop:8, fontSize:13, lineHeight:1.6, maxWidth:320 }}>
+        <p style={{ color:"#a89ec8", textAlign:"center", marginTop:8, fontSize:13, lineHeight:1.6, maxWidth:320 }}>
           De wachtwoord-reset link is verlopen (geldig voor 24 uur). Vraag hieronder een nieuwe aan.
         </p>
         <div style={{ marginTop:20 }}>
@@ -81,7 +81,7 @@ function ResetPasswordContent() {
       <div style={s.screen}>
         <div style={s.logoMark}>✅</div>
         <h1 style={s.title}>Wachtwoord gewijzigd!</h1>
-        <p style={{ color: "#8b80b0", marginTop: 8 }}>Je wordt doorgestuurd naar het dashboard...</p>
+        <p style={{ color: "#a89ec8", marginTop: 8 }}>Je wordt doorgestuurd naar het dashboard...</p>
       </div>
     );
   }
@@ -96,7 +96,7 @@ function ResetPasswordContent() {
 
       {!sessionReady ? (
         <div style={s.formCard}>
-          <p style={{ color: "#8b80b0", textAlign: "center", fontSize: 13 }}>
+          <p style={{ color: "#a89ec8", textAlign: "center", fontSize: 13 }}>
             Link valideren...
           </p>
         </div>
@@ -111,6 +111,7 @@ function ResetPasswordContent() {
               placeholder="Min. 8 tekens, 1 cijfer, 1 speciaal teken"
               value={password}
               onChange={e => setPassword(e.target.value)}
+              autoComplete="new-password"
               required
             />
             <div style={{ marginBottom: 14 }}>
@@ -123,7 +124,7 @@ function ResetPasswordContent() {
                   <span style={{ fontSize: 12, color: password.length === 0 ? "#2e2a4a" : rule.ok ? "#00e5c3" : "#ff4f6d" }}>
                     {password.length === 0 ? "○" : rule.ok ? "✓" : "✗"}
                   </span>
-                  <span style={{ fontSize: 12, color: password.length === 0 ? "#8b80b0" : rule.ok ? "#00e5c3" : "#ff4f6d" }}>
+                  <span style={{ fontSize: 12, color: password.length === 0 ? "#a89ec8" : rule.ok ? "#00e5c3" : "#ff4f6d" }}>
                     {rule.label}
                   </span>
                 </div>
@@ -136,6 +137,7 @@ function ResetPasswordContent() {
               placeholder="Herhaal wachtwoord"
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
+              autoComplete="new-password"
               required
             />
             <button style={s.btnPrimary} type="submit" disabled={loading}>
@@ -153,7 +155,7 @@ export default function ResetPasswordPage() {
     <Suspense fallback={
       <div style={s.screen}>
         <div style={s.logoMark}>🔑</div>
-        <p style={{ color: "#8b80b0" }}>Laden...</p>
+        <p style={{ color: "#a89ec8" }}>Laden...</p>
       </div>
     }>
       <ResetPasswordContent />
@@ -167,9 +169,9 @@ const s: Record<string, React.CSSProperties> = {
   logoMark: { width: 80, height: 80, background: "rgba(0,229,195,0.1)", border: "2px solid #00e5c3", borderRadius: 22, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, marginBottom: 20, boxShadow: "0 0 40px rgba(0,229,195,0.2)" },
   title: { fontFamily: "'Exo 2', sans-serif", fontWeight: 900, fontSize: 34, letterSpacing: 4, textTransform: "uppercase" as const, color: "#f0eeff", marginBottom: 4 },
   appName: { fontSize: 11, letterSpacing: 4, color: "#00e5c3", fontWeight: 700, textTransform: "uppercase" as const, marginBottom: 4 },
-  sub: { fontSize: 13, color: "#8b80b0", marginBottom: 24 },
+  sub: { fontSize: 13, color: "#a89ec8", marginBottom: 24 },
   formCard: { width: "100%", maxWidth: 380, background: "#1a1730", border: "1px solid #2e2a4a", borderRadius: 20, padding: "28px 24px" },
-  label: { display: "block", fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" as const, color: "#8b80b0", marginBottom: 6 },
+  label: { display: "block", fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" as const, color: "#a89ec8", marginBottom: 6 },
   input: { width: "100%", background: "#221f38", border: "1px solid #2e2a4a", borderRadius: 10, padding: "12px 14px", color: "#e8e0ff", fontFamily: "'Exo 2', sans-serif", fontSize: 15, outline: "none", marginBottom: 14, display: "block", boxSizing: "border-box" as const },
   btnPrimary: { display: "block", width: "100%", padding: "14px", borderRadius: 12, background: "linear-gradient(135deg, #00e5c3, #00b89c)", color: "#0f0d1a", fontFamily: "'Exo 2', sans-serif", fontSize: 15, fontWeight: 700, letterSpacing: 1, border: "none", cursor: "pointer", textTransform: "uppercase" as const, boxShadow: "0 4px 20px rgba(0,229,195,0.3)", textAlign: "center" as const },
   errorBox: { background: "rgba(255,79,109,0.1)", border: "1px solid #ff4f6d", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#ff4f6d", marginBottom: 16 },

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase-server";
 import { sendOpenShiftEmail } from "@/lib/email";
+import { parseLocalDate } from "@/lib/dates";
 
 export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id: shiftId } = await context.params;
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
     if (shift) {
       const { data: allProfiles } = await supabase.from("profiles")
         .select("id, email, full_name").neq("id", targetUserId);
-      const shiftDate = new Date(shift.date).toLocaleDateString("nl-NL", { weekday:"long", day:"numeric", month:"long" });
+      const shiftDate = parseLocalDate(shift.date).toLocaleDateString("nl-NL", { weekday:"long", day:"numeric", month:"long" });
       const shiftTime = `${shift.start_time}–${shift.end_time}`;
       if (allProfiles) {
         const adminClient = createAdminClient();

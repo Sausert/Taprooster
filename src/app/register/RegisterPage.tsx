@@ -89,7 +89,7 @@ function RegisterContent() {
     return (
       <div style={s.screen}>
         <div style={s.logoMark}>🍺</div>
-        <p style={{ color: "#8b80b0" }}>Link valideren...</p>
+        <p style={{ color: "#a89ec8" }}>Link valideren...</p>
       </div>
     );
   }
@@ -100,7 +100,7 @@ function RegisterContent() {
         <div style={s.bgGlow1} />
         <div style={s.logoMark}>⛔</div>
         <h1 style={{ ...s.title, fontSize: 22, marginBottom: 12 }}>Ongeldige link</h1>
-        <p style={{ color: "#8b80b0", textAlign: "center", maxWidth: 300, marginBottom: 24 }}>
+        <p style={{ color: "#a89ec8", textAlign: "center", maxWidth: 300, marginBottom: 24 }}>
           {tokenError}
         </p>
         <a href="/login" style={s.btnPrimary}>← Terug naar inloggen</a>
@@ -124,30 +124,36 @@ function RegisterContent() {
         {error && <div style={s.errorBox}>{error}</div>}
 
         <form onSubmit={handleRegister}>
-          <label style={s.label}>Volledige naam</label>
+          <label htmlFor="reg-name" style={s.label}>Volledige naam</label>
           <input
+            id="reg-name"
             style={s.input}
             type="text"
+            autoComplete="name"
             placeholder="Naam Achternaam"
             value={fullName}
             onChange={e => setFullName(e.target.value)}
             required
           />
 
-          <label style={s.label}>E-mailadres</label>
+          <label htmlFor="reg-email" style={s.label}>E-mailadres</label>
           <input
+            id="reg-email"
             style={s.input}
             type="email"
+            autoComplete="email"
             placeholder="jij@email.nl"
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
           />
 
-          <label style={s.label}>Wachtwoord</label>
+          <label htmlFor="reg-password" style={s.label}>Wachtwoord</label>
           <input
+            id="reg-password"
             style={s.input}
             type="password"
+            autoComplete="new-password"
             placeholder="Min. 8 tekens, 1 cijfer, 1 speciaal teken"
             value={password}
             onChange={e => {
@@ -167,20 +173,22 @@ function RegisterContent() {
                 <span style={{ fontSize: 12, color: password.length === 0 ? "#2e2a4a" : rule.ok ? "#00e5c3" : "#ff4f6d" }}>
                   {password.length === 0 ? "○" : rule.ok ? "✓" : "✗"}
                 </span>
-                <span style={{ fontSize: 12, color: password.length === 0 ? "#8b80b0" : rule.ok ? "#00e5c3" : "#ff4f6d" }}>
+                <span style={{ fontSize: 12, color: password.length === 0 ? "#a89ec8" : rule.ok ? "#00e5c3" : "#ff4f6d" }}>
                   {rule.label}
                 </span>
               </div>
             ))}
           </div>
 
-          <label style={s.label}>Bevestig wachtwoord</label>
+          <label htmlFor="reg-confirm" style={s.label}>Bevestig wachtwoord</label>
           <input
+            id="reg-confirm"
             style={{
               ...s.input,
               borderColor: confirmPassword && confirmPassword !== password ? "#ff4f6d" : "#2e2a4a",
             }}
             type="password"
+            autoComplete="new-password"
             placeholder="Herhaal wachtwoord"
             value={confirmPassword}
             onChange={e => setConfirmPassword(e.target.value)}
@@ -208,7 +216,7 @@ export default function RegisterPage() {
     <Suspense fallback={
       <div style={s.screen}>
         <div style={s.logoMark}>🍺</div>
-        <p style={{ color: "#8b80b0" }}>Laden...</p>
+        <p style={{ color: "#a89ec8" }}>Laden...</p>
       </div>
     }>
       <RegisterContent />
@@ -279,7 +287,7 @@ const s: Record<string, React.CSSProperties> = {
     textTransform: "uppercase",
     marginBottom: 4,
   },
-  sub: { fontSize: 13, color: "#8b80b0", marginBottom: 24 },
+  sub: { fontSize: 13, color: "#a89ec8", marginBottom: 24 },
   formCard: {
     width: "100%",
     maxWidth: 380,
@@ -305,7 +313,7 @@ const s: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     letterSpacing: 1,
     textTransform: "uppercase",
-    color: "#8b80b0",
+    color: "#a89ec8",
     marginBottom: 6,
   },
   input: {
@@ -344,7 +352,7 @@ const s: Record<string, React.CSSProperties> = {
     textAlign: "center",
     marginTop: 16,
     fontSize: 13,
-    color: "#8b80b0",
+    color: "#a89ec8",
   },
   errorBox: {
     background: "rgba(255,79,109,0.1)",

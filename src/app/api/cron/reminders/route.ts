@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
         try {
           await sendShiftReminderEmail(a.profile.email, a.profile.full_name, shift.title, dateLabel, timeLabel, weeks);
           sent++;
-        } catch(e) { console.error(`Email ${weeks}w failed:`, e); }
+        } catch { /* email failure is non-fatal */ }
       }
     }
   }
@@ -72,6 +72,7 @@ export async function GET(req: NextRequest) {
 
   for (const shift of upcoming || []) {
     const dateLabel = parseLocalDate(shift.date).toLocaleDateString("nl-NL",{weekday:"long",day:"numeric",month:"long"});
+    const timeLabel = `${shift.start_time}–${shift.end_time}`;
     for (const a of (shift.assignments || [])) {
       if (a.status !== "assigned") continue; // alleen onbevestigd
       if (await alreadySent(a.user_id, "unconfirmed_reminder", shift.id)) continue;
@@ -81,6 +82,11 @@ export async function GET(req: NextRequest) {
         message: `Je hebt nog niet bevestigd voor ${shift.title} op ${dateLabel}.`,
         shift_id: shift.id, read: false,
       });
+      if (a.profile?.email) {
+        try {
+          await sendShiftReminderEmail(a.profile.email, a.profile.full_name, shift.title, dateLabel, timeLabel, 1);
+        } catch { /* email failure is non-fatal */ }
+      }
       sent++;
     }
   }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-helpers";
 import { createAdminClient } from "@/lib/supabase-server";
 import { sendRosterPublishedEmail } from "@/lib/email";
+import { parseLocalDate } from "@/lib/dates";
 
 function getMonthName(m: string): string {
   const months = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     const firstShift = feestjeShifts?.[0];
     const feestjeName = firstShift?.title?.replace(/ \(.*\)$/, "") || "feestje";
     const feestjeDate = firstShift
-      ? new Date(firstShift.date).toLocaleDateString("nl-NL", { weekday:"long", day:"numeric", month:"long" })
+      ? parseLocalDate(firstShift.date).toLocaleDateString("nl-NL", { weekday:"long", day:"numeric", month:"long" })
       : "";
     const notifMessage = message || `${feestjeName}${feestjeDate ? ` op ${feestjeDate}` : ""}. Meld je aan via het rooster!`;
 
@@ -104,7 +105,7 @@ export async function POST(req: NextRequest) {
         read: false,
       }))
     );
-    if (notifError) console.error("Notif insert error:", notifError.message);
+    if (notifError) { /* notif insert failure is non-fatal */ }
   }
 
   const { data: publishedShifts } = await supabase
@@ -121,7 +122,7 @@ export async function POST(req: NextRequest) {
           user_id: assignment.user_id,
           type: "shift_assigned",
           title: "🍺 Jij staat ingepland!",
-          message: `${shift.title} op ${new Date(shift.date).toLocaleDateString("nl-NL", { weekday:"long", day:"numeric", month:"long" })} · ${shift.start_time}–${shift.end_time}`,
+          message: `${shift.title} op ${parseLocalDate(shift.date).toLocaleDateString("nl-NL", { weekday:"long", day:"numeric", month:"long" })} · ${shift.start_time}–${shift.end_time}`,
           shift_id: shift.id,
           read: false,
         });

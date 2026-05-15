@@ -82,18 +82,20 @@ export function RoosterTab() {
   const [publishMsg, setPublishMsg] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [publishResult, setPublishResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const [generatorError, setGeneratorError] = useState<string | null>(null);
 
   async function handleGenerate() {
-    if (!dateFrom || !dateTo) { alert("Selecteer een van- en tot-datum."); return; }
-    if (dateFrom > dateTo) { alert("De startdatum moet voor de einddatum liggen."); return; }
+    setGeneratorError(null);
+    if (!dateFrom || !dateTo) { setGeneratorError("Selecteer een van- en tot-datum."); return; }
+    if (dateFrom > dateTo) { setGeneratorError("De startdatum moet voor de einddatum liggen."); return; }
     setGenerating(true);
     const res = await fetch("/api/schedule", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ dateFrom, dateTo, defaultShifts }) });
     const data = await res.json();
-    if (data.error) { alert("❌ " + data.error); setGenerating(false); return; }
+    if (data.error) { setGeneratorError("❌ " + data.error); setGenerating(false); return; }
     if (data.data?.shifts) {
       setConceptShifts(data.data.shifts);
     } else {
-      alert("Geen nieuwe diensten aangemaakt.");
+      setGeneratorError("Geen nieuwe diensten aangemaakt.");
     }
     setGenerating(false);
   }
@@ -207,9 +209,14 @@ export function RoosterTab() {
             <p className={styles.actionHeader}>Tapavonden genereren</p>
             <div className={styles.card} style={{ marginBottom:12 }}>
               <div style={{ display:"flex", gap:10, marginBottom:14 }}>
-                <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Van</label><input type="date" className={styles.input} value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></div>
-                <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Tot en met</label><input type="date" className={styles.input} value={dateTo} onChange={e => setDateTo(e.target.value)} /></div>
+                <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Van</label><input type="date" className={styles.input} min={new Date().toISOString().slice(0,10)} value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></div>
+                <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Tot en met</label><input type="date" className={styles.input} min={dateFrom || new Date().toISOString().slice(0,10)} value={dateTo} onChange={e => setDateTo(e.target.value)} /></div>
               </div>
+              {generatorError && (
+                <div style={{ background:"rgba(255,79,109,0.1)", border:"1px solid #ff4f6d", borderRadius:8, padding:"8px 12px", fontSize:12, color:"#ff4f6d", marginBottom:8 }}>
+                  {generatorError}
+                </div>
+              )}
               <button className={styles.btnSecondary} onClick={handleGenerate} disabled={generating}>{generating ? "⏳ Genereren..." : "🤖 Genereer conceptrooster"}</button>
             </div>
 

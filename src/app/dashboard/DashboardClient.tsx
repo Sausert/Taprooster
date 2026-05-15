@@ -112,10 +112,14 @@ export default function DashboardClient({
   }, [pct]);
 
   useEffect(() => {
-    if (claimModal) setTimeout(() => claimSheetRef.current?.focus(), 50);
+    if (!claimModal) return;
+    const t = setTimeout(() => claimSheetRef.current?.focus(), 50);
+    return () => clearTimeout(t);
   }, [claimModal]);
   useEffect(() => {
-    if (declineModal) setTimeout(() => declineSheetRef.current?.focus(), 50);
+    if (!declineModal) return;
+    const t = setTimeout(() => declineSheetRef.current?.focus(), 50);
+    return () => clearTimeout(t);
   }, [declineModal]);
 
   const nextAssignment = upcoming[Math.min(heroIndex, Math.max(0, upcoming.length - 1))];
@@ -134,6 +138,8 @@ export default function DashboardClient({
     const d = parseLocalDate(s.date);
     return d.getMonth() === openMonth && d.getFullYear() === openYear;
   });
+
+  const visibleMessages = adminMessages.filter(m => !dismissedMessages.has(m.id));
 
   async function handleConfirm(shiftId: string) {
     setConfirmedIds(p => [...p, shiftId]);
@@ -232,7 +238,7 @@ export default function DashboardClient({
               return (
                 <div style={{ flexShrink:0, width:52, textAlign:"center", background:"rgba(0,229,195,0.06)", border:"1px solid rgba(0,229,195,0.2)", borderRadius:12, padding:"12px 6px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
                   <span style={{ fontFamily:"monospace", fontSize:28, fontWeight:700, color:"#00e5c3", lineHeight:1 }}>{d.getDate()}</span>
-                  <span style={{ fontFamily:"'Exo 2',sans-serif", fontSize:10, fontWeight:700, color:"#8b80b0", textTransform:"uppercase", letterSpacing:"0.1em", marginTop:3 }}>{monthShort}</span>
+                  <span style={{ fontFamily:"'Exo 2',sans-serif", fontSize:10, fontWeight:700, color:"#a89ec8", textTransform:"uppercase", letterSpacing:"0.1em", marginTop:3 }}>{monthShort}</span>
                 </div>
               );
             })()}
@@ -243,7 +249,7 @@ export default function DashboardClient({
                 {upcoming.length > 1 && (
                   <div style={{ display:"flex", gap:4, alignItems:"center" }}>
                     <button aria-label="Vorige dienst" onClick={() => setHeroIndex(i => Math.max(0, i - 1))} style={{ ...s.navArrowSm, width:44, height:44, fontSize:16, opacity: heroIndex === 0 ? 0.35 : 1 }}>‹</button>
-                    <span style={{ fontSize:10, color:"#8b80b0", fontFamily:"monospace" }}>{heroIndex + 1}/{upcoming.length}</span>
+                    <span style={{ fontSize:10, color:"#a89ec8", fontFamily:"monospace" }}>{heroIndex + 1}/{upcoming.length}</span>
                     <button aria-label="Volgende dienst" onClick={() => setHeroIndex(i => Math.min(upcoming.length - 1, i + 1))} style={{ ...s.navArrowSm, width:44, height:44, fontSize:16, opacity: heroIndex === upcoming.length - 1 ? 0.35 : 1 }}>›</button>
                   </div>
                 )}
@@ -252,7 +258,7 @@ export default function DashboardClient({
               <p style={{ ...s.heroSub, display:"flex", alignItems:"center", gap:5, flexWrap:"wrap", margin:0 }}>
                 <span>{formatTime(nextShift.start_time)}–{formatTime(nextShift.end_time)}</span>
                 {daysUntilNext !== null && (
-                  <span style={{ color: daysUntilNext <= 1 ? "#00e5c3" : "#8b80b0" }}>
+                  <span style={{ color: daysUntilNext <= 1 ? "#00e5c3" : "#a89ec8" }}>
                     · {daysUntilNext === 0 ? "Vandaag 🔥" : daysUntilNext === 1 ? "Morgen 🍺" : `over ${daysUntilNext} dagen`}
                   </span>
                 )}
@@ -285,7 +291,7 @@ export default function DashboardClient({
         <div style={{textAlign:"center", padding:"32px 20px", background:"#1a1730", borderRadius:16, border:"1px solid #2e2a4a"}}>
           <div style={{fontSize:40, marginBottom:10}}>🍺</div>
           <p style={{fontSize:14, fontWeight:700, color:"#f0eeff", margin:0}}>Geen geplande diensten</p>
-          <p style={{fontSize:12, color:"#8b80b0", margin:"4px 0 0", marginBottom: claimable.length > 0 ? 12 : 0}}>Je staat nog nergens ingepland.</p>
+          <p style={{fontSize:12, color:"#a89ec8", margin:"4px 0 0", marginBottom: claimable.length > 0 ? 12 : 0}}>Je staat nog nergens ingepland.</p>
           {claimable.length > 0 && (
             <button
               style={{ padding:"8px 18px", borderRadius:20, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:12, cursor:"pointer" }}
@@ -296,10 +302,10 @@ export default function DashboardClient({
       )}
 
       {/* Admin berichten */}
-      {adminMessages.filter(m => !dismissedMessages.has(m.id)).length > 0 && (
+      {visibleMessages.length > 0 && (
         <>
           <p className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px" }}>Berichten van admin</p>
-          {adminMessages.filter(m => !dismissedMessages.has(m.id)).map((msg) => {
+          {visibleMessages.map((msg) => {
             const senderName = msg.sender?.full_name?.split(" ")[0] || "Admin";
             return (
               <div key={msg.id} className={sharedStyles.card}>
@@ -314,7 +320,7 @@ export default function DashboardClient({
                     const next = new Set([...dismissedMessages, msg.id]);
                     setDismissedMessages(next);
                     try { localStorage.setItem("dismissedMessages", JSON.stringify([...next])); } catch {}
-                  }} style={{ background:"none", border:"none", color:"#8b80b0", fontSize:16, cursor:"pointer", padding:"0 4px", flexShrink:0, alignSelf:"flex-start", lineHeight:1 }} aria-label="Sluiten">✕</button>
+                  }} style={{ background:"none", border:"none", color:"#a89ec8", fontSize:16, cursor:"pointer", padding:"0 4px", flexShrink:0, alignSelf:"flex-start", lineHeight:1 }} aria-label="Sluiten">✕</button>
                 </div>
               </div>
             );
@@ -355,7 +361,7 @@ export default function DashboardClient({
           <div ref={mijnDienstenRef} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", margin:"20px 0 8px" }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <p className={sharedStyles.sectionTitle} style={{ margin:0 }}>Mijn diensten</p>
-              <a href="/api/shifts/my-ical" title="Exporteer alle diensten naar agenda" style={{ fontSize:14, color:"#8b80b0", textDecoration:"none", lineHeight:1 }}>📅</a>
+              <a href="/api/shifts/my-ical" title="Exporteer alle diensten naar agenda" style={{ fontSize:14, color:"#a89ec8", textDecoration:"none", lineHeight:1 }}>📅</a>
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
               <button onClick={prevMyMonth} style={s.navArrowSm}>‹</button>
@@ -391,7 +397,7 @@ export default function DashboardClient({
                     </div>
                     <p style={{ fontSize:13, fontWeight:700, color:"#e8e0ff", marginBottom:2 }}>{formatDateShort(sh.date)}</p>
                     <p style={{ fontSize:12, color:"#a89ec8" }}>{formatTime(sh.start_time)}–{formatTime(sh.end_time)}</p>
-                    {sh.admin_note && <p style={{ fontSize:11, color:"#8b80b0", marginTop:4 }}>📌 {sh.admin_note}</p>}
+                    {sh.admin_note && <p style={{ fontSize:11, color:"#a89ec8", marginTop:4 }}>📌 {sh.admin_note}</p>}
                   </div>
                   <div style={{ display:"flex", flexDirection:"column", gap:6, alignItems:"stretch", minWidth:88 }}>
                     {isConfirmed ? (
@@ -407,7 +413,7 @@ export default function DashboardClient({
                         onClick={(e) => { if (/Android/i.test(navigator.userAgent)) { e.preventDefault(); handleAgenda(sh); } }}
                       >📅</a>
                       {typeof navigator !== "undefined" && "share" in navigator && (
-                        <button style={{ ...s.iconSmBtn, flex:1 }} onClick={() => handleShare(sh)} title="Deel dienst">
+                        <button style={{ ...s.iconSmBtn, flex:1 }} onClick={() => handleShare(sh)} title="Deel dienst" aria-label="Deel dienst">
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
                         </button>
                       )}
@@ -419,7 +425,7 @@ export default function DashboardClient({
           })}
           <a
             href="/api/shifts/my-ical"
-            style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 14px", borderRadius:12, background:"#1a1730", border:"1px solid #2e2a4a", color:"#8b80b0", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:12, textDecoration:"none", marginTop:8 }}
+            style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 14px", borderRadius:12, background:"#1a1730", border:"1px solid #2e2a4a", color:"#a89ec8", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:12, textDecoration:"none", marginTop:8 }}
           >
             📅 Zet al mijn diensten in mijn agenda
           </a>
@@ -461,14 +467,14 @@ export default function DashboardClient({
                     <div style={{ display:"flex", alignItems:"center", gap:5, marginTop:4, flexWrap:"wrap" }}>
                       <span style={{ fontSize:11, color:"#a89ec8" }}>{shift.open_spots} open plek{shift.open_spots > 1 ? "ken" : ""}</span>
                       {assignedNames.map((a: any) => (
-                        <span key={a.user_id} style={{ fontSize:11, padding:"1px 8px", borderRadius:20, background:"#221f38", border:"1px solid #2e2a4a", color:"#8b80b0" }}>
+                        <span key={a.user_id} style={{ fontSize:11, padding:"1px 8px", borderRadius:20, background:"#221f38", border:"1px solid #2e2a4a", color:"#a89ec8" }}>
                           {a.profile?.full_name?.split(" ")[0] || "?"}
                         </span>
                       ))}
                     </div>
                   </div>
                   {isFull ? (
-                    <span style={{ fontSize:11, fontWeight:700, padding:"5px 10px", borderRadius:12, background:"rgba(0,229,195,0.08)", border:"1px solid #2e2a4a", color:"#8b80b0" }}>Vol</span>
+                    <span style={{ fontSize:11, fontWeight:700, padding:"5px 10px", borderRadius:12, background:"rgba(0,229,195,0.08)", border:"1px solid #2e2a4a", color:"#a89ec8" }}>Vol</span>
                   ) : (
                     <button className={sharedStyles.btnPrimaryCompact} disabled={loading===shift.id} onClick={() => setClaimModal(shift)}>
                       {loading===shift.id ? "..." : "Inschrijven"}
@@ -487,15 +493,15 @@ export default function DashboardClient({
       {/* Claim modal */}
       {claimModal && (
         <div className={sharedStyles.overlay} onClick={() => setClaimModal(null)}>
-          <div ref={claimSheetRef} className={sharedStyles.sheet} role="dialog" aria-modal="true" aria-labelledby="claim-title" tabIndex={-1} onClick={e => e.stopPropagation()}>
+          <div ref={claimSheetRef} className={sharedStyles.sheet} role="dialog" aria-modal="true" aria-labelledby="claim-title" tabIndex={-1} onClick={e => e.stopPropagation()} onKeyDown={(e) => { if (e.key !== "Tab") return; const focusable = e.currentTarget.querySelectorAll<HTMLElement>('button,[href],input,[tabindex]:not([tabindex="-1"])'); const first = focusable[0]; const last = focusable[focusable.length - 1]; if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); } }}>
             <div className={sharedStyles.sheetHandle}/>
             <h3 id="claim-title" className={sharedStyles.sheetTitle}>Inschrijven voor dienst</h3>
             <div style={{ background:"#221f38", borderRadius:12, padding:"12px 14px", marginBottom:16 }}>
               <p style={{ fontSize:15, fontWeight:700, color:"#f0eeff" }}>{claimModal.title}</p>
-              <p style={{ fontSize:13, color:"#8b80b0", marginTop:4 }}>{formatDate(claimModal.date)} · {formatTime(claimModal.start_time)}–{formatTime(claimModal.end_time)}</p>
+              <p style={{ fontSize:13, color:"#a89ec8", marginTop:4 }}>{formatDate(claimModal.date)} · {formatTime(claimModal.start_time)}–{formatTime(claimModal.end_time)}</p>
               {(claimModal as any).assignments?.filter((a: any) => a.status !== "declined").length > 0 && (
                 <div style={{ marginTop:10 }}>
-                  <p style={{ fontSize:11, color:"#8b80b0", marginBottom:6 }}>Al ingeroosterd:</p>
+                  <p style={{ fontSize:11, color:"#a89ec8", marginBottom:6 }}>Al ingeroosterd:</p>
                   <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                     {(claimModal as any).assignments.filter((a: any) => a.status !== "declined").map((a: any) => (
                       <span key={a.user_id} style={{ fontSize:12, padding:"2px 10px", borderRadius:20, background:"#1a1730", border:"1px solid #2e2a4a", color:"#e8e0ff" }}>
@@ -506,7 +512,7 @@ export default function DashboardClient({
                 </div>
               )}
             </div>
-            <p style={{ fontSize:12, color:"#8b80b0", marginBottom:20, lineHeight:1.5 }}>
+            <p style={{ fontSize:12, color:"#a89ec8", marginBottom:20, lineHeight:1.5 }}>
               Je ontvangt een e-mail bevestiging en herinneringen 2 weken en 1 week van tevoren.
             </p>
             <button className={sharedStyles.btnPrimary} disabled={loading===claimModal.id} onClick={() => handleClaim(claimModal)}>
@@ -520,17 +526,15 @@ export default function DashboardClient({
       {/* Decline modal */}
       {declineModal && (
         <div className={sharedStyles.overlay} onClick={() => setDeclineModal(null)}>
-          <div ref={declineSheetRef} className={sharedStyles.sheet} role="dialog" aria-modal="true" aria-labelledby="decline-title" tabIndex={-1} onClick={e => e.stopPropagation()}>
+          <div ref={declineSheetRef} className={sharedStyles.sheet} role="dialog" aria-modal="true" aria-labelledby="decline-title" tabIndex={-1} onClick={e => e.stopPropagation()} onKeyDown={(e) => { if (e.key !== "Tab") return; const focusable = e.currentTarget.querySelectorAll<HTMLElement>('button,[href],input,[tabindex]:not([tabindex="-1"])'); const first = focusable[0]; const last = focusable[focusable.length - 1]; if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); } }}>
             <div className={sharedStyles.sheetHandle}/>
             <h3 id="decline-title" className={sharedStyles.sheetTitle}>Afmelden voor dienst</h3>
-            <p style={{fontSize:16, fontWeight:700, color:"#f0eeff", marginBottom:4}}>{declineModal.shift?.title}</p>
-            <p style={{fontSize:13, color:"#8b80b0", marginBottom:16}}>{declineModal.shift ? formatDate(declineModal.shift.date) : ""}</p>
-            <p style={{ fontSize:13, color:"#8b80b0", marginBottom:16 }}>
+            <p style={{ fontSize:13, color:"#a89ec8", marginBottom:16 }}>
               Alle andere tappers worden genotificeerd dat er een open plek is.
             </p>
             <div style={{ background:"#221f38", borderRadius:12, padding:"12px 14px", marginBottom:16 }}>
               <p style={{ fontSize:15, fontWeight:700, color:"#f0eeff" }}>{declineModal.shift?.title}</p>
-              <p style={{ fontSize:13, color:"#8b80b0", marginTop:4 }}>
+              <p style={{ fontSize:13, color:"#a89ec8", marginTop:4 }}>
                 {declineModal.shift ? formatDate(declineModal.shift.date) : ""} · {formatTime(declineModal.shift?.start_time || "")}–{formatTime(declineModal.shift?.end_time || "")}
               </p>
             </div>
@@ -556,8 +560,8 @@ const s: Record<string, React.CSSProperties> = {
   heroTitle: { fontSize:20, fontWeight:900, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif", margin:0 },
   heroSub: { fontSize:13, color:"#a89ec8", marginTop:2 },
   confirmBox: { background:"#221f38", borderRadius:16, padding:12 },
-  btnYes: { flex:1, padding:10, borderRadius:12, background:"rgba(0,229,195,0.1)", color:"#00e5c3", border:"1px solid #00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer" },
-  btnNo: { flex:1, padding:10, borderRadius:12, background:"rgba(255,79,109,0.1)", color:"#ff4f6d", border:"1px solid #ff4f6d", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer" },
+  btnYes: { flex:1, padding:"12px 10px", borderRadius:12, background:"rgba(0,229,195,0.1)", color:"#00e5c3", border:"1px solid #00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer" },
+  btnNo: { flex:1, padding:"12px 10px", borderRadius:12, background:"rgba(255,79,109,0.1)", color:"#ff4f6d", border:"1px solid #ff4f6d", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer" },
   statRow: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 },
   statCard: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:16, padding:16, textAlign:"center" },
   statVal: { fontFamily:"monospace", fontSize:28, fontWeight:700, color:"#00e5c3", margin:0 },
@@ -565,9 +569,8 @@ const s: Record<string, React.CSSProperties> = {
   progressWrap: { background:"#2e2a4a", borderRadius:4, height:6, overflow:"hidden" },
   progressFill: { height:"100%", borderRadius:4, background:"linear-gradient(90deg,#00e5c3,#00b89c)", transition:"width 0.6s ease" },
   // Consistent action buttons for mijn diensten
-  actionBtn: { fontSize:11, fontWeight:700, padding:"6px 8px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", cursor:"pointer", textAlign:"center" as const, width:"100%" },
+  actionBtn: { fontSize:11, fontWeight:700, padding:"10px 8px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", cursor:"pointer", textAlign:"center" as const, width:"100%" },
   actionBtnConfirmed: { fontSize:11, fontWeight:700, padding:"6px 8px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", textAlign:"center" as const, width:"100%", background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3" },
-  iconSmBtn: { fontSize:14, padding:"5px 8px", borderRadius:8, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", height:28, boxSizing:"border-box" as const },
+  iconSmBtn: { fontSize:14, padding:"5px 8px", borderRadius:8, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", minHeight:44, boxSizing:"border-box" as const },
   navArrowSm: { background:"#221f38", border:"1px solid #2e2a4a", borderRadius:6, width:44, height:44, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:16, color:"#b8b0d4", flexShrink:0, padding:0 },
-  claimBtn: { padding:"9px 14px", borderRadius:12, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", border:"none", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, letterSpacing:1, cursor:"pointer", textTransform:"uppercase" as const, flexShrink:0 },
 };

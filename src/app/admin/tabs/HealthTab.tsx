@@ -38,7 +38,7 @@ const s: Record<string, React.CSSProperties> = {
   statVal: { fontFamily:"monospace", fontSize:30, fontWeight:700, margin:0 },
   statLabel: { fontSize:10, color:"#8b80b0", letterSpacing:1, textTransform:"uppercase", marginTop:4, margin:0 },
   healthRow: { display:"flex", alignItems:"center", gap:10, padding:"10px 0", borderBottom:"1px solid #2e2a4a" },
-  addTapperBtn: { padding:"4px 10px", borderRadius:20, background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"'Exo 2', sans-serif" },
+  addTapperBtn: { padding:"8px 12px", borderRadius:20, background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"'Exo 2', sans-serif" },
 };
 
 export function HealthTab() {
