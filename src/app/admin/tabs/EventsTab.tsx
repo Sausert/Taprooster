@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useAdminShell } from "../AdminShellContext";
+import { TimeSelect } from "../components/TimeSelect";
 import styles from "@/styles/shared.module.css";
 
 const emptyShift = () => ({ role: "tapper" as "tapper" | "bonnenkassa", start_time: "20:00", end_time: "02:00", max_tappers: 2 });
@@ -133,8 +134,14 @@ export function EventsTab() {
               ))}
             </div>
             <div style={{ display:"flex", gap:8, marginBottom:12 }}>
-              <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Start</label><input className={styles.input} type="time" style={{ marginBottom:0 }} value={shift.start_time} onChange={e => updateShift(idx, "start_time", e.target.value)} required /></div>
-              <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Eind</label><input className={styles.input} type="time" style={{ marginBottom:0 }} value={shift.end_time} onChange={e => updateShift(idx, "end_time", e.target.value)} required /></div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <label className={styles.label}>Start</label>
+                <TimeSelect value={shift.start_time} onChange={v => updateShift(idx, "start_time", v)} />
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <label className={styles.label}>Eind</label>
+                <TimeSelect value={shift.end_time} onChange={v => updateShift(idx, "end_time", v)} />
+              </div>
             </div>
             <label className={styles.label}>Aantal personen</label>
             <div style={{ display:"flex", alignItems:"center", gap:12 }}>

@@ -205,64 +205,56 @@ export default function DashboardClient({
         </h1>
       </div>
 
-      {/* Next shift hero */}
+      {/* Next shift hero — timeline layout */}
       {nextShift ? (
         <div style={s.heroCard}>
-          {/* Navigation when multiple shifts */}
-          {upcoming.length > 1 && (
-            <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:10, gap:6, alignItems:"center" }}>
-              <button onClick={() => setHeroIndex(i => Math.max(0, i - 1))} style={{ ...s.navArrowSm, opacity: heroIndex === 0 ? 0.35 : 1 }}>‹</button>
-              <span style={{ fontSize:11, color:"#8b80b0", fontFamily:"monospace", minWidth:28, textAlign:"center" }}>{heroIndex + 1}/{upcoming.length}</span>
-              <button onClick={() => setHeroIndex(i => Math.min(upcoming.length - 1, i + 1))} style={{ ...s.navArrowSm, opacity: heroIndex === upcoming.length - 1 ? 0.35 : 1 }}>›</button>
-            </div>
-          )}
-          {confirmedIds.includes(nextAssignment.shift_id) || nextAssignment.status === "confirmed" ? (
-            <>
-              <div style={{ marginBottom:12 }}>
-                <p style={s.heroLabel}>Volgende dienst</p>
-                <h2 style={s.heroTitle}>{nextShift.title}</h2>
-                <p style={s.heroSub}>{formatDate(nextShift.date)} · {formatTime(nextShift.start_time)}–{formatTime(nextShift.end_time)}</p>
-              </div>
-              <div style={{ display:"flex", gap:8 }}>
-                {/* Days pill — same width as Agenda */}
-                {daysUntilNext !== null ? (
-                  <div style={{ flex:1, textAlign:"center", background:"rgba(0,229,195,0.06)", border:"1px solid rgba(0,229,195,0.2)", borderRadius:12, padding:"8px 12px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
-                    {daysUntilNext === 0 ? (
-                      <><p style={{ fontFamily:"'Exo 2',sans-serif", fontSize:11, fontWeight:700, color:"#00e5c3", textTransform:"uppercase", letterSpacing:"0.1em", margin:0 }}>Vandaag</p><p style={{ fontSize:18, margin:"4px 0 0" }}>🔥</p></>
-                    ) : daysUntilNext === 1 ? (
-                      <><p style={{ fontFamily:"'Exo 2',sans-serif", fontSize:11, fontWeight:700, color:"#00e5c3", textTransform:"uppercase", letterSpacing:"0.1em", margin:0 }}>Morgen</p><p style={{ fontSize:18, margin:"4px 0 0" }}>🍺</p></>
-                    ) : (
-                      <><p style={{ fontFamily:"monospace", fontSize:26, fontWeight:700, color:"#00e5c3", lineHeight:1, margin:0 }}>{daysUntilNext}</p><p style={{ fontFamily:"'Exo 2',sans-serif", fontSize:10, fontWeight:700, color:"#8b80b0", textTransform:"uppercase", letterSpacing:"0.1em", margin:"2px 0 0" }}>dagen</p></>
-                    )}
-                  </div>
-                ) : <div style={{ flex:1, textAlign:"center", background:"rgba(0,229,195,0.06)", border:"1px solid rgba(0,229,195,0.2)", borderRadius:12, padding:"8px 12px", display:"flex", alignItems:"center", justifyContent:"center" }}><span style={{ fontSize:11, color:"#00e5c3", fontWeight:700 }}>✅ Bevestigd</span></div>}
-                <a
-                  href={`/api/shifts/${nextShift.id}/ical`}
-                  style={{ flex:1, padding:"10px 12px", borderRadius:12, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, textAlign:"center", textDecoration:"none", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}
-                  onClick={(e) => { if (typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent)) { e.preventDefault(); handleAgenda(nextShift); } }}
-                >📅 Agenda</a>
-              </div>
-            </>
-          ) : (
-            <>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <p style={s.heroLabel}>Volgende dienst</p>
-                  <h2 style={s.heroTitle}>{nextShift.title}</h2>
-                  <p style={s.heroSub}>{formatDate(nextShift.date)} · {formatTime(nextShift.start_time)}–{formatTime(nextShift.end_time)}</p>
+          <div style={{ display:"flex", gap:14, alignItems:"flex-start" }}>
+            {/* Left: date column */}
+            {(() => {
+              const d = parseLocalDate(nextShift.date);
+              const monthShort = d.toLocaleDateString("nl-NL", { month:"short" }).replace(".","").toUpperCase();
+              return (
+                <div style={{ flexShrink:0, width:52, textAlign:"center", background:"rgba(0,229,195,0.06)", border:"1px solid rgba(0,229,195,0.2)", borderRadius:12, padding:"12px 6px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+                  <span style={{ fontFamily:"monospace", fontSize:28, fontWeight:700, color:"#00e5c3", lineHeight:1 }}>{d.getDate()}</span>
+                  <span style={{ fontFamily:"'Exo 2',sans-serif", fontSize:10, fontWeight:700, color:"#8b80b0", textTransform:"uppercase", letterSpacing:"0.1em", marginTop:3 }}>{monthShort}</span>
                 </div>
-                {daysUntilNext !== null && (
-                  <div style={{ textAlign:"center", background:"rgba(0,229,195,0.06)", border:"1px solid rgba(0,229,195,0.2)", borderRadius:10, padding:"8px 12px", marginLeft:12, flexShrink:0 }}>
-                    {daysUntilNext === 0 ? (
-                      <><p style={{ fontFamily:"'Exo 2',sans-serif", fontSize:11, fontWeight:700, color:"#00e5c3", textTransform:"uppercase", letterSpacing:"0.1em", margin:0 }}>Vandaag</p><p style={{ fontSize:18, margin:"4px 0 0" }}>🔥</p></>
-                    ) : daysUntilNext === 1 ? (
-                      <><p style={{ fontFamily:"'Exo 2',sans-serif", fontSize:11, fontWeight:700, color:"#00e5c3", textTransform:"uppercase", letterSpacing:"0.1em", margin:0 }}>Morgen</p><p style={{ fontSize:18, margin:"4px 0 0" }}>🍺</p></>
-                    ) : (
-                      <><p style={{ fontFamily:"monospace", fontSize:26, fontWeight:700, color:"#00e5c3", lineHeight:1, margin:0 }}>{daysUntilNext}</p><p style={{ fontFamily:"'Exo 2',sans-serif", fontSize:10, fontWeight:700, color:"#8b80b0", textTransform:"uppercase", letterSpacing:"0.1em", margin:"2px 0 0" }}>dagen</p></>
-                    )}
+              );
+            })()}
+            {/* Right: content */}
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                <p style={{ ...s.heroLabel, margin:0 }}>Volgende dienst</p>
+                {upcoming.length > 1 && (
+                  <div style={{ display:"flex", gap:4, alignItems:"center" }}>
+                    <button onClick={() => setHeroIndex(i => Math.max(0, i - 1))} style={{ ...s.navArrowSm, width:24, height:24, fontSize:14, opacity: heroIndex === 0 ? 0.35 : 1 }}>‹</button>
+                    <span style={{ fontSize:10, color:"#8b80b0", fontFamily:"monospace" }}>{heroIndex + 1}/{upcoming.length}</span>
+                    <button onClick={() => setHeroIndex(i => Math.min(upcoming.length - 1, i + 1))} style={{ ...s.navArrowSm, width:24, height:24, fontSize:14, opacity: heroIndex === upcoming.length - 1 ? 0.35 : 1 }}>›</button>
                   </div>
                 )}
               </div>
+              <h2 style={s.heroTitle}>{nextShift.title}</h2>
+              <p style={{ ...s.heroSub, display:"flex", alignItems:"center", gap:5, flexWrap:"wrap", margin:0 }}>
+                <span>{formatTime(nextShift.start_time)}–{formatTime(nextShift.end_time)}</span>
+                {daysUntilNext !== null && (
+                  <span style={{ color: daysUntilNext <= 1 ? "#00e5c3" : "#8b80b0" }}>
+                    · {daysUntilNext === 0 ? "Vandaag 🔥" : daysUntilNext === 1 ? "Morgen 🍺" : `over ${daysUntilNext} dagen`}
+                  </span>
+                )}
+              </p>
+              {(confirmedIds.includes(nextAssignment.shift_id) || nextAssignment.status === "confirmed") && (
+                <span style={{ display:"inline-flex", alignItems:"center", gap:4, marginTop:8, padding:"3px 10px", borderRadius:20, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", fontSize:11, color:"#00e5c3", fontWeight:700 }}>✅ Bevestigd</span>
+              )}
+            </div>
+          </div>
+          {/* Action row */}
+          <div style={{ marginTop:14 }}>
+            {confirmedIds.includes(nextAssignment.shift_id) || nextAssignment.status === "confirmed" ? (
+              <a
+                href={`/api/shifts/${nextShift.id}/ical`}
+                style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 12px", borderRadius:12, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, textDecoration:"none" }}
+                onClick={(e) => { if (typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent)) { e.preventDefault(); handleAgenda(nextShift); } }}
+              >📅 Zet in agenda</a>
+            ) : (
               <div style={s.confirmBox}>
                 <p style={{ fontSize:12, color:"#8b80b0", marginBottom:8 }}>Ben jij erbij?</p>
                 <div style={{ display:"flex", gap:8 }}>
@@ -270,8 +262,8 @@ export default function DashboardClient({
                   <button style={s.btnNo} onClick={() => setDeclineModal(nextAssignment)}>🔴 Ik kan niet</button>
                 </div>
               </div>
-            </>
-          )}
+            )}
+          </div>
         </div>
       ) : (
         <div style={{textAlign:"center", padding:"32px 20px", background:"#1a1730", borderRadius:16, border:"1px solid #2e2a4a"}}>

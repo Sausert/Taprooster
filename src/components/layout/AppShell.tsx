@@ -94,10 +94,9 @@ export default function AppShell({
             return (
               <button
                 key={item.path}
-                style={s.navItem}
+                style={{ ...s.navItem, background: active ? "rgba(0,229,195,0.08)" : "none" }}
                 onClick={() => router.push(item.path)}
               >
-                {active && <div style={s.navBar} />}
                 <span style={{ display:"flex", alignItems:"center", justifyContent:"center", color: active ? "#00e5c3" : "#b8b0d4", filter: active ? "drop-shadow(0 0 6px #00e5c3)" : "none", transition:"filter 0.2s, color 0.15s" }}>
                   {item.icon}
                 </span>
@@ -185,48 +184,34 @@ const s: Record<string, React.CSSProperties> = {
   main: {
     flex: 1,
     overflowY: "auto",
-    paddingBottom: 96,
+    paddingBottom: "calc(88px + env(safe-area-inset-bottom, 0px))",
   },
   bottomNav: {
     position: "fixed",
-    bottom: 0,
+    bottom: "calc(12px + env(safe-area-inset-bottom, 0px))",
     left: "50%",
     transform: "translateX(-50%)",
-    width: "100%",
-    maxWidth: 430,
-    background: "rgba(15,13,26,0.96)",
+    width: "auto",
+    background: "rgba(26,23,48,0.96)",
     backdropFilter: "blur(20px)",
-    borderTop: "1px solid #2e2a4a",
+    border: "1px solid #2e2a4a",
+    borderRadius: 32,
+    boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
     display: "flex",
     zIndex: 50,
-    paddingBottom: "env(safe-area-inset-bottom, 0px)",
+    padding: "4px 6px",
   },
   navItem: {
-    flex: 1,
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    justifyContent: "flex-start",
-    paddingTop: 14,
-    paddingBottom: 10,
-    paddingLeft: 0,
-    paddingRight: 0,
+    justifyContent: "center",
+    padding: "10px 14px",
     cursor: "pointer",
-    background: "none",
     border: "none",
     gap: 4,
-    position: "relative",
-  },
-  navBar: {
-    position: "absolute",
-    top: 0,
-    left: "50%",
-    transform: "translateX(-50%)",
-    width: 24,
-    height: 2,
-    background: "#00e5c3",
-    borderRadius: "0 0 2px 2px",
-    boxShadow: "0 0 8px #00e5c3",
-    animation: "navBarIn 0.2s ease",
+    borderRadius: 24,
+    minWidth: 54,
+    transition: "background 0.15s",
   },
 };

@@ -4,6 +4,7 @@ import { useAdminShell } from "../AdminShellContext";
 import { AdminShiftCard } from "../components/AdminShiftCard";
 import { AddTapperModal } from "../components/AddTapperModal";
 import { EventsTab } from "./EventsTab";
+import { TimeSelect } from "../components/TimeSelect";
 import { parseLocalDate } from "@/lib/dates";
 import styles from "@/styles/shared.module.css";
 
@@ -235,8 +236,14 @@ export function RoosterTab() {
                     </div>
                     {cfg.enabled && (
                       <div style={{ display:"flex", gap:8 }}>
-                        <div style={{ flex:1, minWidth:0 }}><label className={styles.label} style={{ fontSize:10 }}>Start</label><input className={styles.input} style={{ marginBottom:0, padding:"8px 10px", fontSize:13 }} type="time" value={cfg.start} onChange={e => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], start: e.target.value } }))} /></div>
-                        <div style={{ flex:1, minWidth:0 }}><label className={styles.label} style={{ fontSize:10 }}>Eind</label><input className={styles.input} style={{ marginBottom:0, padding:"8px 10px", fontSize:13 }} type="time" value={cfg.end} onChange={e => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], end: e.target.value } }))} /></div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <label className={styles.label} style={{ fontSize:10 }}>Start</label>
+                          <TimeSelect value={cfg.start} onChange={v => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], start: v } }))} />
+                        </div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <label className={styles.label} style={{ fontSize:10 }}>Eind</label>
+                          <TimeSelect value={cfg.end} onChange={v => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], end: v } }))} />
+                        </div>
                       </div>
                     )}
                   </div>
