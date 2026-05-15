@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
+import sharedStyles from "@/styles/shared.module.css";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -55,9 +56,10 @@ export default function LoginPage() {
 
             {error && <div style={s.errorBox}>{error}</div>}
 
-            <label style={s.label}>E-mailadres</label>
+            <label htmlFor="login-email" style={s.label}>E-mailadres</label>
             <input
-              style={s.input}
+              id="login-email"
+              className={sharedStyles.input}
               type="email"
               placeholder="jij@email.nl"
               value={email}
@@ -66,11 +68,12 @@ export default function LoginPage() {
               autoComplete="email"
             />
 
-            <label style={s.label}>Wachtwoord</label>
+            <label htmlFor="login-password" style={s.label}>Wachtwoord</label>
             <input
-              style={s.input}
+              id="login-password"
+              className={sharedStyles.input}
               type="password"
-              placeholder="••••••••"
+              placeholder="Jouw wachtwoord"
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
@@ -96,9 +99,10 @@ export default function LoginPage() {
             {error && <div style={s.errorBox}>{error}</div>}
             {success && <div style={s.successBox}>{success}</div>}
 
-            <label style={s.label}>E-mailadres</label>
+            <label htmlFor="forgot-email" style={s.label}>E-mailadres</label>
             <input
-              style={s.input}
+              id="forgot-email"
+              className={sharedStyles.input}
               type="email"
               placeholder="jij@email.nl"
               value={email}
@@ -181,7 +185,7 @@ const s: Record<string, React.CSSProperties> = {
   titleAccent: { color: "#00e5c3" },
   appName: {
     fontSize: 11,
-    letterSpacing: 4,
+    letterSpacing: "0.2em",
     color: "#00e5c3",
     fontWeight: 700,
     textTransform: "uppercase",

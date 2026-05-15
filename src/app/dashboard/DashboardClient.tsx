@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Profile, Shift, ShiftAssignment, AdminMessage } from "@/types";
 import { APP_CONFIG } from "@/lib/config";
@@ -51,6 +51,8 @@ export default function DashboardClient({
   const router = useRouter();
   const mijnDienstenRef = useRef<HTMLDivElement>(null);
   const openDienstenRef = useRef<HTMLDivElement>(null);
+  const claimSheetRef = useRef<HTMLDivElement>(null);
+  const declineSheetRef = useRef<HTMLDivElement>(null);
   const [upcoming, setUpcoming] = useState<ShiftAssignment[]>(myUpcoming);
   const [claimable, setClaimable] = useState<ClaimableShift[]>(claimableShifts);
   const [claimModal, setClaimModal] = useState<ClaimableShift | null>(null);
@@ -102,6 +104,19 @@ export default function DashboardClient({
   const firstName = profile?.full_name?.split(" ")[0] || "Tapper";
   const target = (profile?.preferred_frequency || 4) * 4;
   const pct = Math.min(100, Math.round((tapsThisYear / Math.max(target, 1)) * 100));
+
+  const [pctAnimated, setPctAnimated] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setPctAnimated(pct), 80);
+    return () => clearTimeout(t);
+  }, [pct]);
+
+  useEffect(() => {
+    if (claimModal) setTimeout(() => claimSheetRef.current?.focus(), 50);
+  }, [claimModal]);
+  useEffect(() => {
+    if (declineModal) setTimeout(() => declineSheetRef.current?.focus(), 50);
+  }, [declineModal]);
 
   const nextAssignment = upcoming[Math.min(heroIndex, Math.max(0, upcoming.length - 1))];
   const nextShift = nextAssignment?.shift;
@@ -186,19 +201,20 @@ export default function DashboardClient({
   return (
     <div style={s.page}>
       {fetchError && (
-        <div style={s.errorBanner} onClick={() => setFetchError(null)}>
-          ⚠️ {fetchError}
+        <div style={s.errorBanner}>
+          <span>⚠️ {fetchError}</span>
+          <button onClick={() => setFetchError(null)} style={{ background:"none", border:"none", color:"#ff4f6d", fontSize:16, cursor:"pointer", padding:"0 4px", marginLeft:"auto", lineHeight:1, flexShrink:0 }} aria-label="Sluiten">✕</button>
         </div>
       )}
       {claimSuccess && (
-        <div style={{background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", borderRadius:12, padding:"10px 14px", fontSize:13, color:"#00e5c3", fontWeight:700, marginBottom:14, display:"flex", alignItems:"center", gap:8}}>
+        <div className={sharedStyles.bannerIn} style={{background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", borderRadius:12, padding:"10px 14px", fontSize:13, color:"#00e5c3", fontWeight:700, marginBottom:14, display:"flex", alignItems:"center", gap:8}}>
           ✅ Ingeschreven voor {claimSuccess}!
         </div>
       )}
 
       {/* Greeting */}
       <div style={{ marginBottom:20 }}>
-        <p style={{ fontSize:13, color:"#8b80b0", marginBottom:4 }}>Welkom terug,</p>
+        <p style={{ fontSize:13, color:"#a89ec8", marginBottom:4 }}>Welkom terug,</p>
         <h1 style={s.greeting}>
           {firstName} 👋
           {profile?.role === "admin" && <span className={`${sharedStyles.badge} ${sharedStyles.badgeMint}`} style={{ fontSize:11, padding:"2px 10px" }}>⚡ Admin</span>}
@@ -221,14 +237,14 @@ export default function DashboardClient({
               );
             })()}
             {/* Right: content */}
-            <div style={{ flex:1, minWidth:0 }}>
+            <div key={heroIndex} className={sharedStyles.fadeIn} style={{ flex:1, minWidth:0 }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
                 <p style={{ ...s.heroLabel, margin:0 }}>Volgende dienst</p>
                 {upcoming.length > 1 && (
                   <div style={{ display:"flex", gap:4, alignItems:"center" }}>
-                    <button onClick={() => setHeroIndex(i => Math.max(0, i - 1))} style={{ ...s.navArrowSm, width:24, height:24, fontSize:14, opacity: heroIndex === 0 ? 0.35 : 1 }}>‹</button>
+                    <button aria-label="Vorige dienst" onClick={() => setHeroIndex(i => Math.max(0, i - 1))} style={{ ...s.navArrowSm, width:44, height:44, fontSize:16, opacity: heroIndex === 0 ? 0.35 : 1 }}>‹</button>
                     <span style={{ fontSize:10, color:"#8b80b0", fontFamily:"monospace" }}>{heroIndex + 1}/{upcoming.length}</span>
-                    <button onClick={() => setHeroIndex(i => Math.min(upcoming.length - 1, i + 1))} style={{ ...s.navArrowSm, width:24, height:24, fontSize:14, opacity: heroIndex === upcoming.length - 1 ? 0.35 : 1 }}>›</button>
+                    <button aria-label="Volgende dienst" onClick={() => setHeroIndex(i => Math.min(upcoming.length - 1, i + 1))} style={{ ...s.navArrowSm, width:44, height:44, fontSize:16, opacity: heroIndex === upcoming.length - 1 ? 0.35 : 1 }}>›</button>
                   </div>
                 )}
               </div>
@@ -256,7 +272,7 @@ export default function DashboardClient({
               >📅 Zet in agenda</a>
             ) : (
               <div style={s.confirmBox}>
-                <p style={{ fontSize:12, color:"#8b80b0", marginBottom:8 }}>Ben jij erbij?</p>
+                <p style={{ fontSize:12, color:"#a89ec8", marginBottom:8 }}>Ben jij erbij?</p>
                 <div style={{ display:"flex", gap:8 }}>
                   <button style={{ ...s.btnYes, opacity: loading===nextAssignment.shift_id ? 0.5 : 1 }} disabled={loading===nextAssignment.shift_id} onClick={() => handleConfirm(nextAssignment.shift_id)}>✅ Ik ben erbij</button>
                   <button style={s.btnNo} onClick={() => setDeclineModal(nextAssignment)}>🔴 Ik kan niet</button>
@@ -291,14 +307,14 @@ export default function DashboardClient({
                   <span style={{ fontSize:20 }}>📢</span>
                   <div style={{ flex:1 }}>
                     <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", marginBottom:2 }}>{msg.title}</p>
-                    <p style={{ fontSize:11, color:"#8b80b0", marginBottom:6 }}>van {senderName} · {new Date(msg.created_at).toLocaleString("nl-NL", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })}</p>
+                    <p style={{ fontSize:11, color:"#a89ec8", marginBottom:6 }}>van {senderName} · {new Date(msg.created_at).toLocaleString("nl-NL", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })}</p>
                     <p style={{ fontSize:12, color:"#b8b0d4", lineHeight:1.5 }}>{msg.body}</p>
                   </div>
                   <button onClick={() => {
                     const next = new Set([...dismissedMessages, msg.id]);
                     setDismissedMessages(next);
                     try { localStorage.setItem("dismissedMessages", JSON.stringify([...next])); } catch {}
-                  }} style={{ background:"none", border:"none", color:"#8b80b0", fontSize:16, cursor:"pointer", padding:"0 4px", flexShrink:0, alignSelf:"flex-start", lineHeight:1 }} title="Verbergen">✕</button>
+                  }} style={{ background:"none", border:"none", color:"#8b80b0", fontSize:16, cursor:"pointer", padding:"0 4px", flexShrink:0, alignSelf:"flex-start", lineHeight:1 }} aria-label="Sluiten">✕</button>
                 </div>
               </div>
             );
@@ -320,14 +336,14 @@ export default function DashboardClient({
       </div>
       <div className={sharedStyles.card}>
         <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
-          <span style={{ fontSize:12, color:"#8b80b0" }}>Voortgang dit jaar ({tapsThisYear}/{target})</span>
+          <span style={{ fontSize:12, color:"#a89ec8" }}>Voortgang dit jaar ({tapsThisYear}/{target})</span>
           <span style={{ fontFamily:"monospace", fontSize:12, color:"#00e5c3" }}>{pct}%</span>
         </div>
         <div style={{ ...s.progressWrap, position:"relative" }}>
-          <div style={{ ...s.progressFill, width:`${pct}%` }}/>
+          <div style={{ ...s.progressFill, width:`${pctAnimated}%` }}/>
           <div style={{ position:"absolute", top:0, left:"50%", transform:"translateX(-50%)", width:1, height:"100%", background:"rgba(255,255,255,0.25)" }}/>
         </div>
-        {myRank > 0 && <p style={{ fontSize:11, color:"#8b80b0", marginTop:6 }}>Je staat op plek <strong style={{ color:"#00e5c3" }}>#{myRank}</strong> dit jaar 🏆</p>}
+        {myRank > 0 && <p style={{ fontSize:11, color:"#a89ec8", marginTop:6 }}>Je staat op plek <strong style={{ color:"#00e5c3" }}>#{myRank}</strong> dit jaar 🏆</p>}
         {tapsThisYear >= Math.round((new Date().getMonth() + 1) / 12 * target) && (
           <p style={{fontSize:11, color:"#00e5c3", textAlign:"center", margin:"4px 0 0"}}>Je ligt op koers ✓</p>
         )}
@@ -350,7 +366,7 @@ export default function DashboardClient({
             </div>
           </div>
           {filteredUpcoming.length === 0 ? (
-            <div style={{ textAlign:"center", padding:"24px 20px", background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:12, color:"#8b80b0", fontSize:12 }}>
+            <div style={{ textAlign:"center", padding:"24px 20px", background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:12, color:"#a89ec8", fontSize:12 }}>
               Geen diensten in {MONTH_NL[myMonth]}.
             </div>
           ) : filteredUpcoming.map((a): React.ReactNode => {
@@ -374,7 +390,7 @@ export default function DashboardClient({
                       {urgentUnconfirmed && <span className={`${sharedStyles.badge} ${sharedStyles.badgeAmber}`}>⏰ Bevestig — nog {daysUntil === 0 ? "vandaag" : `${daysUntil} dag${daysUntil !== 1 ? "en" : ""}`}</span>}
                     </div>
                     <p style={{ fontSize:13, fontWeight:700, color:"#e8e0ff", marginBottom:2 }}>{formatDateShort(sh.date)}</p>
-                    <p style={{ fontSize:12, color:"#8b80b0" }}>{formatTime(sh.start_time)}–{formatTime(sh.end_time)}</p>
+                    <p style={{ fontSize:12, color:"#a89ec8" }}>{formatTime(sh.start_time)}–{formatTime(sh.end_time)}</p>
                     {sh.admin_note && <p style={{ fontSize:11, color:"#8b80b0", marginTop:4 }}>📌 {sh.admin_note}</p>}
                   </div>
                   <div style={{ display:"flex", flexDirection:"column", gap:6, alignItems:"stretch", minWidth:88 }}>
@@ -414,7 +430,10 @@ export default function DashboardClient({
       {claimable.length > 0 && (
         <>
           <div ref={openDienstenRef} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", margin:"20px 0 8px" }}>
-            <p className={sharedStyles.sectionTitle} style={{ margin:0, color:"#ffb547" }}>● Open diensten</p>
+            <div style={{ display:"flex", alignItems:"center", gap:8, margin:0 }}>
+              <p className={sharedStyles.sectionTitle} style={{ margin:0 }}>Open diensten</p>
+              <span className={`${sharedStyles.badge} ${sharedStyles.badgeAmber}`}>{claimable.length}</span>
+            </div>
             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
               <button onClick={prevOpenMonth} style={s.navArrowSm}>‹</button>
               <span style={{ fontSize:12, fontWeight:700, color:"#e8e0ff", minWidth:82, textAlign:"center" }}>
@@ -424,7 +443,7 @@ export default function DashboardClient({
             </div>
           </div>
           {filteredClaimable.length === 0 ? (
-            <div style={{ textAlign:"center", padding:"24px 20px", background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:12, color:"#8b80b0", fontSize:12 }}>
+            <div style={{ textAlign:"center", padding:"24px 20px", background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:12, color:"#a89ec8", fontSize:12 }}>
               Geen open diensten in {MONTH_NL[openMonth]}.
             </div>
           ) : filteredClaimable.map((shift) => {
@@ -438,9 +457,9 @@ export default function DashboardClient({
                   <div style={{ flex:1 }}>
                     <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff", margin:0 }}>{shift.title}</p>
                     <p style={{ fontSize:13, fontWeight:700, color:"#e8e0ff", marginBottom:2, marginTop:2 }}>{formatDateShort(shift.date)}</p>
-                    <p style={{ fontSize:12, color:"#8b80b0" }}>{formatTime(shift.start_time)}–{formatTime(shift.end_time)}</p>
+                    <p style={{ fontSize:12, color:"#a89ec8" }}>{formatTime(shift.start_time)}–{formatTime(shift.end_time)}</p>
                     <div style={{ display:"flex", alignItems:"center", gap:5, marginTop:4, flexWrap:"wrap" }}>
-                      <span style={{ fontSize:11, color:"#8b80b0" }}>{shift.open_spots} open plek{shift.open_spots > 1 ? "ken" : ""}</span>
+                      <span style={{ fontSize:11, color:"#a89ec8" }}>{shift.open_spots} open plek{shift.open_spots > 1 ? "ken" : ""}</span>
                       {assignedNames.map((a: any) => (
                         <span key={a.user_id} style={{ fontSize:11, padding:"1px 8px", borderRadius:20, background:"#221f38", border:"1px solid #2e2a4a", color:"#8b80b0" }}>
                           {a.profile?.full_name?.split(" ")[0] || "?"}
@@ -451,7 +470,7 @@ export default function DashboardClient({
                   {isFull ? (
                     <span style={{ fontSize:11, fontWeight:700, padding:"5px 10px", borderRadius:12, background:"rgba(0,229,195,0.08)", border:"1px solid #2e2a4a", color:"#8b80b0" }}>Vol</span>
                   ) : (
-                    <button style={{ ...s.claimBtn, opacity: loading===shift.id ? 0.5 : 1 }} disabled={loading===shift.id} onClick={() => setClaimModal(shift)}>
+                    <button className={sharedStyles.btnPrimaryCompact} disabled={loading===shift.id} onClick={() => setClaimModal(shift)}>
                       {loading===shift.id ? "..." : "Inschrijven"}
                     </button>
                   )}
@@ -459,7 +478,7 @@ export default function DashboardClient({
               </div>
             );
           })}
-          <a href="/rooster" style={{display:"block", textAlign:"center", fontSize:12, color:"#00e5c3", textDecoration:"none", padding:"8px 0"}}>
+          <a href="/rooster" style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, fontSize:12, color:"#00e5c3", textDecoration:"none", padding:"12px 16px", borderRadius:12, background:"#1a1730", border:"1px solid #2e2a4a", marginTop:4 }}>
             Bekijk alle diensten op de roosterpagina →
           </a>
         </>
@@ -468,9 +487,9 @@ export default function DashboardClient({
       {/* Claim modal */}
       {claimModal && (
         <div className={sharedStyles.overlay} onClick={() => setClaimModal(null)}>
-          <div className={sharedStyles.sheet} onClick={e => e.stopPropagation()}>
+          <div ref={claimSheetRef} className={sharedStyles.sheet} role="dialog" aria-modal="true" aria-labelledby="claim-title" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className={sharedStyles.sheetHandle}/>
-            <h3 className={sharedStyles.sheetTitle}>Inschrijven voor dienst</h3>
+            <h3 id="claim-title" className={sharedStyles.sheetTitle}>Inschrijven voor dienst</h3>
             <div style={{ background:"#221f38", borderRadius:12, padding:"12px 14px", marginBottom:16 }}>
               <p style={{ fontSize:15, fontWeight:700, color:"#f0eeff" }}>{claimModal.title}</p>
               <p style={{ fontSize:13, color:"#8b80b0", marginTop:4 }}>{formatDate(claimModal.date)} · {formatTime(claimModal.start_time)}–{formatTime(claimModal.end_time)}</p>
@@ -501,9 +520,9 @@ export default function DashboardClient({
       {/* Decline modal */}
       {declineModal && (
         <div className={sharedStyles.overlay} onClick={() => setDeclineModal(null)}>
-          <div className={sharedStyles.sheet} onClick={e => e.stopPropagation()}>
+          <div ref={declineSheetRef} className={sharedStyles.sheet} role="dialog" aria-modal="true" aria-labelledby="decline-title" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className={sharedStyles.sheetHandle}/>
-            <h3 className={sharedStyles.sheetTitle}>Afmelden voor dienst</h3>
+            <h3 id="decline-title" className={sharedStyles.sheetTitle}>Afmelden voor dienst</h3>
             <p style={{fontSize:16, fontWeight:700, color:"#f0eeff", marginBottom:4}}>{declineModal.shift?.title}</p>
             <p style={{fontSize:13, color:"#8b80b0", marginBottom:16}}>{declineModal.shift ? formatDate(declineModal.shift.date) : ""}</p>
             <p style={{ fontSize:13, color:"#8b80b0", marginBottom:16 }}>
@@ -529,26 +548,26 @@ export default function DashboardClient({
 }
 
 const s: Record<string, React.CSSProperties> = {
-  page: { padding:"20px 16px 100px" },
-  errorBanner: { background:"rgba(255,79,109,0.1)", border:"1px solid #ff4f6d", borderRadius:12, padding:"10px 14px", fontSize:13, color:"#ff4f6d", marginBottom:14, cursor:"pointer" },
+  page: { padding:"16px 16px 100px" },
+  errorBanner: { background:"rgba(255,79,109,0.1)", border:"1px solid #ff4f6d", borderRadius:12, padding:"10px 14px", fontSize:13, color:"#ff4f6d", marginBottom:14, display:"flex", alignItems:"center", gap:8 },
   greeting: { fontSize:26, fontWeight:900, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif", display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" },
   heroCard: { background:"linear-gradient(135deg,#1a1730,#221f38)", border:"1px solid #00e5c3", borderRadius:16, padding:18, marginBottom:12, boxShadow:"0 0 30px rgba(0,229,195,0.08)" },
-  heroLabel: { fontSize:11, fontWeight:700, letterSpacing:2, color:"#00e5c3", textTransform:"uppercase", marginBottom:4 },
+  heroLabel: { fontSize:11, fontWeight:700, letterSpacing:"0.12em", color:"#00e5c3", textTransform:"uppercase", marginBottom:4 },
   heroTitle: { fontSize:20, fontWeight:900, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif", margin:0 },
-  heroSub: { fontSize:13, color:"#8b80b0", marginTop:2 },
+  heroSub: { fontSize:13, color:"#a89ec8", marginTop:2 },
   confirmBox: { background:"#221f38", borderRadius:16, padding:12 },
   btnYes: { flex:1, padding:10, borderRadius:12, background:"rgba(0,229,195,0.1)", color:"#00e5c3", border:"1px solid #00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer" },
   btnNo: { flex:1, padding:10, borderRadius:12, background:"rgba(255,79,109,0.1)", color:"#ff4f6d", border:"1px solid #ff4f6d", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer" },
   statRow: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 },
   statCard: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:16, padding:16, textAlign:"center" },
-  statVal: { fontFamily:"monospace", fontSize:30, fontWeight:700, color:"#00e5c3", margin:0 },
-  statLabel: { fontSize:10, fontWeight:700, color:"#8b80b0", letterSpacing:1, textTransform:"uppercase", marginTop:4, margin:0 },
+  statVal: { fontFamily:"monospace", fontSize:28, fontWeight:700, color:"#00e5c3", margin:0 },
+  statLabel: { fontSize:10, fontWeight:700, color:"#a89ec8", letterSpacing:"0.08em", textTransform:"uppercase", marginTop:4, margin:0 },
   progressWrap: { background:"#2e2a4a", borderRadius:4, height:6, overflow:"hidden" },
   progressFill: { height:"100%", borderRadius:4, background:"linear-gradient(90deg,#00e5c3,#00b89c)", transition:"width 0.6s ease" },
   // Consistent action buttons for mijn diensten
   actionBtn: { fontSize:11, fontWeight:700, padding:"6px 8px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", cursor:"pointer", textAlign:"center" as const, width:"100%" },
   actionBtnConfirmed: { fontSize:11, fontWeight:700, padding:"6px 8px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", textAlign:"center" as const, width:"100%", background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3" },
   iconSmBtn: { fontSize:14, padding:"5px 8px", borderRadius:8, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", height:28, boxSizing:"border-box" as const },
-  navArrowSm: { background:"#221f38", border:"1px solid #2e2a4a", borderRadius:6, width:28, height:28, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:16, color:"#b8b0d4", flexShrink:0, padding:0 },
+  navArrowSm: { background:"#221f38", border:"1px solid #2e2a4a", borderRadius:6, width:44, height:44, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:16, color:"#b8b0d4", flexShrink:0, padding:0 },
   claimBtn: { padding:"9px 14px", borderRadius:12, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", border:"none", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, letterSpacing:1, cursor:"pointer", textTransform:"uppercase" as const, flexShrink:0 },
 };

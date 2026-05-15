@@ -53,6 +53,30 @@
 }
 .btnPrimary:disabled { opacity: 0.5; cursor: not-allowed; }
 
+.btnPrimaryCompact {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #00e5c3, #00b89c);
+  color: #0f0d1a;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0,229,195,0.25);
+  transition: box-shadow 0.15s ease, opacity 0.15s ease;
+  flex-shrink: 0;
+}
+.btnPrimaryCompact:hover:not(:disabled) {
+  box-shadow: 0 6px 28px rgba(0,229,195,0.40);
+}
+.btnPrimaryCompact:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .btnSecondary {
   width: 100%;
   padding: 14px;
@@ -123,7 +147,7 @@
   font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: #8b80b0;
+  color: #a89ec8;
   margin-bottom: 4px;
 }
 
@@ -179,6 +203,14 @@
   flex-shrink: 0;
 }
 
+/* Calendar day hover */
+.calDay {
+  transition: filter 0.12s ease;
+}
+.calDay:hover {
+  filter: brightness(1.18);
+}
+
 /* Chip / toggle pill */
 .chip {
   padding: 8px 10px;
@@ -203,8 +235,8 @@
   background: #221f38;
   border: 1px solid #2e2a4a;
   border-radius: 8px;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -285,3 +317,19 @@
 
 .bannerIn { animation: bannerIn 0.25s ease both; }
 .fadeIn   { animation: fadeUp 0.2s ease both; }
+
+/* Scrollable tab bar wrapper with right-fade scroll hint */
+.tabBarWrap {
+  position: relative;
+}
+.tabBarWrap::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 2px;
+  width: 32px;
+  background: linear-gradient(to right, transparent, #0f0d1a);
+  pointer-events: none;
+  z-index: 1;
+}

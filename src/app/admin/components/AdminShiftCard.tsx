@@ -2,6 +2,7 @@
 import type { Shift } from "@/types";
 import { formatDateShort as formatDate } from "@/lib/dates";
 import { useAdminShell } from "../AdminShellContext";
+import { TimeSelect } from "./TimeSelect";
 import styles from "@/styles/shared.module.css";
 
 const s: Record<string, React.CSSProperties> = {
@@ -32,8 +33,8 @@ export function AdminShiftCard({ shift, source }: { shift: Shift & Record<string
           <label className={styles.label}>Naam dienst</label>
           <input className={styles.input} value={shift.title} onChange={e => updateShiftInList(shift.id, "title", e.target.value, list, setList)} />
           <div style={{ display:"flex", gap:8, marginBottom:12 }}>
-            <div style={{ flex:1 }}><label className={styles.label}>Start</label><input className={styles.input} style={{ marginBottom:0 }} value={shift.start_time} onChange={e => updateShiftInList(shift.id, "start_time", e.target.value, list, setList)} /></div>
-            <div style={{ flex:1 }}><label className={styles.label}>Eind</label><input className={styles.input} style={{ marginBottom:0 }} value={shift.end_time} onChange={e => updateShiftInList(shift.id, "end_time", e.target.value, list, setList)} /></div>
+            <div style={{ flex:1 }}><label className={styles.label}>Start</label><TimeSelect value={shift.start_time} onChange={v => updateShiftInList(shift.id, "start_time", v, list, setList)} /></div>
+            <div style={{ flex:1 }}><label className={styles.label}>Eind</label><TimeSelect value={shift.end_time} onChange={v => updateShiftInList(shift.id, "end_time", v, list, setList)} /></div>
           </div>
           <label className={styles.label}>Max tappers</label>
           <input className={styles.input} style={{ width:80 }} type="number" min={1} max={20} value={shift.max_tappers} onChange={e => updateShiftInList(shift.id, "max_tappers", Number(e.target.value), list, setList)} />
@@ -70,8 +71,8 @@ export function AdminShiftCard({ shift, source }: { shift: Shift & Record<string
             </div>
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:6, marginLeft:10 }}>
-            <button className={styles.iconBtn} onClick={() => setEditingShiftId(shift.id)}>✏️</button>
-            <button className={`${styles.iconBtn} ${styles.iconBtnDanger}`} onClick={() => handleDeleteShift(shift.id, source)}>🗑</button>
+            <button className={styles.iconBtn} aria-label="Bewerken" onClick={() => setEditingShiftId(shift.id)}>✏️</button>
+            <button className={`${styles.iconBtn} ${styles.iconBtnDanger}`} aria-label="Verwijderen" onClick={() => handleDeleteShift(shift.id, source)}>🗑</button>
           </div>
         </div>
       )}

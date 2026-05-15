@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { parseLocalDate, formatDate, formatDateShort, formatTime } from "@/lib/dates";
 import { useShiftApi } from "@/hooks/useShiftApi";
 import { createClient } from "@/lib/supabase";
+import sharedStyles from "@/styles/shared.module.css";
 
 const MONTH_NAMES = ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December"];
 const DAY_LABELS = ["Ma","Di","Wo","Do","Vr","Za","Zo"];
@@ -220,7 +221,7 @@ export default function RoosterClient({
               { color: C.empty,   bg: "rgba(255,79,109,0.1)", label: "Leeg" },
               { color: C.party,   bg: "rgba(244,114,182,0.12)", label: "Feestje" },
             ].map(({ color, bg, label }) => (
-              <div key={label} style={{ display:"flex", alignItems:"center", gap:5, fontSize:10, color:"#8b80b0", padding:"3px 8px", background:"rgba(255,255,255,0.04)", borderRadius:6 }}>
+              <div key={label} style={{ display:"flex", alignItems:"center", gap:5, fontSize:10, color:"#a89ec8", padding:"3px 8px", background:"rgba(255,255,255,0.04)", borderRadius:6 }}>
                 <div style={{ width:10, height:10, borderRadius:2, background:bg, borderWidth:1, borderStyle:"solid", borderColor:color }} />
                 {label}
               </div>
@@ -251,7 +252,7 @@ export default function RoosterClient({
               const isMineDay = myShiftIds.concat(claimedIds).some(id => dayShifts.some((s: any) => s.id === id));
 
               return (
-                <div key={day} onClick={() => setSelectedShifts(dayShifts)} style={{
+                <div key={day} className={sharedStyles.calDay} onClick={() => setSelectedShifts(dayShifts)} style={{
                   aspectRatio:"1", display:"flex", alignItems:"center", justifyContent:"center",
                   fontSize:12, fontWeight:700, borderRadius:8, cursor:"pointer", position:"relative",
                   background: bg, color, borderWidth:1, borderStyle:"solid", borderColor,
@@ -259,11 +260,9 @@ export default function RoosterClient({
                   boxShadow: isMineDay ? "0 0 0 2px #9b87f0, 0 0 10px rgba(155,135,240,0.35)" : undefined,
                 }}>
                   {day}
-                  {isMineDay && <span style={{ position:"absolute", top:1, left:2, fontSize:7, color:"#c4b5fd", lineHeight:1 }}>★</span>}
+                  {isMineDay && <span style={{ position:"absolute", top:1, left:2, fontSize:9, color:"#c4b5fd", lineHeight:1 }}>★</span>}
                   {dayShifts.length > 1 && (
-                    <span style={{ position:"absolute", bottom:1, left:"50%", transform:"translateX(-50%)", display:"flex", gap:2 }}>
-                      {dayShifts.slice(0, 3).map((_: any, i: number) => <span key={i} style={{ width:3, height:3, borderRadius:"50%", background:color, opacity:0.8, display:"block" }} />)}
-                    </span>
+                    <span style={{ position:"absolute", bottom:2, left:"50%", transform:"translateX(-50%)", width:16, height:3, borderRadius:2, background:color, opacity:0.8, display:"block" }} />
                   )}
                   {dayShifts.length === 1 && hasOpen && !isMineDay && (
                     <span style={{ position:"absolute", top:1, right:2, fontSize:8, color }}>+</span>
@@ -275,7 +274,7 @@ export default function RoosterClient({
 
           {/* Selected day detail */}
           {selectedShifts.length > 0 && (
-            <div style={{ marginTop:16 }}>
+            <div className={sharedStyles.fadeIn} style={{ marginTop:16 }}>
               {selectedShifts.map(shift => {
                 const mine = isMyShift(shift);
                 const declined = declinedIds.includes(shift.id);
@@ -301,7 +300,7 @@ export default function RoosterClient({
                         <p style={{ fontSize:11, color: accentColor, marginTop:2 }}>{assigned.length}/{totalSpots} tappers</p>
                         {shift.admin_note && <p style={{ fontSize:11, color:"#8b80b0", marginTop:4 }}>📌 {shift.admin_note}</p>}
                       </div>
-                      <button onClick={() => setSelectedShifts([])} style={s.closeBtn}>✕</button>
+                      <button onClick={() => setSelectedShifts([])} style={s.closeBtn} aria-label="Sluiten">✕</button>
                     </div>
 
                     {/* Tappers */}
@@ -327,7 +326,7 @@ export default function RoosterClient({
                     {/* Actions */}
                     <div style={{ display:"flex", gap:8 }}>
                       {claimable && !declined && (
-                        <button style={{ ...s.claimBtn, flex:1, opacity: loading===shift.id ? 0.5 : 1 }} disabled={loading===shift.id} onClick={() => setClaimModal(shift)}>
+                        <button className={sharedStyles.btnPrimaryCompact} style={{ flex:1 }} disabled={loading===shift.id} onClick={() => setClaimModal(shift)}>
                           {loading===shift.id ? "..." : "✅ Inschrijven"}
                         </button>
                       )}
@@ -380,11 +379,11 @@ export default function RoosterClient({
             const isPast = parseLocalDate(shift.date) < new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
             return (
-              <div key={shift.id} style={{ background:"#1a1730", borderRadius:16, padding:16, marginBottom:10, borderLeft:`3px solid ${accentColor}`, borderTop:"1px solid #2e2a4a", borderRight:"1px solid #2e2a4a", borderBottom:"1px solid #2e2a4a", opacity: isPast ? 0.45 : 1 }}>
+              <div key={shift.id} style={{ background:"#1a1730", borderRadius:16, padding:16, marginBottom:10, borderLeft:`4px solid ${accentColor}`, borderTop:"1px solid #2e2a4a", borderRight:"1px solid #2e2a4a", borderBottom:"1px solid #2e2a4a", opacity: isPast ? 0.45 : 1 }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                   <div style={{ flex:1 }}>
                     <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:4, flexWrap:"wrap" }}>
-                      <p style={{ fontSize:15, fontWeight:700, color:"#f0eeff" }}>{shift.title}</p>
+                      <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff" }}>{shift.title}</p>
                       {mine && <span style={s.myBadge}>Jij</span>}
                       {isParty && <span style={s.warnBadge}>Feestje</span>}
                       {isPast && <span style={{ fontSize:10, padding:"1px 6px", borderRadius:8, background:"rgba(255,255,255,0.05)", color:"#8b80b0", border:"1px solid #2e2a4a" }}>Verstreken</span>}
@@ -414,10 +413,10 @@ export default function RoosterClient({
 
       {/* Claim modal */}
       {claimModal && (
-        <div style={s.overlay} onClick={() => setClaimModal(null)}>
-          <div style={s.sheet} onClick={e => e.stopPropagation()}>
-            <div style={s.sheetHandle} />
-            <h3 style={s.sheetTitle}>Inschrijven</h3>
+        <div className={sharedStyles.overlay} onClick={() => setClaimModal(null)}>
+          <div className={sharedStyles.sheet} role="dialog" aria-modal="true" aria-labelledby="rooster-claim-title" onClick={e => e.stopPropagation()}>
+            <div className={sharedStyles.sheetHandle} />
+            <h3 className={sharedStyles.sheetTitle} id="rooster-claim-title">Inschrijven</h3>
             <div style={{ background:"#221f38", borderRadius:12, padding:"12px 14px", marginBottom:16 }}>
               <p style={{ fontSize:15, fontWeight:700, color:"#f0eeff" }}>{claimModal.title}</p>
               <p style={{ fontSize:13, color:"#8b80b0", marginTop:4 }}>{formatDate(claimModal.date)} · {formatTime(claimModal.start_time)}–{formatTime(claimModal.end_time)}</p>
@@ -449,10 +448,10 @@ export default function RoosterClient({
             <p style={{ fontSize:12, color:"#8b80b0", marginBottom:20, lineHeight:1.5 }}>
               Je ontvangt een bevestiging per e-mail en herinneringen 2 weken en 1 week van tevoren.
             </p>
-            <button style={s.btnPrimary} disabled={loading===claimModal.id} onClick={() => handleClaim(claimModal)}>
+            <button className={sharedStyles.btnPrimary} disabled={loading===claimModal.id} onClick={() => handleClaim(claimModal)}>
               {loading===claimModal.id ? "Bezig..." : "✅ Ja, ik schrijf me in!"}
             </button>
-            <button style={{ ...s.btnSecondary, marginTop:8 }} onClick={() => setClaimModal(null)}>Annuleren</button>
+            <button className={sharedStyles.btnSecondary} style={{ marginTop:8 }} onClick={() => setClaimModal(null)}>Annuleren</button>
           </div>
         </div>
       )}
@@ -465,10 +464,10 @@ const s: Record<string, React.CSSProperties> = {
   toggleRow: { display:"flex", gap:8, marginBottom:16 },
   toggleBtn: { flex:1, padding:"10px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer" },
   monthNav: { display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, position:"relative" },
-  navArrow: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:8, color:"#e8e0ff", fontSize:20, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" },
+  navArrow: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:8, color:"#e8e0ff", fontSize:20, width:44, height:44, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" },
   monthLabel: { fontSize:18, fontWeight:900, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif", minWidth:140, textAlign:"center", cursor:"pointer" },
   calGrid: { display:"grid", gridTemplateColumns:"repeat(7, 1fr)", gap:4, marginBottom:16 },
-  dayHeader: { textAlign:"center", fontSize:12, fontWeight:700, color:"#8b80b0", padding:"4px 0" },
+  dayHeader: { textAlign:"center", fontSize:12, fontWeight:700, color:"#a89ec8", padding:"4px 0" },
   closeBtn: { background:"none", border:"none", color:"#8b80b0", fontSize:16, cursor:"pointer", padding:4, flexShrink:0 },
   warnBadge: { background:"rgba(244,114,182,0.12)", borderWidth:1, borderStyle:"solid", borderColor:"#f472b6", color:"#f472b6", fontSize:10, fontWeight:700, padding:"2px 10px", borderRadius:20 },
   myBadge: { background:"rgba(90,74,158,0.35)", borderWidth:1, borderStyle:"solid", borderColor:"#9b87f0", color:"#c4b5fd", fontSize:10, fontWeight:700, padding:"2px 10px", borderRadius:20 },
@@ -478,10 +477,4 @@ const s: Record<string, React.CSSProperties> = {
   declineBtnSm: { padding:"5px 10px", borderRadius:8, background:"rgba(255,79,109,0.1)", borderWidth:1, borderStyle:"solid", borderColor:"#ff4f6d", color:"#ff4f6d", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer" },
   icalBtn: { padding:"10px 12px", borderRadius:10, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", cursor:"pointer", fontSize:16 },
   icalBtnSm: { padding:"5px 8px", borderRadius:8, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", fontSize:14, cursor:"pointer" },
-  overlay: { position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", backdropFilter:"blur(6px)", zIndex:100, display:"flex", alignItems:"flex-end", justifyContent:"center" },
-  sheet: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:"24px 24px 0 0", padding:"24px 20px 40px", width:"100%", maxWidth:430 },
-  sheetHandle: { width:48, height:5, background:"#9b87f0", borderRadius:3, margin:"0 auto 20px" },
-  sheetTitle: { fontSize:18, fontWeight:700, color:"#f0eeff", marginBottom:8, fontFamily:"'Exo 2',sans-serif" },
-  btnPrimary: { width:"100%", padding:14, borderRadius:12, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", fontFamily:"'Exo 2',sans-serif", fontSize:14, fontWeight:700, border:"none", cursor:"pointer", textTransform:"uppercase", display:"block" },
-  btnSecondary: { width:"100%", padding:14, borderRadius:12, background:"#221f38", color:"#e8e0ff", fontFamily:"'Exo 2',sans-serif", fontSize:14, fontWeight:700, border:"1px solid #2e2a4a", cursor:"pointer", textTransform:"uppercase", display:"block" },
 };
