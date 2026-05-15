@@ -110,10 +110,10 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
 
   const unreadNotifCount = notifs.filter(n => !n.read).length;
   const TABS = [
-    { id: "profiel", label: "👤 Profiel" },
-    { id: "voorkeuren", label: "⚙️ Voorkeuren" },
-    { id: "stats", label: "🏆 Stats" },
-    { id: "notif", label: "🔔 Notificaties" },
+    { id: "profiel", label: "Profiel" },
+    { id: "voorkeuren", label: "Voorkeuren" },
+    { id: "stats", label: "Stats" },
+    { id: "notif", label: "Notificaties" },
   ];
 
   return (
@@ -134,10 +134,10 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
       <div className={sharedStyles.tabBarWrap}>
         <div style={s.tabBar}>
           {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id as any)} style={{ ...s.tab, color: tab===t.id?"#00e5c3":"#8b80b0", borderBottom:`2px solid ${tab===t.id?"#00e5c3":"transparent"}`, fontWeight: tab===t.id ? 900 : 600, position:"relative" }}>
+            <button key={t.id} onClick={() => setTab(t.id as any)} style={{ ...s.tab, color: tab===t.id?"#00e5c3":"#a89ec8", borderBottom:`2px solid ${tab===t.id?"#00e5c3":"transparent"}`, fontWeight: tab===t.id ? 900 : 600, position:"relative" }}>
               {t.label}
               {t.id === "notif" && unreadNotifCount > 0 && (
-                <span style={{ position:"absolute", top:6, right:6, width:8, height:8, borderRadius:"50%", background:"#ff4f6d", display:"block" }} />
+                <span style={{ position:"absolute", top:6, right:6, width:10, height:10, borderRadius:"50%", background:"#ff4f6d", display:"block" }} />
               )}
             </button>
           ))}
@@ -152,7 +152,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
           <form onSubmit={handleSavePersonal}>
             <div className={sharedStyles.card}>
               <div style={{ background:"#221f38", borderRadius:10, padding:"10px 14px", marginBottom:12 }}>
-                <p style={{ fontSize:11, color:"#8b80b0", marginBottom:4, textTransform:"uppercase", letterSpacing:1, fontWeight:700 }}>Naam</p>
+                <p style={{ fontSize:11, color:"#a89ec8", marginBottom:4, textTransform:"uppercase", letterSpacing:1, fontWeight:700 }}>Naam</p>
                 <p style={{ fontSize:15, color:"#e8e0ff", fontWeight:600 }}>{profile.full_name}</p>
                 <p style={{ fontSize:11, color:"#a89ec8", marginTop:4 }}>Naam aanpassen? Vraag een admin.</p>
               </div>
@@ -218,7 +218,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
 
           <p className={sharedStyles.sectionTitle}>Niet beschikbaar in</p>
           <div className={sharedStyles.card}>
-            <p style={{ fontSize:12, color:"#8b80b0", marginBottom:12 }}>
+            <p style={{ fontSize:12, color:"#a89ec8", marginBottom:12 }}>
               Selecteer de maanden waarin je niet wilt tappen (bijv. vakantie). De planner houdt hier rekening mee.
             </p>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:6 }}>
@@ -264,7 +264,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
 
           <div className={sharedStyles.card}>
             <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
-              <span style={{ fontSize:12, color:"#8b80b0" }}>Voortgang dit jaar ({myStats?.taps_this_year||0}/{profile.preferred_frequency*4})</span>
+              <span style={{ fontSize:12, color:"#a89ec8" }}>Voortgang dit jaar ({myStats?.taps_this_year||0}/{profile.preferred_frequency*4})</span>
               <span style={{ fontFamily:"monospace", fontSize:12, color:"#00e5c3" }}>{tapsPct}%</span>
             </div>
             <div style={s.progressWrap}><div style={{ ...s.progressFill, width:`${tapsPctAnimated}%` }} /></div>
@@ -277,7 +277,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
               const rankBorder = lb.rank===1 ? "1px solid rgba(255,215,0,0.25)" : lb.rank===2 ? "1px solid rgba(192,192,192,0.2)" : lb.rank===3 ? "1px solid rgba(205,127,50,0.2)" : lb.id===profile.id ? "1px solid rgba(0,229,195,0.2)" : "1px solid transparent";
               return (
               <div key={lb.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 8px", borderRadius:10, marginBottom:4, background:rankBg, border:rankBorder }}>
-                <span style={{ fontSize:lb.rank<=3?20:16, fontFamily:"monospace", width:28, textAlign:"center", color:lb.rank<=3?undefined:"#8b80b0" }}>
+                <span style={{ fontSize:lb.rank<=3?20:16, fontFamily:"monospace", width:28, textAlign:"center", color:lb.rank<=3?undefined:"#b8b0d4" }}>
                   {lb.rank<=3?MEDALS[lb.rank-1]:lb.rank}
                 </span>
                 <div style={s.avatarSm}>{(lb.full_name || "?").split(" ").map((n: string) => n[0]).join("").slice(0,2)}</div>
@@ -302,7 +302,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
             </div>
           )}
           {notifs.length === 0 ? (
-            <div style={{ textAlign:"center", padding:"40px 0", color:"#8b80b0" }}>Geen notificaties.</div>
+            <div style={{ textAlign:"center", padding:"40px 0", color:"#a89ec8" }}>Geen notificaties.</div>
           ) : (() => {
             // Sort: shift-related first by shift date asc; admin_message by created_at desc at the end
             const shiftNotifs = [...notifs]
@@ -318,7 +318,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
             if (msgNotifs.length > 0) groups.push({ label:"Berichten", items:msgNotifs });
             return groups.map(group => (
               <div key={group.label}>
-                <p style={{ fontSize:10, fontWeight:700, letterSpacing:2, textTransform:"uppercase", color:"#8b80b0", margin:"12px 0 6px" }}>{group.label}</p>
+                <p style={{ fontSize:10, fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase", color:"#a89ec8", margin:"12px 0 6px" }}>{group.label}</p>
                 {group.items.map(n => {
                   const notifHref = n.type === "admin_message" ? "/dashboard" : "/rooster";
                   const shiftDate = (n as any).shift?.date;
@@ -331,8 +331,8 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
                         {n.type==="roster_published"?"📅":n.type.includes("reminder")?"⏰":n.type==="open_shift"?"🔓":"📢"}
                       </div>
                       <div style={{ flex:1 }}>
-                        <p style={{ fontSize:13, fontWeight:700, color: n.read ? "#8b80b0" : "#f0eeff" }}>{n.title}</p>
-                        <p style={{ fontSize:12, color:"#8b80b0", marginTop:2, lineHeight:1.4 }}>{n.message}</p>
+                        <p style={{ fontSize:13, fontWeight:700, color: n.read ? "#a89ec8" : "#f0eeff" }}>{n.title}</p>
+                        <p style={{ fontSize:12, color:"#a89ec8", marginTop:2, lineHeight:1.4 }}>{n.message}</p>
                         <p style={{ fontSize:11, color:"#a89ec8", marginTop:6 }}>
                           {shiftDate
                             ? `${new Date(shiftDate).toLocaleDateString("nl-NL", { day:"numeric", month:"short" })}${shiftTime ? " · " + shiftTime.slice(0,5) : ""}`
@@ -344,7 +344,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
                           ✓
                         </button>
                       ) : (
-                        <span style={{ flexShrink:0, fontSize:14, color:"#2e2a4a", alignSelf:"flex-start", marginTop:2 }}>✓</span>
+                        <span style={{ flexShrink:0, fontSize:14, color:"#4a4470", alignSelf:"flex-start", marginTop:2 }}>✓</span>
                       )}
                     </div>
                   </div>

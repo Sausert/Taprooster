@@ -62,6 +62,7 @@ export default function AppShell({
   const [unreadCount, setUnreadCount] = useState(initialUnread);
 
   const isAdmin = profile?.role === "admin";
+  const [notifHover, setNotifHover] = useState(false);
   const NAV_ITEMS = isAdmin ? [...NAV_ITEMS_BASE, NAV_ITEM_ADMIN] : NAV_ITEMS_BASE;
   const currentLabel = NAV_ITEMS.find(n => pathname.startsWith(n.path))?.label || "";
 
@@ -76,8 +77,11 @@ export default function AppShell({
           </div>
           <div style={s.pageLabel}>{currentLabel.toUpperCase()}</div>
           <button
-            style={s.notifBtn}
+            style={{ ...s.notifBtn, background: notifHover ? "#221f38" : "#1a1730", borderColor: notifHover ? "#5a4a9e" : "#2e2a4a", transition:"background 0.15s, border-color 0.15s" }}
+            aria-label={unreadCount > 0 ? `Notificaties (${unreadCount} ongelezen)` : "Notificaties"}
             onClick={() => router.push("/account?tab=notif")}
+            onMouseEnter={() => setNotifHover(true)}
+            onMouseLeave={() => setNotifHover(false)}
           >
             🔔
             {unreadCount > 0 && <span style={s.notifDot} />}
@@ -88,7 +92,7 @@ export default function AppShell({
         <main style={s.main}>{children}</main>
 
         {/* Bottom nav */}
-        <nav style={s.bottomNav}>
+        <nav style={s.bottomNav} aria-label="Hoofdnavigatie">
           {NAV_ITEMS.map(item => {
             const active = pathname.startsWith(item.path);
             return (
@@ -159,8 +163,8 @@ const s: Record<string, React.CSSProperties> = {
     color: "#b8b0d4",
   },
   notifBtn: {
-    width: 36,
-    height: 36,
+    width: 44,
+    height: 44,
     background: "#1a1730",
     border: "1px solid #2e2a4a",
     borderRadius: 10,

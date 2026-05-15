@@ -6,7 +6,7 @@ import { TimeSelect } from "./TimeSelect";
 import styles from "@/styles/shared.module.css";
 
 const s: Record<string, React.CSSProperties> = {
-  addTapperBtn: { padding:"4px 10px", borderRadius:20, background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"'Exo 2', sans-serif" },
+  addTapperBtn: { padding:"8px 12px", borderRadius:20, background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"'Exo 2', sans-serif" },
 };
 
 export function AdminShiftCard({ shift, source }: { shift: Shift & Record<string, unknown>; source: "concept" | "published" }) {

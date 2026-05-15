@@ -64,6 +64,7 @@ export default function AdminClient({
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<AdminTab>("health");
+  const [backHover, setBackHover] = useState(false);
 
   // Shared state — passed to all tabs via context
   const [shifts, setShifts] = useState<Shift[]>(initialShifts);
@@ -158,7 +159,7 @@ export default function AdminClient({
       <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column", background:"#0f0d1a" }}>
         {/* Header */}
         <header style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 20px", background:"rgba(15,13,26,0.92)", backdropFilter:"blur(16px)", borderBottom:"1px solid #2e2a4a", position:"sticky", top:0, zIndex:50 }}>
-          <button onClick={() => router.push("/account")} style={{ background:"none", border:"none", color:"#00e5c3", fontSize:22, cursor:"pointer", padding:0, width:28 }}>←</button>
+          <button onClick={() => router.push("/account")} onMouseEnter={() => setBackHover(true)} onMouseLeave={() => setBackHover(false)} style={{ background: backHover ? "rgba(0,229,195,0.1)" : "none", border:"none", color:"#00e5c3", fontSize:22, cursor:"pointer", padding:"4px 8px", borderRadius:8, transition:"background 0.15s", lineHeight:1 }}>←</button>
           <span style={{ fontSize:14, fontWeight:700, color:"#f0eeff", letterSpacing:1, fontFamily:"'Exo 2', sans-serif" }}>Admin Dashboard</span>
           <div style={{ width:28 }} />
         </header>

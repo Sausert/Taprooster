@@ -93,6 +93,13 @@ export default function RoosterClient({
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  useEffect(() => {
+    if (!showMonthPicker) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setShowMonthPicker(false); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [showMonthPicker]);
+
   function prevMonth() {
     setSelectedShifts([]);
     if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); }
@@ -158,7 +165,7 @@ export default function RoosterClient({
           <button key={v} onClick={() => { setView(v); setSelectedShifts([]); }} style={{
             ...s.toggleBtn,
             background: view===v ? "rgba(0,229,195,0.1)" : "#221f38",
-            color: view===v ? "#00e5c3" : "#8b80b0",
+            color: view===v ? "#00e5c3" : "#a89ec8",
             borderWidth:1, borderStyle:"solid", borderColor: view===v ? "#00e5c3" : "#2e2a4a",
           }}>
             {v === "cal" ? "📅 Kalender" : "📋 Lijst"}
@@ -184,10 +191,12 @@ export default function RoosterClient({
             )}
           </div>
           {showMonthPicker && (
-            <div style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:12, padding:12, zIndex:100, width:240 }}>
+            <>
+              <div style={{ position:"fixed", inset:0, zIndex:99 }} onClick={() => setShowMonthPicker(false)} />
+              <div role="dialog" aria-modal="true" aria-label="Maand selecteren" style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:12, padding:12, zIndex:100, width:240 }}>
               {[now.getFullYear(), now.getFullYear() + 1].map(year => (
                 <div key={year}>
-                  <div style={{ fontSize:10, fontWeight:700, color:"#8b80b0", textTransform:"uppercase", letterSpacing:1, marginBottom:6, marginTop: year === now.getFullYear() ? 0 : 10 }}>{year}</div>
+                  <div style={{ fontSize:10, fontWeight:700, color:"#a89ec8", textTransform:"uppercase", letterSpacing:1, marginBottom:6, marginTop: year === now.getFullYear() ? 0 : 10 }}>{year}</div>
                   <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:4 }}>
                     {MONTH_NAMES.map((name, idx) => {
                       const isActive = viewYear === year && viewMonth === idx;
@@ -205,6 +214,7 @@ export default function RoosterClient({
                 </div>
               ))}
             </div>
+            </>
           )}
         </div>
         <button style={s.navArrow} onClick={nextMonth}>›</button>
@@ -240,7 +250,7 @@ export default function RoosterClient({
 
               if (!hasShift) {
                 return (
-                  <div key={day} style={{ aspectRatio:"1", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"#8b80b0", borderRadius:8, outline: today ? "2px solid rgba(0,229,195,0.3)" : "none", position:"relative" }}>
+                  <div key={day} style={{ aspectRatio:"1", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"#a89ec8", borderRadius:8, outline: today ? "2px solid rgba(0,229,195,0.3)" : "none", position:"relative" }}>
                     {day}
                     {isAdmin && <span style={{ position:"absolute", bottom:1, right:2, fontSize:9, color:"rgba(0,229,195,0.4)" }}>+</span>}
                   </div>
@@ -296,9 +306,9 @@ export default function RoosterClient({
                           <p style={{ fontSize:16, fontWeight:700, color:"#f0eeff" }}>{shift.title}</p>
                           {isParty && <span style={s.warnBadge}>Feestje</span>}
                         </div>
-                        <p style={{ fontSize:13, color:"#8b80b0" }}>{formatDate(shift.date)} · {formatTime(shift.start_time)}–{formatTime(shift.end_time)}</p>
+                        <p style={{ fontSize:13, color:"#a89ec8" }}>{formatDate(shift.date)} · {formatTime(shift.start_time)}–{formatTime(shift.end_time)}</p>
                         <p style={{ fontSize:11, color: accentColor, marginTop:2 }}>{assigned.length}/{totalSpots} tappers</p>
-                        {shift.admin_note && <p style={{ fontSize:11, color:"#8b80b0", marginTop:4 }}>📌 {shift.admin_note}</p>}
+                        {shift.admin_note && <p style={{ fontSize:11, color:"#a89ec8", marginTop:4 }}>📌 {shift.admin_note}</p>}
                       </div>
                       <button onClick={() => setSelectedShifts([])} style={s.closeBtn} aria-label="Sluiten">✕</button>
                     </div>
@@ -317,7 +327,7 @@ export default function RoosterClient({
                         </div>
                       ))}
                       {Array(Math.max(0, totalSpots - assigned.length)).fill(null).map((_,i) => (
-                        <div key={`open${i}`} style={{ padding:"3px 10px", borderRadius:20, fontSize:12, color:"#8b80b0", borderWidth:1, borderStyle:"dashed", borderColor:"#2e2a4a", background:"transparent" }}>
+                        <div key={`open${i}`} style={{ padding:"3px 10px", borderRadius:20, fontSize:12, color:"#a89ec8", borderWidth:1, borderStyle:"dashed", borderColor:"#2e2a4a", background:"transparent" }}>
                           open
                         </div>
                       ))}
@@ -335,7 +345,7 @@ export default function RoosterClient({
                           {loading===shift.id ? "..." : "🔴 Afmelden"}
                         </button>
                       )}
-                      <a href={`/api/shifts/${shift.id}/ical`} style={{ ...s.icalBtn, flex: claimable || mine ? 0 : 1, textDecoration:"none" }}>📅</a>
+                      <a href={`/api/shifts/${shift.id}/ical`} aria-label="Exporteer naar agenda" style={{ ...s.icalBtn, flex: claimable || mine ? 0 : 1, textDecoration:"none" }}>📅</a>
                     </div>
                   </div>
                 );
@@ -347,24 +357,24 @@ export default function RoosterClient({
         /* List view */
         <>
           <input
-            style={{ boxSizing:"border-box" as const, width:"100%", background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:10, padding:"10px 14px", color:"#e8e0ff", fontFamily:"'Exo 2',sans-serif", fontSize:13, outline:"none", marginBottom:10, display:"block" }}
+            className={sharedStyles.input}
             placeholder="🔍 Zoek op naam of datum..."
             value={listSearch}
             onChange={e => setListSearch(e.target.value)}
           />
           {monthShifts.length === 0 ? (
-            <div style={{ textAlign:"center", padding:"40px 20px", background:"#1a1730", borderRadius:16, border:"1px dashed #2e2a4a" }}>
+            <div style={{ textAlign:"center", padding:"40px 20px", background:"#1a1730", borderRadius:16, border:"1px solid #2e2a4a" }}>
               <div style={{ fontSize:40, marginBottom:12 }}>📅</div>
               <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff", margin:0 }}>Geen diensten</p>
-              <p style={{ fontSize:12, color:"#8b80b0", marginTop:4 }}>Er zijn geen diensten gepland voor deze maand.</p>
+              <p style={{ fontSize:12, color:"#a89ec8", marginTop:4 }}>Er zijn geen diensten gepland voor deze maand.</p>
             </div>
           ) : monthShifts.filter(shift =>
               !listSearch ||
               shift.title?.toLowerCase().includes(listSearch.toLowerCase()) ||
               shift.date?.includes(listSearch)
             ).length === 0 ? (
-            <div style={{ textAlign:"center", padding:"32px 20px", background:"#1a1730", borderRadius:16, border:"1px dashed #2e2a4a" }}>
-              <p style={{ fontSize:13, color:"#8b80b0", margin:0 }}>Geen diensten gevonden voor "{listSearch}".</p>
+            <div style={{ textAlign:"center", padding:"32px 20px", background:"#1a1730", borderRadius:16, border:"1px solid #2e2a4a" }}>
+              <p style={{ fontSize:13, color:"#a89ec8", margin:0 }}>Geen diensten gevonden voor "{listSearch}".</p>
             </div>
           ) : monthShifts.filter(shift =>
               !listSearch ||
@@ -386,13 +396,12 @@ export default function RoosterClient({
                       <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff" }}>{shift.title}</p>
                       {mine && <span style={s.myBadge}>Jij</span>}
                       {isParty && <span style={s.warnBadge}>Feestje</span>}
-                      {isPast && <span style={{ fontSize:10, padding:"1px 6px", borderRadius:8, background:"rgba(255,255,255,0.05)", color:"#8b80b0", border:"1px solid #2e2a4a" }}>Verstreken</span>}
+                      {isPast && <span style={{ fontSize:10, padding:"1px 6px", borderRadius:8, background:"rgba(255,255,255,0.05)", color:"#a89ec8", border:"1px solid #2e2a4a" }}>Verstreken</span>}
                     </div>
-                    <p style={{ fontSize:12, color:"#8b80b0" }}>{formatDateShort(shift.date)}</p>
-                    <p style={{ fontSize:12, color:"#8b80b0" }}>{formatTime(shift.start_time)}–{formatTime(shift.end_time)}</p>
+                    <p style={{ fontSize:12, color:"#a89ec8" }}>{formatDateShort(shift.date)} · {formatTime(shift.start_time)}–{formatTime(shift.end_time)}</p>
                     <div style={{ display:"flex", gap:4, marginTop:6, flexWrap:"wrap" }}>
                       {(shift.assignments || []).filter((a: any) => a.status !== "declined").map((a: any) => (
-                        <span key={a.user_id} style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:a.user_id===userId?"rgba(90,74,158,0.35)":"#221f38", color:a.user_id===userId?C.myShift:"#8b80b0", borderWidth:1, borderStyle:"solid", borderColor:a.user_id===userId?"#9b87f0":"#2e2a4a" }}>
+                        <span key={a.user_id} style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:a.user_id===userId?"rgba(90,74,158,0.35)":"#221f38", color:a.user_id===userId?C.myShift:"#a89ec8", borderWidth:1, borderStyle:"solid", borderColor:a.user_id===userId?"#9b87f0":"#2e2a4a" }}>
                           {a.profile?.full_name?.split(" ")[0] || "?"}
                         </span>
                       ))}
@@ -400,7 +409,7 @@ export default function RoosterClient({
                   </div>
                   <div style={{ textAlign:"right", display:"flex", flexDirection:"column", gap:6, alignItems:"flex-end" }}>
                     <p style={{ fontSize:11, color: accentColor }}>{assigned}/{shift.max_tappers}{assigned >= shift.max_tappers && <span style={{ marginLeft:5, fontSize:10, fontWeight:700, color:"#00e5c3", background:"rgba(0,229,195,0.12)", padding:"1px 6px", borderRadius:10 }}>VOL</span>}</p>
-                    <a href={`/api/shifts/${shift.id}/ical`} style={{ ...s.icalBtnSm, textDecoration:"none" }}>📅</a>
+                    <a href={`/api/shifts/${shift.id}/ical`} aria-label="Exporteer naar agenda" style={{ ...s.icalBtnSm, textDecoration:"none" }}>📅</a>
                     {canClaim(shift) && <button style={s.claimBtnSm} onClick={() => setClaimModal(shift)}>Inschrijven</button>}
                     {mine && <button style={s.declineBtnSm} onClick={() => handleDecline(shift.id)}>Afmelden</button>}
                   </div>
@@ -419,7 +428,7 @@ export default function RoosterClient({
             <h3 className={sharedStyles.sheetTitle} id="rooster-claim-title">Inschrijven</h3>
             <div style={{ background:"#221f38", borderRadius:12, padding:"12px 14px", marginBottom:16 }}>
               <p style={{ fontSize:15, fontWeight:700, color:"#f0eeff" }}>{claimModal.title}</p>
-              <p style={{ fontSize:13, color:"#8b80b0", marginTop:4 }}>{formatDate(claimModal.date)} · {formatTime(claimModal.start_time)}–{formatTime(claimModal.end_time)}</p>
+              <p style={{ fontSize:13, color:"#a89ec8", marginTop:4 }}>{formatDate(claimModal.date)} · {formatTime(claimModal.start_time)}–{formatTime(claimModal.end_time)}</p>
               {(() => {
                 const assigned = (claimModal.assignments || []).filter((a: any) => a.status !== "declined");
                 const max = claimModal.max_tappers || 1;
@@ -427,10 +436,10 @@ export default function RoosterClient({
                 return (
                   <div style={{ marginTop:10 }}>
                     <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                      <div style={{ fontSize:11, color:"#8b80b0" }}>{assigned.length}/{max} plekken bezet</div>
+                      <div style={{ fontSize:11, color:"#a89ec8" }}>{assigned.length}/{max} plekken bezet</div>
                     </div>
-                    <div style={{ height:4, borderRadius:2, background:"#2e2a4a", overflow:"hidden" }}>
-                      <div style={{ height:"100%", width:`${pct}%`, background:"#00e5c3", borderRadius:2 }} />
+                    <div style={{ height:6, borderRadius:4, background:"#2e2a4a", overflow:"hidden" }}>
+                      <div style={{ height:"100%", width:`${pct}%`, background:"#00e5c3", borderRadius:4 }} />
                     </div>
                     {assigned.length > 0 && (
                       <div style={{ marginTop:10, display:"flex", gap:6, flexWrap:"wrap" }}>
@@ -445,7 +454,7 @@ export default function RoosterClient({
                 );
               })()}
             </div>
-            <p style={{ fontSize:12, color:"#8b80b0", marginBottom:20, lineHeight:1.5 }}>
+            <p style={{ fontSize:12, color:"#a89ec8", marginBottom:20, lineHeight:1.5 }}>
               Je ontvangt een bevestiging per e-mail en herinneringen 2 weken en 1 week van tevoren.
             </p>
             <button className={sharedStyles.btnPrimary} disabled={loading===claimModal.id} onClick={() => handleClaim(claimModal)}>
@@ -462,19 +471,18 @@ export default function RoosterClient({
 const s: Record<string, React.CSSProperties> = {
   page: { padding:"16px 16px 100px" },
   toggleRow: { display:"flex", gap:8, marginBottom:16 },
-  toggleBtn: { flex:1, padding:"10px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer" },
+  toggleBtn: { flex:1, padding:"10px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", transition:"background 0.15s, color 0.15s, border-color 0.15s" },
   monthNav: { display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, position:"relative" },
   navArrow: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:8, color:"#e8e0ff", fontSize:20, width:44, height:44, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" },
   monthLabel: { fontSize:18, fontWeight:900, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif", minWidth:140, textAlign:"center", cursor:"pointer" },
   calGrid: { display:"grid", gridTemplateColumns:"repeat(7, 1fr)", gap:4, marginBottom:16 },
   dayHeader: { textAlign:"center", fontSize:12, fontWeight:700, color:"#a89ec8", padding:"4px 0" },
-  closeBtn: { background:"none", border:"none", color:"#8b80b0", fontSize:16, cursor:"pointer", padding:4, flexShrink:0 },
+  closeBtn: { background:"none", border:"none", color:"#a89ec8", fontSize:16, cursor:"pointer", width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 },
   warnBadge: { background:"rgba(244,114,182,0.12)", borderWidth:1, borderStyle:"solid", borderColor:"#f472b6", color:"#f472b6", fontSize:10, fontWeight:700, padding:"2px 10px", borderRadius:20 },
   myBadge: { background:"rgba(90,74,158,0.35)", borderWidth:1, borderStyle:"solid", borderColor:"#9b87f0", color:"#c4b5fd", fontSize:10, fontWeight:700, padding:"2px 10px", borderRadius:20 },
-  claimBtn: { padding:"10px 14px", borderRadius:10, background:"linear-gradient(135deg,#00e5c3,#00b89c)", color:"#0f0d1a", border:"none", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", textTransform:"uppercase" },
-  claimBtnSm: { padding:"5px 10px", borderRadius:8, background:"rgba(0,229,195,0.1)", borderWidth:1, borderStyle:"solid", borderColor:"#00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer" },
+  claimBtnSm: { padding:"10px 14px", borderRadius:8, background:"rgba(0,229,195,0.1)", borderWidth:1, borderStyle:"solid", borderColor:"#00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer" },
   declineBtn: { padding:"10px 14px", borderRadius:10, background:"rgba(255,79,109,0.1)", borderWidth:1, borderStyle:"solid", borderColor:"#ff4f6d", color:"#ff4f6d", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", textTransform:"uppercase" },
-  declineBtnSm: { padding:"5px 10px", borderRadius:8, background:"rgba(255,79,109,0.1)", borderWidth:1, borderStyle:"solid", borderColor:"#ff4f6d", color:"#ff4f6d", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer" },
+  declineBtnSm: { padding:"10px 14px", borderRadius:8, background:"rgba(255,79,109,0.1)", borderWidth:1, borderStyle:"solid", borderColor:"#ff4f6d", color:"#ff4f6d", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer" },
   icalBtn: { padding:"10px 12px", borderRadius:10, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", cursor:"pointer", fontSize:16 },
-  icalBtnSm: { padding:"5px 8px", borderRadius:8, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", fontSize:14, cursor:"pointer" },
+  icalBtnSm: { padding:"10px 12px", borderRadius:8, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", fontSize:14, cursor:"pointer" },
 };
