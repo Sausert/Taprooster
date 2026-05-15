@@ -409,6 +409,12 @@ export default function DashboardClient({
               </div>
             );
           })}
+          <a
+            href="/api/shifts/my-ical"
+            style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 14px", borderRadius:12, background:"#1a1730", border:"1px solid #2e2a4a", color:"#8b80b0", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:12, textDecoration:"none", marginTop:8 }}
+          >
+            📅 Zet al mijn diensten in mijn agenda
+          </a>
         </>
       )}
 
@@ -441,18 +447,14 @@ export default function DashboardClient({
                     <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff", margin:0 }}>{shift.title}</p>
                     <p style={{ fontSize:13, fontWeight:700, color:"#e8e0ff", marginBottom:2, marginTop:2 }}>{formatDateShort(shift.date)}</p>
                     <p style={{ fontSize:12, color:"#8b80b0" }}>{formatTime(shift.start_time)}–{formatTime(shift.end_time)}</p>
-                    <p style={{ fontSize:11, color:"#8b80b0", marginTop:4 }}>
-                      {shift.open_spots} open plek{shift.open_spots > 1 ? "ken" : ""}
-                    </p>
-                    {assignedNames.length > 0 && (
-                      <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginTop:6 }}>
-                        {assignedNames.map((a: any) => (
-                          <span key={a.user_id} style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:"#221f38", border:"1px solid #2e2a4a", color:"#8b80b0" }}>
-                            {a.profile?.full_name?.split(" ")[0] || "?"}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                    <div style={{ display:"flex", alignItems:"center", gap:5, marginTop:4, flexWrap:"wrap" }}>
+                      <span style={{ fontSize:11, color:"#8b80b0" }}>{shift.open_spots} open plek{shift.open_spots > 1 ? "ken" : ""}</span>
+                      {assignedNames.map((a: any) => (
+                        <span key={a.user_id} style={{ fontSize:11, padding:"1px 8px", borderRadius:20, background:"#221f38", border:"1px solid #2e2a4a", color:"#8b80b0" }}>
+                          {a.profile?.full_name?.split(" ")[0] || "?"}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                   {isFull ? (
                     <span style={{ fontSize:11, fontWeight:700, padding:"5px 10px", borderRadius:12, background:"rgba(0,229,195,0.08)", border:"1px solid #2e2a4a", color:"#8b80b0" }}>Vol</span>

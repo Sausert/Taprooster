@@ -66,29 +66,27 @@ export async function POST(req: NextRequest) {
   const rangeStartStr = toLocalDateStr(rangeStart);
   const rangeEndStr = toLocalDateStr(rangeEnd);
 
-  // FIX: Only skip dates that already have a CONCEPT shift — NOT published shifts
-  // This allows generating a new concept even if there are published shifts in the period
-  const { data: existingConceptShifts } = await supabase
+  // Skip dates that already have ANY tapavond (published or concept) to avoid duplicates
+  const { data: existingTapavonden } = await supabase
     .from("shifts")
-    .select("date, type, role")
-    .eq("status", "concept")  // ← KEY FIX: only concept, not published
+    .select("date")
+    .eq("type", "tapavond")
     .gte("date", rangeStartStr)
     .lte("date", rangeEndStr);
 
-  // Use date+type+role combo to avoid duplicates within concept shifts
-  const existingKeys = new Set(
-    (existingConceptShifts || []).map((s: any) => `${s.date}-${s.type}-${s.role}`)
+  const existingTapavondDates = new Set(
+    (existingTapavonden || []).map((s: any) => s.date)
   );
 
   const shiftsToCreate: any[] = [];
 
-  // Generate shifts for all enabled days
+  // Generate shifts for all enabled days — skip any date that already has a tapavond
   for (const [dayName, { jsDay, title }] of Object.entries(DAY_MAP)) {
     const cfg = defaultShifts[dayName];
     if (!cfg || cfg.enabled === false) continue;
     for (const d of getDatesForDayInRange(jsDay, rangeStart, rangeEnd)) {
       const dateStr = toLocalDateStr(d);
-      if (!existingKeys.has(`${dateStr}-tapavond-tapper`)) {
+      if (!existingTapavondDates.has(dateStr)) {
         shiftsToCreate.push({ title:`Tapavond ${title}`, date:dateStr, start_time:cfg.start, end_time:cfg.end, type:"tapavond", role:"tapper", max_tappers:2, status:"concept", created_by:user.id });
       }
     }

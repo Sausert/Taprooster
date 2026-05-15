@@ -11,9 +11,9 @@ export default async function AccountPage() {
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
   const { data: leaderboard } = await supabase.from("leaderboard").select("*").order("rank", { ascending: true });
   const { data: notifications } = await supabase
-    .from("notifications").select("*")
+    .from("notifications").select("*, shift:shifts!shift_id(date, start_time)")
     .eq("user_id", user.id)
-    .order("created_at", { ascending: false }).limit(30);
+    .order("created_at", { ascending: false }).limit(60);
 
   return (
     <AccountClient

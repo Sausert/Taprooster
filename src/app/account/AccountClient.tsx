@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Profile, Notification } from "@/types";
@@ -33,27 +33,6 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
   const [unavailableMonths, setUnavailableMonths] = useState<number[]>(
     (profile as any).unavailable_months || []
   );
-
-  const [avatarUrl, setAvatarUrl] = useState<string>(profile.avatar_url || "");
-  const [avatarUploading, setAvatarUploading] = useState(false);
-  const [avatarError, setAvatarError] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) { setAvatarError("Alleen afbeeldingen toegestaan."); return; }
-    if (file.size > 4 * 1024 * 1024) { setAvatarError("Maximaal 4 MB per afbeelding."); return; }
-    setAvatarUploading(true);
-    setAvatarError("");
-    const formData = new FormData();
-    formData.append("file", file);
-    const res = await fetch("/api/avatar", { method: "POST", body: formData });
-    const data = await res.json();
-    if (!res.ok) { setAvatarError(data.error || "Upload mislukt. Probeer opnieuw."); setAvatarUploading(false); return; }
-    setAvatarUrl(data.url);
-    setAvatarUploading(false);
-  }
 
   async function handleSavePersonal(e: React.FormEvent) {
     e.preventDefault();
@@ -136,28 +115,12 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
     <div style={s.page}>
       {/* Header */}
       <div style={s.profileHeader}>
-        <div
-          style={{ ...s.avatar, cursor:"pointer", position:"relative", overflow:"hidden", flexShrink:0 }}
-          onClick={() => fileInputRef.current?.click()}
-          title="Profielfoto wijzigen"
-        >
-          {avatarUrl ? (
-            <img src={avatarUrl} alt="Profielfoto" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block", borderRadius:"inherit" }} onError={() => setAvatarUrl("")} />
-          ) : (
-            (profile.full_name || "?").split(" ").map(n => n[0]).join("").slice(0,2)
-          )}
-          {avatarUploading && (
-            <div style={{ position:"absolute", inset:0, background:"rgba(15,13,26,0.75)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-              <span style={{ fontSize:16, animation:"spin 1s linear infinite" }}>⏳</span>
-            </div>
-          )}
-          <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"3px 0", background:"rgba(0,229,195,0.18)", fontSize:9, color:"#00e5c3", textAlign:"center", fontWeight:700, letterSpacing:1 }}>📷</div>
+        <div style={{ ...s.avatar, flexShrink:0 }}>
+          {(profile.full_name || "?").split(" ").map(n => n[0]).join("").slice(0,2)}
         </div>
-        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display:"none" }} />
         <div style={{ flex:1, minWidth:0 }}>
           <p style={s.name}>{profile.full_name}</p>
           <p style={s.emailTxt}>{profile.email}</p>
-          {avatarError && <p style={{ fontSize:11, color:"#ff4f6d", marginTop:4 }}>{avatarError}</p>}
           {profile.role === "admin" && <span className={`${sharedStyles.badge} ${sharedStyles.badgeMint}`} style={{ marginTop:6, display:"inline-block" }}>⚡ Admin</span>}
         </div>
       </div>
@@ -339,21 +302,25 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
           {notifs.length === 0 ? (
             <div style={{ textAlign:"center", padding:"40px 0", color:"#8b80b0" }}>Geen notificaties.</div>
           ) : (() => {
-            const now2 = new Date();
-            const todayStart = new Date(now2.getFullYear(), now2.getMonth(), now2.getDate());
-            const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+            // Sort: shift-related first by shift date asc; admin_message by created_at desc at the end
+            const shiftNotifs = [...notifs]
+              .filter(n => n.type !== "admin_message")
+              .sort((a, b) => {
+                const da = (a as any).shift?.date || a.created_at;
+                const db = (b as any).shift?.date || b.created_at;
+                return da < db ? -1 : da > db ? 1 : 0;
+              });
+            const msgNotifs = notifs.filter(n => n.type === "admin_message");
             const groups: { label: string; items: typeof notifs }[] = [];
-            const todayN = notifs.filter(n => new Date(n.created_at) >= todayStart);
-            const ystN = notifs.filter(n => { const d = new Date(n.created_at); return d >= yesterdayStart && d < todayStart; });
-            const oldN = notifs.filter(n => new Date(n.created_at) < yesterdayStart);
-            if (todayN.length > 0) groups.push({ label:"Vandaag", items:todayN });
-            if (ystN.length > 0) groups.push({ label:"Gisteren", items:ystN });
-            if (oldN.length > 0) groups.push({ label:"Eerder", items:oldN });
+            if (shiftNotifs.length > 0) groups.push({ label:"Diensten", items:shiftNotifs });
+            if (msgNotifs.length > 0) groups.push({ label:"Berichten", items:msgNotifs });
             return groups.map(group => (
               <div key={group.label}>
                 <p style={{ fontSize:10, fontWeight:700, letterSpacing:2, textTransform:"uppercase", color:"#8b80b0", margin:"12px 0 6px" }}>{group.label}</p>
                 {group.items.map(n => {
                   const notifHref = n.type === "admin_message" ? "/dashboard" : "/rooster";
+                  const shiftDate = (n as any).shift?.date;
+                  const shiftTime = (n as any).shift?.start_time;
                   return (
                   <div key={n.id} className={sharedStyles.card} style={{ opacity:n.read?0.72:1, borderLeft:`3px solid ${n.read ? "#2e2a4a" : n.type.includes("open")||n.type.includes("reminder") ? "#ffb547" : "#00e5c3"}`, cursor:"pointer" }}
                     onClick={() => { markRead(n.id); router.push(notifHref); }}>
@@ -365,7 +332,9 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
                         <p style={{ fontSize:13, fontWeight:700, color: n.read ? "#8b80b0" : "#f0eeff" }}>{n.title}</p>
                         <p style={{ fontSize:12, color:"#8b80b0", marginTop:2, lineHeight:1.4 }}>{n.message}</p>
                         <p style={{ fontSize:11, color:"#8b80b0", marginTop:6 }}>
-                          {new Date(n.created_at).toLocaleTimeString("nl-NL", { hour:"2-digit", minute:"2-digit" })}
+                          {shiftDate
+                            ? `${new Date(shiftDate).toLocaleDateString("nl-NL", { day:"numeric", month:"short" })}${shiftTime ? " · " + shiftTime.slice(0,5) : ""}`
+                            : new Date(n.created_at).toLocaleString("nl-NL", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })}
                         </p>
                       </div>
                       {!n.read ? (
