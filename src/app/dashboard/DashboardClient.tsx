@@ -127,6 +127,12 @@ export default function DashboardClient({
   const daysUntilNext = nextShift
     ? Math.ceil((parseLocalDate(nextShift.date).getTime() - Date.now()) / (1000*60*60*24))
     : null;
+  const heroDate = nextShift ? parseLocalDate(nextShift.date) : null;
+  const heroWeekday = heroDate ? heroDate.toLocaleDateString("nl-NL", { weekday:"long" }) : "";
+  const heroDateLong = heroDate ? heroDate.toLocaleDateString("nl-NL", { day:"numeric", month:"long", year:"numeric" }) : "";
+  const heroProgressPct = daysUntilNext !== null ? Math.min(100, Math.max(0, Math.round((1 - Math.min(daysUntilNext, 14) / 14) * 100))) : 0;
+  const heroFilledDots = daysUntilNext !== null ? Math.min(7, Math.max(0, 7 - daysUntilNext)) : 0;
+  const heroIsConfirmed = nextAssignment ? confirmedIds.includes(nextAssignment.shift_id) || nextAssignment.status === "confirmed" : false;
 
   const filteredUpcoming = upcoming.filter(a => {
     if (!a.shift?.date) return false;
@@ -227,61 +233,77 @@ export default function DashboardClient({
         </h1>
       </div>
 
-      {/* Next shift hero — timeline layout */}
+      {/* Next shift hero — Optie 5: Minimal + Progress */}
       {nextShift ? (
         <div style={s.heroCard}>
-          <div style={{ display:"flex", gap:14, alignItems:"flex-start" }}>
-            {/* Left: date column */}
-            {(() => {
-              const d = parseLocalDate(nextShift.date);
-              const monthShort = d.toLocaleDateString("nl-NL", { month:"short" }).replace(".","").toUpperCase();
-              return (
-                <div style={{ flexShrink:0, width:52, textAlign:"center", background:"rgba(0,229,195,0.06)", border:"1px solid rgba(0,229,195,0.2)", borderRadius:12, padding:"12px 6px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
-                  <span style={{ fontFamily:"monospace", fontSize:28, fontWeight:700, color:"#00e5c3", lineHeight:1 }}>{d.getDate()}</span>
-                  <span style={{ fontFamily:"'Exo 2',sans-serif", fontSize:10, fontWeight:700, color:"#a89ec8", textTransform:"uppercase", letterSpacing:"0.1em", marginTop:3 }}>{monthShort}</span>
-                </div>
-              );
-            })()}
-            {/* Right: content */}
-            <div key={heroIndex} className={sharedStyles.fadeIn} style={{ flex:1, minWidth:0 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-                <p style={{ ...s.heroLabel, margin:0 }}>Volgende dienst</p>
-                {upcoming.length > 1 && (
-                  <div style={{ display:"flex", gap:4, alignItems:"center" }}>
-                    <button aria-label="Vorige dienst" onClick={() => setHeroIndex(i => Math.max(0, i - 1))} style={{ ...s.navArrowSm, width:44, height:44, fontSize:16, opacity: heroIndex === 0 ? 0.35 : 1 }}>‹</button>
-                    <span style={{ fontSize:10, color:"#a89ec8", fontFamily:"monospace" }}>{heroIndex + 1}/{upcoming.length}</span>
-                    <button aria-label="Volgende dienst" onClick={() => setHeroIndex(i => Math.min(upcoming.length - 1, i + 1))} style={{ ...s.navArrowSm, width:44, height:44, fontSize:16, opacity: heroIndex === upcoming.length - 1 ? 0.35 : 1 }}>›</button>
-                  </div>
-                )}
+          {/* Top urgency bar: fills left→right as shift approaches (14-day window) */}
+          <div style={s.heroProgressWrap}>
+            <div style={{ ...s.heroProgressFill, width:`${heroProgressPct}%` }}/>
+            <div style={{ flex:1, background:"#2e2a4a" }}/>
+          </div>
+          <div key={heroIndex} className={sharedStyles.fadeIn} style={{ padding:"16px 18px" }}>
+            {/* Row 1: date + badge or multi-shift nav */}
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
+              <div>
+                <div style={s.heroWeekday}>{heroWeekday.charAt(0).toUpperCase() + heroWeekday.slice(1)}</div>
+                <div style={s.heroDateTxt}>{heroDateLong}</div>
               </div>
-              <h2 style={s.heroTitle}>{nextShift.title}</h2>
-              <p style={{ ...s.heroSub, display:"flex", alignItems:"center", gap:5, flexWrap:"wrap", margin:0 }}>
-                <span>{formatTime(nextShift.start_time)}–{formatTime(nextShift.end_time)}</span>
-                {daysUntilNext !== null && (
-                  <span style={{ color: daysUntilNext <= 1 ? "#00e5c3" : "#a89ec8" }}>
-                    · {daysUntilNext === 0 ? "Vandaag 🔥" : daysUntilNext === 1 ? "Morgen 🍺" : `over ${daysUntilNext} dagen`}
-                  </span>
-                )}
-              </p>
-              {(confirmedIds.includes(nextAssignment.shift_id) || nextAssignment.status === "confirmed") && (
-                <span style={{ display:"inline-flex", alignItems:"center", gap:4, marginTop:8, padding:"3px 10px", borderRadius:20, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", fontSize:11, color:"#00e5c3", fontWeight:700 }}>✅ Bevestigd</span>
+              {upcoming.length > 1 ? (
+                <div style={{ display:"flex", gap:4, alignItems:"center" }}>
+                  <button aria-label="Vorige dienst" onClick={() => setHeroIndex(i => Math.max(0, i - 1))} style={{ ...s.navArrowSm, opacity: heroIndex === 0 ? 0.35 : 1 }}>‹</button>
+                  <span style={{ fontSize:10, color:"#a89ec8", fontFamily:"monospace" }}>{heroIndex + 1}/{upcoming.length}</span>
+                  <button aria-label="Volgende dienst" onClick={() => setHeroIndex(i => Math.min(upcoming.length - 1, i + 1))} style={{ ...s.navArrowSm, opacity: heroIndex === upcoming.length - 1 ? 0.35 : 1 }}>›</button>
+                </div>
+              ) : (
+                <span style={s.heroDaysBadge}>
+                  {daysUntilNext === 0 ? "Vandaag 🔥" : daysUntilNext === 1 ? "Morgen 🍺" : `nog ${daysUntilNext} dagen`}
+                </span>
               )}
             </div>
-          </div>
-          {/* Action row */}
-          <div style={{ marginTop:14 }}>
-            {confirmedIds.includes(nextAssignment.shift_id) || nextAssignment.status === "confirmed" ? (
-              <a
-                href={`/api/shifts/${nextShift.id}/ical`}
-                style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 12px", borderRadius:12, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, textDecoration:"none" }}
-                onClick={(e) => { if (typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent)) { e.preventDefault(); handleAgenda(nextShift); } }}
-              >📅 Zet in agenda</a>
+            {/* Title */}
+            <h2 style={s.heroTitle}>{nextShift.title}</h2>
+            {/* Meta: time + role */}
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
+              <span style={s.heroTimePill}>{formatTime(nextShift.start_time)}–{formatTime(nextShift.end_time)}</span>
+              {nextShift.role === "bonnenkassa" && (
+                <>
+                  <span style={{ width:3, height:3, borderRadius:"50%", background:"#3e3a5a", display:"inline-block" }}/>
+                  <span style={{ fontSize:11, color:"#5a4a9e", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em" }}>Kassa</span>
+                </>
+              )}
+            </div>
+            {/* Confirmed or confirm box */}
+            {heroIsConfirmed ? (
+              <div style={{ display:"flex", gap:8 }}>
+                <span style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"9px", borderRadius:8, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:12, fontWeight:700 }}>✅ Bevestigd</span>
+                <a
+                  href={`/api/shifts/${nextShift.id}/ical`}
+                  style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"9px", borderRadius:8, background:"#221f38", border:"1px solid #2e2a4a", color:"#a89ec8", fontSize:12, fontWeight:700, fontFamily:"'Exo 2',sans-serif", textDecoration:"none" }}
+                  onClick={(e) => { if (typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent)) { e.preventDefault(); handleAgenda(nextShift); } }}
+                >📅 Agenda</a>
+              </div>
             ) : (
-              <div style={s.confirmBox}>
-                <p style={{ fontSize:12, color:"#a89ec8", marginBottom:8 }}>Ben jij erbij?</p>
-                <div style={{ display:"flex", gap:8 }}>
-                  <button style={{ ...s.btnYes, opacity: loading===nextAssignment.shift_id ? 0.5 : 1 }} disabled={loading===nextAssignment.shift_id} onClick={() => handleConfirm(nextAssignment.shift_id)}>✅ Ik ben erbij</button>
-                  <button style={s.btnNo} onClick={() => setDeclineModal(nextAssignment)}>🔴 Ik kan niet</button>
+              <div style={s.heroConfirmBox}>
+                <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
+                  <div style={{ width:6, height:6, borderRadius:"50%", background:"#ffb547", flexShrink:0 }}/>
+                  <span style={{ fontSize:12, color:"#a89ec8" }}>Ben jij erbij?</span>
+                </div>
+                <div style={{ display:"flex", gap:6 }}>
+                  <button style={{ ...s.heroYes, opacity: loading===nextAssignment.shift_id ? 0.5 : 1 }} disabled={loading===nextAssignment.shift_id} onClick={() => handleConfirm(nextAssignment.shift_id)}>✅ Bevestigen</button>
+                  <button style={s.heroNo} onClick={() => setDeclineModal(nextAssignment)}>Afmelden</button>
+                </div>
+              </div>
+            )}
+            {/* Dot countdown — fills right-to-left as shift approaches */}
+            {daysUntilNext !== null && daysUntilNext >= 0 && (
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:14 }}>
+                <span style={{ fontSize:10, color:"#3e3a5a", fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase" }}>
+                  {daysUntilNext === 0 ? "Vandaag" : daysUntilNext === 1 ? "Morgen" : `Nog ${Math.min(daysUntilNext, 7)} dag${Math.min(daysUntilNext, 7) !== 1 ? "en" : ""}`}
+                </span>
+                <div style={{ display:"flex", gap:5 }}>
+                  {Array.from({ length:7 }).map((_,i) => (
+                    <div key={i} style={{ width:6, height:6, borderRadius:"50%", background: i >= Math.max(0, 7 - heroFilledDots) ? "#00e5c3" : "#2e2a4a" }}/>
+                  ))}
                 </div>
               </div>
             )}
@@ -555,13 +577,17 @@ const s: Record<string, React.CSSProperties> = {
   page: { padding:"16px 16px 100px" },
   errorBanner: { background:"rgba(255,79,109,0.1)", border:"1px solid #ff4f6d", borderRadius:12, padding:"10px 14px", fontSize:13, color:"#ff4f6d", marginBottom:14, display:"flex", alignItems:"center", gap:8 },
   greeting: { fontSize:26, fontWeight:900, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif", display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" },
-  heroCard: { background:"linear-gradient(135deg,#1a1730,#221f38)", border:"1px solid #00e5c3", borderRadius:16, padding:18, marginBottom:12, boxShadow:"0 0 30px rgba(0,229,195,0.08)" },
-  heroLabel: { fontSize:11, fontWeight:700, letterSpacing:"0.12em", color:"#00e5c3", textTransform:"uppercase", marginBottom:4 },
-  heroTitle: { fontSize:20, fontWeight:900, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif", margin:0 },
-  heroSub: { fontSize:13, color:"#a89ec8", marginTop:2 },
-  confirmBox: { background:"#221f38", borderRadius:16, padding:12 },
-  btnYes: { flex:1, padding:"12px 10px", borderRadius:12, background:"rgba(0,229,195,0.1)", color:"#00e5c3", border:"1px solid #00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer" },
-  btnNo: { flex:1, padding:"12px 10px", borderRadius:12, background:"rgba(255,79,109,0.1)", color:"#ff4f6d", border:"1px solid #ff4f6d", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer" },
+  heroCard: { background:"#161326", border:"1px solid #2e2a4a", borderRadius:16, overflow:"hidden", boxShadow:"0 4px 24px rgba(0,0,0,.3)", marginBottom:12 },
+  heroProgressWrap: { height:4, display:"flex" },
+  heroProgressFill: { background:"linear-gradient(90deg,#00e5c3,#5a4a9e)", height:"100%", transition:"width 0.6s ease" },
+  heroWeekday: { fontSize:11, fontWeight:600, color:"#a89ec8", textTransform:"capitalize" as const, marginBottom:1 },
+  heroDateTxt: { fontSize:16, fontWeight:900, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif" },
+  heroDaysBadge: { background:"rgba(0,229,195,.08)", border:"1px solid rgba(0,229,195,.25)", borderRadius:20, padding:"4px 12px", fontSize:11, fontWeight:700, color:"#00e5c3", flexShrink:0 as unknown as number },
+  heroTitle: { fontSize:22, fontWeight:900, color:"#fff", marginBottom:4, letterSpacing:"-.01em" },
+  heroTimePill: { fontSize:13, color:"#a89ec8", fontFamily:"'Space Mono',monospace" },
+  heroConfirmBox: { background:"#0f0d1a", border:"1px solid #2e2a4a", borderRadius:10, padding:"12px 14px" },
+  heroYes: { flex:1, padding:"10px", borderRadius:8, background:"rgba(0,229,195,.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:12, cursor:"pointer" },
+  heroNo: { flex:1, padding:"10px", borderRadius:8, background:"transparent", border:"1px solid #2e2a4a", color:"#a89ec8", fontFamily:"'Exo 2',sans-serif", fontSize:12, cursor:"pointer" },
   statRow: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 },
   statCard: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:16, padding:16, textAlign:"center" },
   statVal: { fontFamily:"monospace", fontSize:28, fontWeight:700, color:"#00e5c3", margin:0 },
