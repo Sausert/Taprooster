@@ -103,10 +103,13 @@ export default function AdminClient({
       setPublished(updateList);
       setConceptShifts(updateList);
       setShifts(updateList);
+      setAddTapperModal(null);
+      setTapperSearchModal("");
+    } else {
+      const data = await res.json().catch(() => ({}));
+      alert(`❌ Tapper toevoegen mislukt: ${data.error ?? "Probeer opnieuw."}`);
     }
     setAddingTapper(null);
-    setAddTapperModal(null);
-    setTapperSearchModal("");
   }
 
   async function handleRemoveTapper(shiftId: string, userId: string) {
@@ -129,6 +132,9 @@ export default function AdminClient({
       if (source === "published") setPublished(ps => ps.filter(s => s.id !== shiftId));
       else setConceptShifts(cs => cs.filter(s => s.id !== shiftId));
       setShifts(ss => ss.filter(s => s.id !== shiftId));
+    } else {
+      const data = await res.json().catch(() => ({}));
+      alert(`❌ Verwijderen mislukt: ${data.error ?? "Probeer opnieuw."}`);
     }
   }
 

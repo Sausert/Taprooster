@@ -36,11 +36,16 @@ export async function GET(_req: NextRequest) {
     const dateStr = `${d.getFullYear()}${fmt(d.getMonth()+1)}${fmt(d.getDate())}`;
     const startStr = shift.start_time.replace(/:/g, "").slice(0, 4);
     const endStr = shift.end_time.replace(/:/g, "").slice(0, 4);
+    // Shifts ending past midnight get DTEND on the next day
+    const endDate = endStr < startStr
+      ? new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)
+      : d;
+    const endDateStr = `${endDate.getFullYear()}${fmt(endDate.getMonth()+1)}${fmt(endDate.getDate())}`;
     return [
       "BEGIN:VEVENT",
       `UID:shift-${shift.id}@${APP_CONFIG.domain}`,
       `DTSTART:${dateStr}T${startStr}00`,
-      `DTEND:${dateStr}T${endStr}00`,
+      `DTEND:${endDateStr}T${endStr}00`,
       `SUMMARY:🍺 ${shift.title}`,
       `DESCRIPTION:Tapavond bij ${APP_CONFIG.orgName}`,
       `LOCATION:${APP_CONFIG.locationIcal}`,

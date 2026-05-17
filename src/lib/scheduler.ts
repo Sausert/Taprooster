@@ -242,12 +242,19 @@ export function generateICalEvent(shift: Shift): string {
   const d = parseLocalDate(shift.date);
   const fmt = (n: number) => String(n).padStart(2, "0");
   const dateStr = `${d.getFullYear()}${fmt(d.getMonth()+1)}${fmt(d.getDate())}`;
+  const startStr = shift.start_time.replace(/:/g, "").slice(0, 4);
+  const endStr = shift.end_time.replace(/:/g, "").slice(0, 4);
+  // Shifts ending past midnight get DTEND on the next day
+  const endDate = endStr < startStr
+    ? new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)
+    : d;
+  const endDateStr = `${endDate.getFullYear()}${fmt(endDate.getMonth()+1)}${fmt(endDate.getDate())}`;
   return [
     `BEGIN:VCALENDAR`, "VERSION:2.0", `PRODID:-//${APP_CONFIG.orgName}//Taprooster//NL`,
     "BEGIN:VEVENT",
     `UID:shift-${shift.id}@${APP_CONFIG.domain}`,
-    `DTSTART:${dateStr}T${shift.start_time.replace(":","")}00`,
-    `DTEND:${dateStr}T${shift.end_time.replace(":","")}00`,
+    `DTSTART:${dateStr}T${startStr}00`,
+    `DTEND:${endDateStr}T${endStr}00`,
     `SUMMARY:🍺 ${shift.title}`,
     `LOCATION:${APP_CONFIG.locationIcal}`,
     `DTSTAMP:${new Date().toISOString().replace(/[-:]/g,"").split(".")[0]}Z`,
