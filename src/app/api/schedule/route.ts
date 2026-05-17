@@ -114,11 +114,21 @@ export async function POST(req: NextRequest) {
 
   const { data: profiles } = await supabase.from("profiles").select("*");
   const { data: existingAssignments } = await supabase.from("shift_assignments").select("*");
+  // Fetch published shifts for the current year so quota counting works across schedule periods
+  const yearStart = `${rangeStart.getFullYear()}-01-01`;
+  const yearEnd = `${rangeStart.getFullYear()}-12-31`;
+  const { data: publishedShiftsForContext } = await supabase
+    .from("shifts")
+    .select("*")
+    .eq("status", "published")
+    .gte("date", yearStart)
+    .lte("date", yearEnd);
 
   const suggestions = generateSchedule({
     profiles: profiles || [],
     shifts: shiftsForAutoAssign,
     existingAssignments: existingAssignments || [],
+    contextShifts: publishedShiftsForContext || [],
   });
 
   if (suggestions.length > 0) {

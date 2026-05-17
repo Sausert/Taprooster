@@ -16,6 +16,9 @@ interface ScheduleInput {
   profiles: Profile[];
   shifts: Shift[];
   existingAssignments: ShiftAssignment[];
+  // Optional broader set of shifts for quota counting (includes previously published shifts).
+  // When omitted, falls back to `shifts` (which may undercount cross-period assignments).
+  contextShifts?: Shift[];
 }
 
 
@@ -194,6 +197,10 @@ function scoreUser(
 
 export function generateSchedule(input: ScheduleInput): AssignmentSuggestion[] {
   const { profiles, shifts, existingAssignments } = input;
+  // Use contextShifts for quota counting so cross-period assignments are included
+  const allShiftsForContext = input.contextShifts
+    ? [...input.contextShifts, ...shifts.filter(s => !input.contextShifts!.some(c => c.id === s.id))]
+    : shifts;
   const suggestions: AssignmentSuggestion[] = [];
   const tempAssignments = [...existingAssignments];
 
@@ -212,9 +219,9 @@ export function generateSchedule(input: ScheduleInput): AssignmentSuggestion[] {
     const eligible = profiles
       .filter(p => !tempAssignments.some(a => a.shift_id === shift.id && a.user_id === p.id))
       .map(p => {
-        const { eligible, reason } = isUserEligible(p, shift, shifts, tempAssignments);
+        const { eligible, reason } = isUserEligible(p, shift, allShiftsForContext, tempAssignments);
         if (!eligible) return null;
-        const score = scoreUser(p, shift, shifts, tempAssignments);
+        const score = scoreUser(p, shift, allShiftsForContext, tempAssignments);
         return { userId: p.id, score };
       })
       .filter((x): x is { userId: string; score: number } => x !== null)
