@@ -10,15 +10,19 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
 
   if (id === user.id) return NextResponse.json({ error: "Je kunt jezelf niet verwijderen" }, { status: 400 });
 
-  // Delete assignments, notifications, then profile, then auth user
+  // Delete related data first (cleanup — errors are non-fatal)
   await supabase.from("shift_assignments").delete().eq("user_id", id);
   await supabase.from("notifications").delete().eq("user_id", id);
   await supabase.from("tapper_preferences").delete().eq("user_id", id);
-  await supabase.from("profiles").delete().eq("id", id);
+
+  // Delete profile — stop if this fails (auth user deletion would be orphaned)
+  const { error: profileError } = await supabase.from("profiles").delete().eq("id", id);
+  if (profileError) return NextResponse.json({ error: profileError.message }, { status: 500 });
 
   // Delete auth user (requires service role)
   const adminClient = createAdminClient();
-  await adminClient.auth.admin.deleteUser(id);
+  const { error: authError } = await adminClient.auth.admin.deleteUser(id);
+  if (authError) return NextResponse.json({ error: authError.message }, { status: 500 });
 
   return NextResponse.json({ data: { deleted: true } });
 }

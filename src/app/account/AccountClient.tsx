@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
+import { parseLocalDate } from "@/lib/dates";
 import type { Profile, Notification } from "@/types";
 import { useApp } from "@/components/layout/AppShell";
 import sharedStyles from "@/styles/shared.module.css";
@@ -24,14 +25,11 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
   const [savingProfile, setSavingProfile] = useState(false);
   const [savedProfile, setSavedProfile] = useState(false);
 
-  const nameParts = profile.full_name?.split(" ") || [];
-  const [firstName, setFirstName] = useState(nameParts[0] || "");
-  const [lastName, setLastName] = useState(nameParts.slice(1).join(" ") || "");
-  const [phone, setPhone] = useState((profile as any).phone || "");
+  const [phone, setPhone] = useState(profile.phone || "");
   const [email, setEmail] = useState(profile.email || "");
 
   const [unavailableMonths, setUnavailableMonths] = useState<number[]>(
-    (profile as any).unavailable_months || []
+    profile.unavailable_months || []
   );
 
   async function handleSavePersonal(e: React.FormEvent) {
@@ -335,7 +333,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
                         <p style={{ fontSize:12, color:"#a89ec8", marginTop:2, lineHeight:1.4 }}>{n.message}</p>
                         <p style={{ fontSize:11, color:"#a89ec8", marginTop:6 }}>
                           {shiftDate
-                            ? `${new Date(shiftDate).toLocaleDateString("nl-NL", { day:"numeric", month:"short" })}${shiftTime ? " · " + shiftTime.slice(0,5) : ""}`
+                            ? `${parseLocalDate(shiftDate).toLocaleDateString("nl-NL", { day:"numeric", month:"short" })}${shiftTime ? " · " + shiftTime.slice(0,5) : ""}`
                             : new Date(n.created_at).toLocaleString("nl-NL", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })}
                         </p>
                       </div>

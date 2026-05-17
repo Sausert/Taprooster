@@ -291,7 +291,8 @@ export default function RoosterClient({
                 const claimable = canClaim(shift) && !declined;
                 const assigned = (shift.assignments || []).filter((a: any) => a.status !== "declined");
                 const totalSpots = shift.max_tappers;
-                const filledSpots = assigned.length + (claimedIds.includes(shift.id) ? 1 : 0);
+                const alreadyAssigned = assigned.some((a: any) => a.user_id === userId);
+                const filledSpots = assigned.length + (claimedIds.includes(shift.id) && !alreadyAssigned ? 1 : 0);
                 const isParty = shift.type === "feestje";
                 const accentColor = mine ? C.myShift : isParty ? C.party : filledSpots >= totalSpots ? C.full : filledSpots === 0 ? C.empty : C.partial;
 
@@ -383,8 +384,10 @@ export default function RoosterClient({
             ).map(shift => {
             const mine = isMyShift(shift);
             const isParty = shift.type === "feestje";
-            const assignedBase = (shift.assignments || []).filter((a: any) => a.status !== "declined").length;
-            const assigned = assignedBase + (claimedIds.includes(shift.id) ? 1 : 0);
+            const assignedFiltered = (shift.assignments || []).filter((a: any) => a.status !== "declined");
+            const assignedBase = assignedFiltered.length;
+            const alreadyInList = assignedFiltered.some((a: any) => a.user_id === userId);
+            const assigned = assignedBase + (claimedIds.includes(shift.id) && !alreadyInList ? 1 : 0);
             const accentColor = mine ? C.myShift : isParty ? C.party : assigned >= shift.max_tappers ? C.full : assigned === 0 ? C.empty : C.partial;
             const isPast = parseLocalDate(shift.date) < new Date(now.getFullYear(), now.getMonth(), now.getDate());
 

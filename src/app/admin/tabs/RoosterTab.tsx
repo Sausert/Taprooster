@@ -112,6 +112,7 @@ export function RoosterTab() {
     if (res.ok) {
       const notified = data.data?.notified || 0;
       setPublishResult({ ok: true, text: `🚀 Rooster gepubliceerd! ${notified} tapper${notified !== 1 ? "s" : ""} genotificeerd.` });
+      setTimeout(() => setPublishResult(null), 6000);
       setPublished(ps => [...ps, ...conceptShifts.map(s => ({ ...s, status: "published" as const }))]);
       setConceptShifts([]);
       setPublishMsg("");

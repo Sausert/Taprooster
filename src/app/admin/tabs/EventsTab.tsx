@@ -58,7 +58,8 @@ export function EventsTab() {
       setPublishResult({ ok: true, text: `🎉 Feestje gepubliceerd! ${notified} tapper${notified !== 1 ? "s" : ""} genotificeerd.` });
       setConceptShifts(cs => cs.filter(s => !createdFeestje.shiftIds.includes(s.id)));
       setPublished(ps => [...ps, ...createdFeestje.shifts.map((s: any) => ({ ...s, status: "published" }))]);
-      setCreatedFeestje(null);
+      // Delay clearing so success message is visible for a moment
+      setTimeout(() => setCreatedFeestje(null), 3000);
     } else {
       setPublishResult({ ok: false, text: `❌ Publiceren mislukt: ${data.error ?? "Probeer opnieuw."}` });
     }

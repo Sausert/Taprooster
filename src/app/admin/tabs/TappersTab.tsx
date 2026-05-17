@@ -180,9 +180,9 @@ export function TappersTab() {
 
             {editTab === "voorkeuren" && (
               <>
-                <label className={styles.label}>Tapfrequentie per maand</label>
+                <label className={styles.label}>Tapfrequentie per kwartaal</label>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-                  <input type="range" min={1} max={20} value={editForm.preferred_frequency || 4} onChange={e => setEditForm(f => ({ ...f, preferred_frequency: Number(e.target.value) }))} style={{ flex:1, accentColor:"#00e5c3", marginRight:12 }} />
+                  <input type="range" min={1} max={12} value={editForm.preferred_frequency || 4} onChange={e => setEditForm(f => ({ ...f, preferred_frequency: Number(e.target.value) }))} style={{ flex:1, accentColor:"#00e5c3", marginRight:12 }} />
                   <span style={{ fontFamily:"monospace", fontSize:18, color:"#00e5c3", minWidth:40 }}>{editForm.preferred_frequency}x</span>
                 </div>
                 <label className={styles.label}>Voorkeursdagen</label>

@@ -42,7 +42,15 @@ export function InviteTab() {
           <div className={styles.card}>
             <div style={{ background:"#0f0d1a", borderRadius:10, padding:"10px 12px", fontFamily:"monospace", fontSize:11, color:"#00e5c3", wordBreak:"break-all", marginBottom:10 }}>{inviteUrl}</div>
             <button
-              onClick={() => { navigator.clipboard.writeText(inviteUrl); setCopiedInvite(true); setTimeout(() => setCopiedInvite(false), 2000); }}
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(inviteUrl);
+                  setCopiedInvite(true);
+                  setTimeout(() => setCopiedInvite(false), 2000);
+                } catch {
+                  setInviteError("Kopiëren mislukt. Kopieer de link handmatig.");
+                }
+              }}
               style={{ padding:"8px 16px", borderRadius:12, background:copiedInvite ? "rgba(0,229,195,0.15)" : "#221f38", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:13, fontWeight:700, cursor:"pointer", width:"100%", marginTop:8 }}
             >
               {copiedInvite ? "✅ Gekopieerd!" : "📋 Kopieer link"}
