@@ -129,10 +129,17 @@ export default function DashboardClient({
     : null;
   const heroDate = nextShift ? parseLocalDate(nextShift.date) : null;
   const heroWeekday = heroDate ? heroDate.toLocaleDateString("nl-NL", { weekday:"long" }) : "";
-  const heroDateLong = heroDate ? heroDate.toLocaleDateString("nl-NL", { day:"numeric", month:"long", year:"numeric" }) : "";
-  const heroProgressPct = daysUntilNext !== null ? Math.min(100, Math.max(0, Math.round((1 - Math.min(daysUntilNext, 14) / 14) * 100))) : 0;
+  const isCurrentYear = heroDate ? heroDate.getFullYear() === new Date().getFullYear() : true;
+  const heroDateLong = heroDate ? heroDate.toLocaleDateString("nl-NL", isCurrentYear ? { day:"numeric", month:"long" } : { day:"numeric", month:"long", year:"numeric" }) : "";
+  const heroProgressPct = daysUntilNext !== null ? Math.min(100, Math.max(0, Math.round((1 - Math.min(daysUntilNext, 7) / 7) * 100))) : 0;
   const heroFilledDots = daysUntilNext !== null ? Math.min(7, Math.max(0, 7 - daysUntilNext)) : 0;
   const heroIsConfirmed = nextAssignment ? confirmedIds.includes(nextAssignment.shift_id) || nextAssignment.status === "confirmed" : false;
+
+  const [heroPctAnim, setHeroPctAnim] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setHeroPctAnim(heroProgressPct), 80);
+    return () => clearTimeout(t);
+  }, [heroProgressPct]);
 
   const filteredUpcoming = upcoming.filter(a => {
     if (!a.shift?.date) return false;
@@ -235,13 +242,22 @@ export default function DashboardClient({
 
       {/* Next shift hero — Optie 5: Minimal + Progress */}
       {nextShift ? (
-        <div style={s.heroCard}>
-          {/* Top urgency bar: fills left→right as shift approaches (14-day window) */}
-          <div style={s.heroProgressWrap}>
-            <div style={{ ...s.heroProgressFill, width:`${heroProgressPct}%` }}/>
-            <div style={{ flex:1, background:"#2e2a4a" }}/>
-          </div>
-          <div key={heroIndex} className={sharedStyles.fadeIn} style={{ padding:"16px 18px" }}>
+        <div style={{ ...s.heroCard, ...(daysUntilNext === 0 ? { boxShadow:"0 4px 32px rgba(0,229,195,.25), 0 4px 24px rgba(0,0,0,.3)", border:"1px solid rgba(0,229,195,.4)" } : {}) }}>
+          {/* Top urgency bar: fills left→right as shift approaches (7-day window) */}
+          {heroProgressPct > 0 && (
+            <div
+              role="progressbar"
+              aria-label="Tijd tot dienst"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={heroProgressPct}
+              style={s.heroProgressWrap}
+            >
+              <div style={{ ...s.heroProgressFill, width:`${heroPctAnim}%` }}/>
+              <div style={{ flex:1, background:"#2e2a4a" }}/>
+            </div>
+          )}
+          <div key={heroIndex} className={sharedStyles.fadeIn} style={{ padding:"16px" }}>
             {/* Row 1: date + badge or multi-shift nav */}
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
               <div>
@@ -275,17 +291,20 @@ export default function DashboardClient({
             {/* Confirmed or confirm box */}
             {heroIsConfirmed ? (
               <div style={{ display:"flex", gap:8 }}>
-                <span style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"9px", borderRadius:8, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:12, fontWeight:700 }}>✅ Bevestigd</span>
+                <span style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"9px", borderRadius:10, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:11, fontWeight:700, fontFamily:"'Exo 2',sans-serif" }}>✅ Bevestigd</span>
                 <a
                   href={`/api/shifts/${nextShift.id}/ical`}
-                  style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"9px", borderRadius:8, background:"#221f38", border:"1px solid #2e2a4a", color:"#a89ec8", fontSize:12, fontWeight:700, fontFamily:"'Exo 2',sans-serif", textDecoration:"none" }}
+                  style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"9px", borderRadius:10, background:"#221f38", border:"1px solid #2e2a4a", color:"#a89ec8", fontSize:11, fontWeight:700, fontFamily:"'Exo 2',sans-serif", textDecoration:"none" }}
                   onClick={(e) => { if (typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent)) { e.preventDefault(); handleAgenda(nextShift); } }}
-                >📅 Agenda</a>
+                >
+                  <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  Zet in agenda
+                </a>
               </div>
             ) : (
               <div style={s.heroConfirmBox}>
                 <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
-                  <div style={{ width:6, height:6, borderRadius:"50%", background:"#ffb547", flexShrink:0 }}/>
+                  <div aria-hidden={true} style={{ width:6, height:6, borderRadius:"50%", background:"#ffb547", flexShrink:0 }}/>
                   <span style={{ fontSize:12, color:"#a89ec8" }}>Ben jij erbij?</span>
                 </div>
                 <div style={{ display:"flex", gap:6 }}>
@@ -296,13 +315,14 @@ export default function DashboardClient({
             )}
             {/* Dot countdown — fills right-to-left as shift approaches */}
             {daysUntilNext !== null && daysUntilNext >= 0 && (
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:14 }}>
-                <span style={{ fontSize:10, color:"#3e3a5a", fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase" }}>
-                  {daysUntilNext === 0 ? "Vandaag" : daysUntilNext === 1 ? "Morgen" : `Nog ${Math.min(daysUntilNext, 7)} dag${Math.min(daysUntilNext, 7) !== 1 ? "en" : ""}`}
-                </span>
-                <div style={{ display:"flex", gap:5 }}>
+              <div style={{ marginTop:12, paddingTop:12, borderTop:"1px solid #2e2a4a", display:"flex", justifyContent:"flex-end" }}>
+                <div
+                  role="img"
+                  aria-label={`${heroFilledDots} van 7 dagen verstreken`}
+                  style={{ display:"flex", gap:5 }}
+                >
                   {Array.from({ length:7 }).map((_,i) => (
-                    <div key={i} style={{ width:6, height:6, borderRadius:"50%", background: i >= Math.max(0, 7 - heroFilledDots) ? "#00e5c3" : "#2e2a4a" }}/>
+                    <div key={i} aria-hidden={true} style={{ width:6, height:6, borderRadius:"50%", background: i >= Math.max(0, 7 - heroFilledDots) ? "#00e5c3" : "#2e2a4a", transition:"background-color 0.4s ease" }}/>
                   ))}
                 </div>
               </div>
@@ -326,7 +346,7 @@ export default function DashboardClient({
       {/* Admin berichten */}
       {visibleMessages.length > 0 && (
         <>
-          <p className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px" }}>Berichten van admin</p>
+          <p className={sharedStyles.sectionTitle}>Berichten van admin</p>
           {visibleMessages.map((msg) => {
             const senderName = msg.sender?.full_name?.split(" ")[0] || "Admin";
             return (
@@ -351,7 +371,7 @@ export default function DashboardClient({
       )}
 
       {/* Stats */}
-      <p className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px" }}>Jouw statistieken</p>
+      <p className={sharedStyles.sectionTitle}>Jouw statistieken</p>
       <div style={s.statRow}>
         <div style={{ ...s.statCard, cursor:"pointer" }} onClick={() => router.push("/account")}>
           <p style={s.statVal}>{tapsThisYear}</p>
@@ -460,7 +480,7 @@ export default function DashboardClient({
           <div ref={openDienstenRef} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", margin:"20px 0 8px" }}>
             <div style={{ display:"flex", alignItems:"center", gap:8, margin:0 }}>
               <p className={sharedStyles.sectionTitle} style={{ margin:0 }}>Open diensten</p>
-              <span className={`${sharedStyles.badge} ${sharedStyles.badgeAmber}`}>{claimable.length}</span>
+              <span className={`${sharedStyles.badge} ${sharedStyles.badgeMuted}`}>{claimable.length}</span>
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
               <button onClick={prevOpenMonth} style={s.navArrowSm}>‹</button>
@@ -577,18 +597,18 @@ const s: Record<string, React.CSSProperties> = {
   page: { padding:"16px 16px 100px" },
   errorBanner: { background:"rgba(255,79,109,0.1)", border:"1px solid #ff4f6d", borderRadius:12, padding:"10px 14px", fontSize:13, color:"#ff4f6d", marginBottom:14, display:"flex", alignItems:"center", gap:8 },
   greeting: { fontSize:26, fontWeight:900, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif", display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" },
-  heroCard: { background:"#161326", border:"1px solid #2e2a4a", borderRadius:16, overflow:"hidden", boxShadow:"0 4px 24px rgba(0,0,0,.3)", marginBottom:12 },
+  heroCard: { background:"#161326", border:"1px solid rgba(0,229,195,.15)", borderRadius:16, overflow:"hidden", boxShadow:"0 4px 24px rgba(0,0,0,.3)", marginBottom:12 },
   heroProgressWrap: { height:4, display:"flex" },
-  heroProgressFill: { background:"linear-gradient(90deg,#00e5c3,#5a4a9e)", height:"100%", transition:"width 0.6s ease" },
-  heroWeekday: { fontSize:11, fontWeight:600, color:"#a89ec8", textTransform:"capitalize" as const, marginBottom:1 },
-  heroDateTxt: { fontSize:16, fontWeight:900, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif" },
+  heroProgressFill: { background:"linear-gradient(90deg,#00e5c3,#00b89c)", height:"100%", transition:"width 0.6s ease" },
+  heroWeekday: { fontSize:11, fontWeight:600, color:"#a89ec8", textTransform:"capitalize" as const, marginBottom:3 },
+  heroDateTxt: { fontSize:14, fontWeight:700, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif" },
   heroDaysBadge: { background:"rgba(0,229,195,.08)", border:"1px solid rgba(0,229,195,.25)", borderRadius:20, padding:"4px 12px", fontSize:11, fontWeight:700, color:"#00e5c3", flexShrink:0 as unknown as number },
   heroTitle: { fontSize:22, fontWeight:900, color:"#fff", marginBottom:4, letterSpacing:"-.01em" },
   heroTimePill: { fontSize:13, color:"#a89ec8", fontFamily:"'Space Mono',monospace" },
-  heroConfirmBox: { background:"#0f0d1a", border:"1px solid #2e2a4a", borderRadius:10, padding:"12px 14px" },
+  heroConfirmBox: { background:"#221f38", borderRadius:10, padding:"12px 14px" },
   heroYes: { flex:1, padding:"10px", borderRadius:8, background:"rgba(0,229,195,.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:12, cursor:"pointer" },
-  heroNo: { flex:1, padding:"10px", borderRadius:8, background:"transparent", border:"1px solid #2e2a4a", color:"#a89ec8", fontFamily:"'Exo 2',sans-serif", fontSize:12, cursor:"pointer" },
-  statRow: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 },
+  heroNo: { flex:1, padding:"10px", borderRadius:8, background:"rgba(255,79,109,.06)", border:"1px solid rgba(255,79,109,.3)", color:"#ff4f6d", fontFamily:"'Exo 2',sans-serif", fontSize:12, cursor:"pointer" },
+  statRow: { display:"grid", gridTemplateColumns:"1.3fr 1fr", gap:10, marginBottom:12 },
   statCard: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:16, padding:16, textAlign:"center" },
   statVal: { fontFamily:"monospace", fontSize:28, fontWeight:700, color:"#00e5c3", margin:0 },
   statLabel: { fontSize:10, fontWeight:700, color:"#a89ec8", letterSpacing:"0.08em", textTransform:"uppercase", marginTop:4, margin:0 },

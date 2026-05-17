@@ -98,6 +98,7 @@ export default function AppShell({
             return (
               <button
                 key={item.path}
+                aria-current={active ? "page" : undefined}
                 style={{ ...s.navItem, background: active ? "rgba(0,229,195,0.08)" : "none" }}
                 onClick={() => router.push(item.path)}
               >
