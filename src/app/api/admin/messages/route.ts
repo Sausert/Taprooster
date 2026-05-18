@@ -14,7 +14,7 @@ export async function GET() {
     .order("created_at", { ascending: false })
     .limit(3);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Berichten ophalen mislukt" }, { status: 500 });
   return NextResponse.json({ data: messages });
 }
 
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Bericht opslaan mislukt" }, { status: 500 });
 
   // Notify all tappers — use admin client to bypass RLS (no INSERT policy for regular users)
   const adminClient = createAdminClient();

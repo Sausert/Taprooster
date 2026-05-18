@@ -1,7 +1,7 @@
 // app/api/invite/route.ts — Uitnodigingslinks beheren
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
-import { requireAdmin } from "@/lib/api-helpers";
+import { requireAdmin, requireAuth } from "@/lib/api-helpers";
 import { sendInviteEmail } from "@/lib/email";
 import QRCode from "qrcode";
 
@@ -83,23 +83,26 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Deze link is verlopen" }, { status: 410 });
   }
 
-  return NextResponse.json({ data: { valid: true, expiresAt: invite.expires_at } });
+  return NextResponse.json({ data: { valid: true } });
 }
 
-// PATCH /api/invite — markeer token als gebruikt (aangeroepen na succesvolle registratie)
+// PATCH /api/invite — markeer token als gebruikt (vereist authenticatie)
 export async function PATCH(req: NextRequest) {
+  const auth = await requireAuth();
+  if ("error" in auth) return auth.error;
+  const { supabase } = auth;
+
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Ongeldige request body" }, { status: 400 }); }
   const token = body.token as string | undefined;
   if (!token) return NextResponse.json({ error: "Token required" }, { status: 400 });
 
-  const supabase = await createServerSupabaseClient();
   const { error } = await supabase
     .from("invite_tokens")
     .update({ status: "used", used_at: new Date().toISOString() })
     .eq("token", token)
     .eq("status", "pending");
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Bijwerken mislukt" }, { status: 500 });
   return NextResponse.json({ data: { marked: true } });
 }

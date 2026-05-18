@@ -60,26 +60,26 @@ function RegisterContent() {
 
     setLoading(true);
 
-    const { error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName },
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-      },
+    // Server-side validation: password policy + token + user creation
+    const regRes = await fetch("/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, fullName, token }),
     });
-
-    if (signUpError) {
-      setError(signUpError.message);
+    const regData = await regRes.json();
+    if (!regRes.ok) {
+      setError(regData.error ?? "Registratie mislukt. Probeer opnieuw.");
       setLoading(false);
       return;
     }
 
-    await fetch(`/api/invite`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token }),
-    });
+    // Sign in to get a session after server-created account
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    if (signInError) {
+      setError("Account aangemaakt, maar inloggen mislukt. Ga naar de loginpagina.");
+      setLoading(false);
+      return;
+    }
 
     router.push("/dashboard");
     setLoading(false);

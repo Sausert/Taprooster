@@ -1,6 +1,19 @@
 import { Resend } from "resend";
 import { APP_CONFIG } from "@/lib/config";
 
+function escHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
+function escHtmlPreserveNewlines(str: string): string {
+  return escHtml(str).replace(/\n/g, "<br>");
+}
+
 function getResend() {
   if (!process.env.RESEND_API_KEY) throw new Error("RESEND_API_KEY is not set");
   return new Resend(process.env.RESEND_API_KEY);
@@ -125,10 +138,10 @@ export async function sendRosterPublishedEmail(
     html: emailTemplate(
       "Het rooster is gepubliceerd! 🍺",
       `
-      ${period ? `<div class="badge">📅 ${period}</div>` : ""}
-      <p>Hey ${name},</p>
+      ${period ? `<div class="badge">📅 ${escHtml(period)}</div>` : ""}
+      <p>Hey ${escHtml(name)},</p>
       <p>Het nieuwe taprooster staat live. Bekijk jouw ingeplande diensten en bevestig je aanwezigheid.</p>
-      ${message ? `<div class="highlight"><p>${message}</p></div>` : ""}
+      ${message ? `<div class="highlight"><p>${escHtmlPreserveNewlines(message)}</p></div>` : ""}
       <a href="${APP_URL}/rooster" class="btn">Bekijk rooster →</a>
       `
     ),
@@ -152,11 +165,11 @@ export async function sendShiftReminderEmail(
     html: emailTemplate(
       `Herinnering: nog ${days} dagen`,
       `
-      <p>Hey ${name},</p>
+      <p>Hey ${escHtml(name)},</p>
       <p>Je staat ingepland — vergeet je dienst niet te bevestigen!</p>
       <div class="highlight">
-        <p><strong>${shiftTitle}</strong></p>
-        <p class="meta">📅 ${shiftDate}<br>🕐 ${shiftTime}<br>📍 ${APP_CONFIG.location}</p>
+        <p><strong>${escHtml(shiftTitle)}</strong></p>
+        <p class="meta">📅 ${escHtml(shiftDate)}<br>🕐 ${escHtml(shiftTime)}<br>📍 ${escHtml(APP_CONFIG.location)}</p>
       </div>
       <a href="${APP_URL}/dashboard" class="btn">Bevestig aanwezigheid →</a>
       `
@@ -180,11 +193,11 @@ export async function sendOpenShiftEmail(
     html: emailTemplate(
       "Er is een open plek! 🔓",
       `
-      <p>Hey ${name},</p>
+      <p>Hey ${escHtml(name)},</p>
       <p>Er is zojuist een plek vrijgekomen. Wil jij tappen? Wees er snel bij — <strong>vol = vol!</strong></p>
       <div class="highlight">
-        <p><strong>${shiftTitle}</strong></p>
-        <p class="meta">📅 ${shiftDate}<br>🕐 ${shiftTime}<br>📍 ${APP_CONFIG.location}</p>
+        <p><strong>${escHtml(shiftTitle)}</strong></p>
+        <p class="meta">📅 ${escHtml(shiftDate)}<br>🕐 ${escHtml(shiftTime)}<br>📍 ${escHtml(APP_CONFIG.location)}</p>
       </div>
       <a href="${APP_URL}/dashboard?claim=${shiftId}" class="btn">Claim deze dienst →</a>
       `
@@ -203,12 +216,12 @@ export async function sendInviteEmail(to: string, token: string, adminName: stri
       "Je bent uitgenodigd! 🍺",
       `
       <p>Hey,</p>
-      <p><strong>${adminName}</strong> heeft je uitgenodigd om tapper te worden bij ${APP_CONFIG.orgName} in ${APP_CONFIG.city}.</p>
+      <p><strong>${escHtml(adminName)}</strong> heeft je uitgenodigd om tapper te worden bij ${escHtml(APP_CONFIG.orgName)} in ${escHtml(APP_CONFIG.city)}.</p>
       <p>Klik op de knop hieronder om je account aan te maken.</p>
       <a href="${inviteUrl}" class="btn">Maak account aan →</a>
       <p class="meta" style="margin-top:16px;">⏳ Deze link is <strong>7 dagen</strong> geldig.<br>Daarna moet de admin een nieuwe uitnodiging versturen.</p>
       <hr class="divider">
-      <p style="font-size:12px;">Link niet werken? Kopieer: ${inviteUrl}</p>
+      <p style="font-size:12px;">Link niet werken? Kopieer: ${escHtml(inviteUrl)}</p>
       `
     ),
   });
@@ -241,11 +254,11 @@ export async function sendAdminMessageEmail(to: string, name: string, title: str
     to,
     subject: `📢 ${title}`,
     html: emailTemplate(
-      `📢 ${title}`,
+      `📢 ${escHtml(title)}`,
       `
-      <p>Hey ${name},</p>
+      <p>Hey ${escHtml(name)},</p>
       <hr class="divider">
-      <div class="highlight"><p>${body}</p></div>
+      <div class="highlight"><p>${escHtmlPreserveNewlines(body)}</p></div>
       <a href="${APP_URL}/dashboard" class="btn">Bekijk in de app →</a>
       `
     ),

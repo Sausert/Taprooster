@@ -15,6 +15,6 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
     .update({ status: "declined", declined_at: new Date().toISOString() })
     .eq("shift_id", shiftId).eq("user_id", userId);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Bijwerken mislukt" }, { status: 500 });
   return NextResponse.json({ data: { removed: true } });
 }

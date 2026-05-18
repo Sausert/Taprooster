@@ -4,6 +4,9 @@ import { createAdminClient } from "@/lib/supabase-server";
 import { sendRosterPublishedEmail } from "@/lib/email";
 import { parseLocalDate } from "@/lib/dates";
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function getMonthName(m: string): string {
   const months = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
   return months[parseInt(m, 10) - 1] || m;
@@ -17,7 +20,14 @@ export async function POST(req: NextRequest) {
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Ongeldige request body" }, { status: 400 }); }
   const message = body.message as string | undefined;
-  const shiftIds = Array.isArray(body.shiftIds) ? (body.shiftIds as string[]) : null;
+  const rawShiftIds = Array.isArray(body.shiftIds) ? (body.shiftIds as unknown[]) : null;
+  if (rawShiftIds && rawShiftIds.length > 500) {
+    return NextResponse.json({ error: "Te veel shifts opgegeven (max 500)" }, { status: 400 });
+  }
+  if (rawShiftIds && !rawShiftIds.every(id => typeof id === "string" && UUID_RE.test(id))) {
+    return NextResponse.json({ error: "Ongeldige shift-ID in lijst" }, { status: 400 });
+  }
+  const shiftIds = rawShiftIds as string[] | null;
 
   // Admin client bypasses RLS — needed for notification inserts
   const adminClient = createAdminClient();
@@ -28,7 +38,7 @@ export async function POST(req: NextRequest) {
     const { error: publishError } = await supabase.from("shifts")
       .update({ status: "published" })
       .in("id", shiftIds);
-    if (publishError) return NextResponse.json({ error: publishError.message }, { status: 500 });
+    if (publishError) return NextResponse.json({ error: "Publiceren mislukt" }, { status: 500 });
 
     // Haal shift details op voor de notificatietekst
     const { data: feestjeShifts } = await supabase.from("shifts").select("title, date").in("id", shiftIds).limit(1);
@@ -65,6 +75,9 @@ export async function POST(req: NextRequest) {
   let rangeEnd: string;
 
   if (dateFrom && dateTo) {
+    if (!DATE_RE.test(dateFrom) || !DATE_RE.test(dateTo)) {
+      return NextResponse.json({ error: "Ongeldig datumformaat (verwacht YYYY-MM-DD)" }, { status: 400 });
+    }
     rangeStart = dateFrom;
     rangeEnd = dateTo;
   } else {
@@ -84,7 +97,7 @@ export async function POST(req: NextRequest) {
     .eq("status", "concept")
     .gte("date", rangeStart).lte("date", rangeEnd);
 
-  if (publishError) return NextResponse.json({ error: publishError.message }, { status: 500 });
+  if (publishError) return NextResponse.json({ error: "Publiceren mislukt" }, { status: 500 });
 
   // Maak periode label van rangeStart/rangeEnd
   const startParts = rangeStart.split("-");

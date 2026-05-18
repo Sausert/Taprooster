@@ -10,6 +10,8 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
 
   if (id === user.id) return NextResponse.json({ error: "Je kunt jezelf niet verwijderen" }, { status: 400 });
 
+  console.error(`[AUDIT] Tapper verwijderd: target=${id} door admin=${user.id} om ${new Date().toISOString()}`);
+
   // Delete related data first (cleanup — errors are non-fatal)
   await supabase.from("shift_assignments").delete().eq("user_id", id);
   await supabase.from("notifications").delete().eq("user_id", id);
@@ -17,12 +19,12 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
 
   // Delete profile — stop if this fails (auth user deletion would be orphaned)
   const { error: profileError } = await supabase.from("profiles").delete().eq("id", id);
-  if (profileError) return NextResponse.json({ error: profileError.message }, { status: 500 });
+  if (profileError) return NextResponse.json({ error: "Verwijderen mislukt" }, { status: 500 });
 
   // Delete auth user (requires service role)
   const adminClient = createAdminClient();
   const { error: authError } = await adminClient.auth.admin.deleteUser(id);
-  if (authError) return NextResponse.json({ error: authError.message }, { status: 500 });
+  if (authError) return NextResponse.json({ error: "Auth-gebruiker verwijderen mislukt" }, { status: 500 });
 
   return NextResponse.json({ data: { deleted: true } });
 }

@@ -16,8 +16,12 @@ export async function POST(req: NextRequest) {
   if (!file.type.startsWith("image/")) return NextResponse.json({ error: "Alleen afbeeldingen toegestaan" }, { status: 400 });
   if (file.size > 4 * 1024 * 1024) return NextResponse.json({ error: "Maximaal 4 MB per afbeelding" }, { status: 400 });
 
-  const ext = file.name.split(".").pop() || "jpg";
-  const path = `${user.id}/avatar.${ext}`;
+  const ALLOWED_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "gif"]);
+  const rawExt = (file.name.split(".").pop() || "").toLowerCase();
+  if (!ALLOWED_EXTENSIONS.has(rawExt)) {
+    return NextResponse.json({ error: "Alleen JPG, PNG, WebP of GIF toegestaan" }, { status: 400 });
+  }
+  const path = `${user.id}/avatar.${rawExt}`;
   const bytes = await file.arrayBuffer();
 
   const adminClient = createAdminClient();
@@ -25,7 +29,7 @@ export async function POST(req: NextRequest) {
     .from("avatars")
     .upload(path, bytes, { upsert: true, contentType: file.type });
 
-  if (uploadErr) return NextResponse.json({ error: uploadErr.message }, { status: 500 });
+  if (uploadErr) return NextResponse.json({ error: "Upload mislukt" }, { status: 500 });
 
   // Use signed URL (1-year expiry) so private-bucket files resolve correctly
   const { data: signedData } = await adminClient.storage.from("avatars").createSignedUrl(path, 31536000);

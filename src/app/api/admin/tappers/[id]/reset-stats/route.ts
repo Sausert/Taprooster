@@ -5,7 +5,9 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
   const { id } = await context.params;
   const auth = await requireAdmin();
   if ("error" in auth) return auth.error;
-  const { supabase } = auth;
+  const { user, supabase } = auth;
+
+  console.error(`[AUDIT] Statistieken gereset: target=${id} door admin=${user.id} om ${new Date().toISOString()}`);
 
   // Reset: set all assignments of this year to declined (soft reset)
   const thisYear = new Date().getFullYear();

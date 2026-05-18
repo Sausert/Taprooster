@@ -11,6 +11,6 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
   await supabase.from("shift_assignments").delete().eq("shift_id", id);
   // Delete the shift
   const { error } = await supabase.from("shifts").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Verwijderen mislukt" }, { status: 500 });
   return NextResponse.json({ data: { deleted: true } });
 }

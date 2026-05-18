@@ -3,6 +3,8 @@ import { requireAdmin } from "@/lib/api-helpers";
 import { parseLocalDate, toLocalDateStr } from "@/lib/dates";
 import { generateSchedule } from "@/lib/scheduler";
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 function getDatesForDayInRange(dayOfWeek: number, start: Date, end: Date): Date[] {
   const dates: Date[] = [];
   const current = new Date(start.getFullYear(), start.getMonth(), start.getDate());
@@ -50,6 +52,9 @@ export async function POST(req: NextRequest) {
   let rangeEnd: Date;
 
   if (body.dateFrom && body.dateTo) {
+    if (!DATE_RE.test(body.dateFrom) || !DATE_RE.test(body.dateTo)) {
+      return NextResponse.json({ error: "Ongeldig datumformaat (verwacht YYYY-MM-DD)" }, { status: 400 });
+    }
     // Direct date range from datepicker
     rangeStart = parseLocalDate(body.dateFrom);
     rangeEnd = parseLocalDate(body.dateTo);
@@ -95,7 +100,7 @@ export async function POST(req: NextRequest) {
   // Sla nieuwe shifts op
   if (shiftsToCreate.length > 0) {
     const { error } = await supabase.from("shifts").insert(shiftsToCreate);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: "Shifts aanmaken mislukt" }, { status: 500 });
   }
 
   // Haal ALLE concept shifts op voor de periode (incl. net aangemaakte)
@@ -136,7 +141,7 @@ export async function POST(req: NextRequest) {
       suggestions.map(s => ({ shift_id: s.shiftId, user_id: s.userId, status: "assigned" })),
       { onConflict: "shift_id,user_id" }
     );
-    if (upsertError) return NextResponse.json({ error: upsertError.message }, { status: 500 });
+    if (upsertError) return NextResponse.json({ error: "Inplannen mislukt" }, { status: 500 });
   }
 
   // Geef conceptrooster terug met assignments
