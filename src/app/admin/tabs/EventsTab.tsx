@@ -55,13 +55,13 @@ export function EventsTab() {
     const data = await res.json();
     if (res.ok) {
       const notified = data.data?.notified || 0;
-      setPublishResult({ ok: true, text: `🎉 Feestje gepubliceerd! ${notified} tapper${notified !== 1 ? "s" : ""} genotificeerd.` });
+      setPublishResult({ ok: true, text: `Feestje gepubliceerd! ${notified} tapper${notified !== 1 ? "s" : ""} genotificeerd.` });
       setConceptShifts(cs => cs.filter(s => !createdFeestje.shiftIds.includes(s.id)));
       setPublished(ps => [...ps, ...createdFeestje.shifts.map((s: any) => ({ ...s, status: "published" }))]);
       // Delay clearing so success message is visible for a moment
       setTimeout(() => setCreatedFeestje(null), 3000);
     } else {
-      setPublishResult({ ok: false, text: `❌ Publiceren mislukt: ${data.error ?? "Probeer opnieuw."}` });
+      setPublishResult({ ok: false, text: `Publiceren mislukt: ${data.error ?? "Probeer opnieuw."}` });
     }
     setPublishing(false);
   }
@@ -70,13 +70,13 @@ export function EventsTab() {
     <>
       {eventError && (
         <div className={styles.bannerIn} style={{ background:"rgba(255,79,109,0.08)", border:"1px solid #ff4f6d", borderRadius:10, padding:"10px 14px", fontSize:13, color:"#ff4f6d", fontWeight:700, marginBottom:12 }}>
-          ❌ {eventError}
+          {eventError}
         </div>
       )}
 
       {createdFeestje && (
         <div className={`${styles.card} ${styles.bannerIn}`} style={{ borderColor:"#00e5c3", marginBottom:16 }}>
-          <p style={{ fontSize:13, fontWeight:700, color:"#00e5c3", marginBottom:4 }}>🎉 {createdFeestje.title} aangemaakt!</p>
+          <p style={{ fontSize:13, fontWeight:700, color:"#00e5c3", marginBottom:4 }}>{createdFeestje.title} aangemaakt!</p>
           <p style={{ fontSize:12, color:"#b8b0d4", marginBottom:12, lineHeight:1.5 }}>
             {createdFeestje.shiftIds.length} dienst{createdFeestje.shiftIds.length !== 1 ? "en" : ""} staan als concept klaar. Publiceer nu om alle tappers te notificeren.
           </p>
@@ -97,7 +97,7 @@ export function EventsTab() {
                 style={{ resize:"none", marginBottom:10 }}
               />
               <button className={styles.btnPrimary} onClick={handlePublishFeestje} disabled={publishing}>
-                {publishing ? "⏳ Publiceren..." : "🚀 Feestje publiceren"}
+                {publishing ? "Publiceren..." : "Feestje publiceren"}
               </button>
               <button className={styles.btnSecondary} style={{ marginTop:8 }} onClick={() => setCreatedFeestje(null)}>
                 Later publiceren
@@ -121,16 +121,18 @@ export function EventsTab() {
           <div key={idx} className={styles.card} style={{ marginBottom:10, borderLeft:`4px solid ${shift.role === "bonnenkassa" ? "#ffb547" : "#00e5c3"}` }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
               <span style={{ fontSize:11, fontWeight:700, color: shift.role === "bonnenkassa" ? "#ffb547" : "#00e5c3", textTransform:"uppercase", letterSpacing:"0.12em" }}>
-                {shift.role === "bonnenkassa" ? "🎟" : "🍺"} Dienst {idx + 1}
+                Dienst {idx + 1}
               </span>
               {eventForm.shifts.length > 1 && (
-                <button type="button" className={`${styles.iconBtn} ${styles.iconBtnDanger}`} onClick={() => removeShift(idx)}>🗑</button>
+                <button type="button" className={`${styles.iconBtn} ${styles.iconBtnDanger}`} onClick={() => removeShift(idx)}>
+                  <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+                </button>
               )}
             </div>
             <div style={{ display:"flex", gap:8, marginBottom:12 }}>
               {(["tapper", "bonnenkassa"] as const).map(r => (
                 <div key={r} className={`${styles.chip}${shift.role === r ? ` ${styles.chipActive}` : ""}`} style={{ flex:1, textAlign:"center" }} onClick={() => updateShift(idx, "role", r)}>
-                  {r === "bonnenkassa" ? "🎟 Kassa" : "🍺 Tapper"}
+                  {r === "bonnenkassa" ? "Kassa" : "Tapper"}
                 </div>
               ))}
             </div>
@@ -158,7 +160,7 @@ export function EventsTab() {
 
         <div style={{ borderTop:"1px solid #2e2a4a", marginTop:4, paddingTop:12 }}>
           <button type="button" className={styles.btnSecondary} style={{ marginBottom:10 }} onClick={addShift}>+ Dienst toevoegen</button>
-          <button type="submit" className={styles.btnPrimary} disabled={saving}>{saving ? "Aanmaken..." : "✅ Feestje aanmaken"}</button>
+          <button type="submit" className={styles.btnPrimary} disabled={saving}>{saving ? "Aanmaken..." : "Feestje aanmaken"}</button>
         </div>
       </form>
     </>

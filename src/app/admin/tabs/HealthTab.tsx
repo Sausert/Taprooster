@@ -105,7 +105,9 @@ export function HealthTab() {
       <div className={styles.card}>
         {allShifts.length === 0 && (
           <div style={{ textAlign:"center", padding:"32px 20px" }}>
-            <div style={{ fontSize:40, marginBottom:8 }}>📅</div>
+            <div style={{ display:"flex", justifyContent:"center", marginBottom:8 }}>
+              <svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#2e2a4a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
             <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", margin:0 }}>Geen diensten</p>
             <p style={{ fontSize:12, color:"#8b80b0", marginTop:4 }}>Er zijn nog geen diensten aangemaakt.</p>
           </div>
@@ -141,7 +143,7 @@ export function HealthTab() {
               </div>
               {unresponsive.length > 0 && (
                 <div style={{ paddingLeft:20, display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
-                  <span style={{ fontSize:10, color:"#ffb547" }}>⏳ Niet bevestigd:</span>
+                  <span style={{ fontSize:10, color:"#ffb547" }}>Niet bevestigd:</span>
                   {unresponsive.map((name, i) => (
                     <span key={i} style={{ fontSize:11, padding:"1px 8px", borderRadius:20, background:"rgba(255,181,71,0.1)", border:"1px solid rgba(255,181,71,0.3)", color:"#ffb547" }}>{name}</span>
                   ))}
@@ -152,7 +154,7 @@ export function HealthTab() {
         })}
       </div>
 
-      <p className={styles.sectionTitle}>🍺 Tapscore dit jaar</p>
+      <p className={styles.sectionTitle}>Tapscore dit jaar</p>
       <div className={styles.card}><TapBarChart leaderboard={leaderboard} /></div>
     </>
   );

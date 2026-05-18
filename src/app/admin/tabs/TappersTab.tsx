@@ -62,7 +62,7 @@ export function TappersTab() {
     const res = await fetch(`/api/admin/tappers/${editingTapper.id}`, { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(saveData) });
     const data = await res.json();
     if (!res.ok) {
-      setFeedbackMsg({ text:`❌ Opslaan mislukt: ${data.error ?? "Probeer opnieuw."}`, ok:false });
+      setFeedbackMsg({ text:`Opslaan mislukt: ${data.error ?? "Probeer opnieuw."}`, ok:false });
       setTimeout(() => setFeedbackMsg(null), 4000);
     } else {
       setProfiles(ps => ps.map(p => p.id === editingTapper.id ? { ...p, ...data.data } : p));
@@ -81,11 +81,11 @@ export function TappersTab() {
         if (res.ok) {
           setProfiles(ps => ps.filter(p => p.id !== tapperId));
           setEditingTapper(null);
-          setFeedbackMsg({ text:`✅ ${tapperName} is verwijderd.`, ok:true });
+          setFeedbackMsg({ text:`${tapperName} is verwijderd.`, ok:true });
           setTimeout(() => setFeedbackMsg(null), 3000);
         } else {
           const d = await res.json().catch(() => ({}));
-          setFeedbackMsg({ text:`❌ Verwijderen mislukt: ${d.error ?? "Probeer opnieuw."}`, ok:false });
+          setFeedbackMsg({ text:`Verwijderen mislukt: ${d.error ?? "Probeer opnieuw."}`, ok:false });
           setTimeout(() => setFeedbackMsg(null), 4000);
         }
       },
@@ -114,7 +114,7 @@ export function TappersTab() {
         </div>
       )}
       <p className={styles.sectionTitle}>Alle tappers ({profiles.length})</p>
-      <input className={styles.input} placeholder="🔍 Zoek op naam of e-mail..." value={tapperSearch} onChange={e => setTapperSearch(e.target.value)} />
+      <input className={styles.input} placeholder="Zoek op naam of e-mail..." value={tapperSearch} onChange={e => setTapperSearch(e.target.value)} />
       <div style={{ display:"flex", gap:6, marginBottom:10, alignItems:"center" }}>
         <span style={{ fontSize:11, color:"#8b80b0" }}>Sorteer:</span>
         {(["name","taps"] as const).map(opt => (
@@ -137,7 +137,10 @@ export function TappersTab() {
               </div>
               <div style={{ display:"flex", gap:6, flexDirection:"column", alignItems:"flex-end" }}>
                 {p.role === "admin" && <span className={`${styles.badge} ${styles.badgeMint}`}>Admin</span>}
-                <button style={s.editBtn} onClick={() => openEditTapper(p)}>✏️ Bewerken</button>
+                <button style={{ ...s.editBtn, display:"flex", alignItems:"center", gap:5 }} onClick={() => openEditTapper(p)}>
+                  <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Bewerken
+                </button>
               </div>
             </div>
           </div>
@@ -152,7 +155,7 @@ export function TappersTab() {
             <div style={{ display:"flex", borderBottom:"1px solid #2e2a4a", marginBottom:16 }}>
               {(["info", "voorkeuren"] as const).map(id => (
                 <button key={id} onClick={() => setEditTab(id)} style={{ flex:1, padding:"8px", background:"none", border:"none", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:12, cursor:"pointer", color:editTab === id ? "#00e5c3" : "#8b80b0", borderBottom:`2px solid ${editTab === id ? "#00e5c3" : "transparent"}` }}>
-                  {id === "info" ? "👤 Info" : "⚙️ Voorkeuren"}
+                  {id === "info" ? "Info" : "Voorkeuren"}
                 </button>
               ))}
             </div>
@@ -171,7 +174,7 @@ export function TappersTab() {
                 <div style={{ display:"flex", gap:8, marginBottom:16 }}>
                   {(["tapper", "admin"] as const).map(r => (
                     <div key={r} className={`${styles.chip}${editForm.role === r ? ` ${styles.chipActive}` : ""}`} style={{ flex:1, textAlign:"center" }} onClick={() => setEditForm(f => ({ ...f, role: r }))}>
-                      {r === "admin" ? "⚡ Admin" : "🍺 Tapper"}
+                      {r === "admin" ? "Admin" : "Tapper"}
                     </div>
                   ))}
                 </div>
@@ -197,10 +200,10 @@ export function TappersTab() {
                 <div style={{ display:"flex", gap:8, marginBottom:14, flexWrap:"wrap" }}>
                   {(["tapper", "bonnenkassa"] as const).map(v => (
                     <div key={v} className={`${styles.chip}${(editForm.preferred_roles || []).includes(v) ? ` ${styles.chipActive}` : ""}`} style={{ flex:1, textAlign:"center" }} onClick={() => toggleEditRole(v)}>
-                      {v === "bonnenkassa" ? "🎟 Kassa" : "🍺 Tappen"}
+                      {v === "bonnenkassa" ? "Kassa" : "Tappen"}
                     </div>
                   ))}
-                  <div className={`${styles.chip}${editForm.wants_parties ? ` ${styles.chipActive}` : ""}`} style={{ flex:1, textAlign:"center" }} onClick={() => setEditForm(f => ({ ...f, wants_parties: !f.wants_parties }))}>🎉 Feestjes</div>
+                  <div className={`${styles.chip}${editForm.wants_parties ? ` ${styles.chipActive}` : ""}`} style={{ flex:1, textAlign:"center" }} onClick={() => setEditForm(f => ({ ...f, wants_parties: !f.wants_parties }))}>Feestjes</div>
                 </div>
                 <label className={styles.label}>Niet beschikbaar in</label>
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6, marginBottom:14 }}>
@@ -211,11 +214,11 @@ export function TappersTab() {
               </>
             )}
 
-            <button className={styles.btnPrimary} onClick={saveTapper} disabled={savingTapper}>{savingTapper ? "Opslaan..." : "💾 Opslaan"}</button>
+            <button className={styles.btnPrimary} onClick={saveTapper} disabled={savingTapper}>{savingTapper ? "Opslaan..." : "Opslaan"}</button>
             <button className={styles.btnSecondary} style={{ marginTop:8 }} onClick={() => setEditingTapper(null)}>Annuleren</button>
             <div style={{ borderTop:"1px solid #2e2a4a", paddingTop:16, marginTop:16 }}>
               <p style={{ fontSize:11, fontWeight:700, letterSpacing:2, color:"#ff4f6d", textTransform:"uppercase", marginBottom:10 }}>⚠️ Danger zone</p>
-              <button className={styles.btnSecondary} style={{ color:"#ff4f6d", borderColor:"#ff4f6d" }} onClick={() => deleteTapper(editingTapper.id, editingTapper.full_name)}>🗑 Tapper verwijderen</button>
+              <button className={styles.btnSecondary} style={{ color:"#ff4f6d", borderColor:"#ff4f6d" }} onClick={() => deleteTapper(editingTapper.id, editingTapper.full_name)}>Tapper verwijderen</button>
             </div>
           </div>
         </div>

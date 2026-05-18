@@ -41,10 +41,10 @@ export function AdminShiftCard({ shift, source }: { shift: Shift & Record<string
           <label className={styles.label}>Notitie</label>
           <input className={styles.input} value={(shift.admin_note as string) || ""} onChange={e => updateShiftInList(shift.id, "admin_note", e.target.value, list, setList)} placeholder="Optionele notitie..." />
           {shiftEditError && editingShiftId === shift.id && (
-            <div style={{ background:"rgba(255,79,109,0.1)", border:"1px solid #ff4f6d", borderRadius:8, padding:"8px 12px", fontSize:12, color:"#ff4f6d", marginBottom:8 }}>❌ {shiftEditError}</div>
+            <div style={{ background:"rgba(255,79,109,0.1)", border:"1px solid #ff4f6d", borderRadius:8, padding:"8px 12px", fontSize:12, color:"#ff4f6d", marginBottom:8 }}>{shiftEditError}</div>
           )}
           <div style={{ display:"flex", gap:8 }}>
-            <button className={styles.btnPrimary} style={{ flex:1, padding:"10px" }} onClick={() => saveShiftEdit(shift)}>💾 Opslaan</button>
+            <button className={styles.btnPrimary} style={{ flex:1, padding:"10px" }} onClick={() => saveShiftEdit(shift)}>Opslaan</button>
             <button className={styles.btnSecondary} style={{ flex:1, padding:"10px" }} onClick={() => { setEditingShiftId(null); setShiftEditError(null); }}>Annuleer</button>
           </div>
         </div>
@@ -53,13 +53,13 @@ export function AdminShiftCard({ shift, source }: { shift: Shift & Record<string
           <div style={{ flex:1 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4, flexWrap:"wrap" }}>
               <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff", margin:0 }}>{shift.title}</p>
-              {shift.type === "feestje" && <span className={`${styles.badge} ${styles.badgeParty}`}>🎉 Feestje</span>}
-              {shift.role === "bonnenkassa" && <span className={`${styles.badge} ${styles.badgeViolet}`}>🎟 Kassa</span>}
+              {shift.type === "feestje" && <span className={`${styles.badge} ${styles.badgeParty}`}>Feestje</span>}
+              {shift.role === "bonnenkassa" && <span className={`${styles.badge} ${styles.badgeViolet}`}>Kassa</span>}
               {source === "concept" && <span className={`${styles.badge} ${styles.badgeMuted}`}>Concept</span>}
             </div>
             <p style={{ fontSize:12, color:"#b8b0d4", lineHeight:1.5 }}>{formatDate(shift.date)} · {shift.start_time}–{shift.end_time}</p>
             <p style={{ fontSize:12, fontWeight:700, color:open > 0 ? "#ffb547" : "#00e5c3", marginTop:2 }}>{assigned.length}/{shift.max_tappers}{open > 0 ? ` · ${open} open` : ""}</p>
-            {shift.admin_note && <p style={{ fontSize:11, color:"#b8b0d4", marginTop:4, lineHeight:1.5 }}>📌 {shift.admin_note as string}</p>}
+            {shift.admin_note && <p style={{ fontSize:11, color:"#b8b0d4", marginTop:4, lineHeight:1.5 }}>{shift.admin_note as string}</p>}
             <div style={{ display:"flex", gap:4, marginTop:8, flexWrap:"wrap" }}>
               {assigned.map((a: any) => (
                 <div key={a.user_id} style={{ display:"flex", alignItems:"center", gap:4, background:"#221f38", borderRadius:20, padding:"3px 8px 3px 10px", border:"1px solid #2e2a4a" }}>
@@ -71,8 +71,12 @@ export function AdminShiftCard({ shift, source }: { shift: Shift & Record<string
             </div>
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:6, marginLeft:10 }}>
-            <button className={styles.iconBtn} aria-label="Bewerken" onClick={() => setEditingShiftId(shift.id)}>✏️</button>
-            <button className={`${styles.iconBtn} ${styles.iconBtnDanger}`} aria-label="Verwijderen" onClick={() => handleDeleteShift(shift.id, source)}>🗑</button>
+            <button className={styles.iconBtn} aria-label="Bewerken" onClick={() => setEditingShiftId(shift.id)}>
+              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button className={`${styles.iconBtn} ${styles.iconBtnDanger}`} aria-label="Verwijderen" onClick={() => handleDeleteShift(shift.id, source)}>
+              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+            </button>
           </div>
         </div>
       )}

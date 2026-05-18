@@ -91,7 +91,7 @@ export function RoosterTab() {
     setGenerating(true);
     const res = await fetch("/api/schedule", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ dateFrom, dateTo, defaultShifts }) });
     const data = await res.json();
-    if (data.error) { setGeneratorError("❌ " + data.error); setGenerating(false); return; }
+    if (data.error) { setGeneratorError(data.error); setGenerating(false); return; }
     if (data.data?.shifts) {
       setConceptShifts(data.data.shifts);
     } else {
@@ -111,13 +111,13 @@ export function RoosterTab() {
     const data = await res.json();
     if (res.ok) {
       const notified = data.data?.notified || 0;
-      setPublishResult({ ok: true, text: `🚀 Rooster gepubliceerd! ${notified} tapper${notified !== 1 ? "s" : ""} genotificeerd.` });
+      setPublishResult({ ok: true, text: `Rooster gepubliceerd! ${notified} tapper${notified !== 1 ? "s" : ""} genotificeerd.` });
       setTimeout(() => setPublishResult(null), 6000);
       setPublished(ps => [...ps, ...conceptShifts.map(s => ({ ...s, status: "published" as const }))]);
       setConceptShifts([]);
       setPublishMsg("");
     } else {
-      setPublishResult({ ok: false, text: `❌ Publiceren mislukt: ${data.error ?? "Probeer opnieuw."}` });
+      setPublishResult({ ok: false, text: `Publiceren mislukt: ${data.error ?? "Probeer opnieuw."}` });
     }
     setPublishing(false);
   }
@@ -205,7 +205,7 @@ export function RoosterTab() {
                       const allAssigned = conceptShifts.flatMap((s: any) => (s.assignments || [])).filter((a: any) => a.status !== "declined");
                       const uniqueTapperCount = new Set(allAssigned.map((a: any) => a.user_id)).size;
                       return uniqueTapperCount > 0 ? (
-                        <p style={{ fontSize:12, color:"#ffb547", marginBottom:8 }}>📬 {uniqueTapperCount} tapper{uniqueTapperCount !== 1 ? "s" : ""} {uniqueTapperCount !== 1 ? "ontvangen" : "ontvangt"} een e-mailnotificatie.</p>
+                        <p style={{ fontSize:12, color:"#ffb547", marginBottom:8 }}>{uniqueTapperCount} tapper{uniqueTapperCount !== 1 ? "s" : ""} {uniqueTapperCount !== 1 ? "ontvangen" : "ontvangt"} een e-mailnotificatie.</p>
                       ) : null;
                     })()}
                     <label className={styles.label}>Optioneel bericht aan tappers</label>
@@ -218,7 +218,7 @@ export function RoosterTab() {
                       style={{ resize:"none", marginBottom:10 }}
                     />
                     <button className={styles.btnPrimary} onClick={handlePublish} disabled={publishing}>
-                      {publishing ? "⏳ Publiceren..." : "🚀 Rooster publiceren"}
+                      {publishing ? "Publiceren..." : "Rooster publiceren"}
                     </button>
                   </>
                 )}
@@ -247,7 +247,7 @@ export function RoosterTab() {
                   {generatorError}
                 </div>
               )}
-              <button className={styles.btnSecondary} onClick={handleGenerate} disabled={generating}>{generating ? "⏳ Genereren..." : "🤖 Genereer conceptrooster"}</button>
+              <button className={styles.btnSecondary} onClick={handleGenerate} disabled={generating}>{generating ? "Genereren..." : "Genereer conceptrooster"}</button>
             </div>
 
             <p className={styles.sectionTitle}>Standaard tapavonden</p>

@@ -161,14 +161,18 @@ export default function RoosterClient({
     <div style={s.page}>
       {/* Toggle */}
       <div style={s.toggleRow}>
-        {(["cal","list"] as const).map(v => (
-          <button key={v} onClick={() => { setView(v); setSelectedShifts([]); }} style={{
+        {([
+          { id: "cal", label: "Kalender", icon: <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
+          { id: "list", label: "Lijst", icon: <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> },
+        ] as const).map(v => (
+          <button key={v.id} onClick={() => { setView(v.id); setSelectedShifts([]); }} style={{
             ...s.toggleBtn,
-            background: view===v ? "rgba(0,229,195,0.1)" : "#221f38",
-            color: view===v ? "#00e5c3" : "#a89ec8",
-            borderWidth:1, borderStyle:"solid", borderColor: view===v ? "#00e5c3" : "#2e2a4a",
+            background: view===v.id ? "rgba(0,229,195,0.1)" : "#221f38",
+            color: view===v.id ? "#00e5c3" : "#a89ec8",
+            borderWidth:1, borderStyle:"solid", borderColor: view===v.id ? "#00e5c3" : "#2e2a4a",
+            display:"flex", alignItems:"center", justifyContent:"center", gap:6,
           }}>
-            {v === "cal" ? "📅 Kalender" : "📋 Lijst"}
+            {v.icon}{v.label}
           </button>
         ))}
       </div>
@@ -309,7 +313,7 @@ export default function RoosterClient({
                         </div>
                         <p style={{ fontSize:13, color:"#a89ec8" }}>{formatDate(shift.date)} · {formatTime(shift.start_time)}–{formatTime(shift.end_time)}</p>
                         <p style={{ fontSize:11, color: accentColor, marginTop:2 }}>{assigned.length}/{totalSpots} tappers</p>
-                        {shift.admin_note && <p style={{ fontSize:11, color:"#a89ec8", marginTop:4 }}>📌 {shift.admin_note}</p>}
+                        {shift.admin_note && <p style={{ fontSize:11, color:"#a89ec8", marginTop:4 }}>{shift.admin_note}</p>}
                       </div>
                       <button onClick={() => setSelectedShifts([])} style={s.closeBtn} aria-label="Sluiten">✕</button>
                     </div>
@@ -338,15 +342,17 @@ export default function RoosterClient({
                     <div style={{ display:"flex", gap:8 }}>
                       {claimable && !declined && (
                         <button className={sharedStyles.btnPrimaryCompact} style={{ flex:1 }} disabled={loading===shift.id} onClick={() => setClaimModal(shift)}>
-                          {loading===shift.id ? "..." : "✅ Inschrijven"}
+                          {loading===shift.id ? "..." : "Inschrijven"}
                         </button>
                       )}
                       {mine && !declined && (
                         <button style={{ ...s.declineBtn, flex:1, opacity: loading===shift.id ? 0.5 : 1 }} disabled={loading===shift.id} onClick={() => handleDecline(shift.id)}>
-                          {loading===shift.id ? "..." : "🔴 Afmelden"}
+                          {loading===shift.id ? "..." : "Afmelden"}
                         </button>
                       )}
-                      <a href={`/api/shifts/${shift.id}/ical`} aria-label="Exporteer naar agenda" style={{ ...s.icalBtn, flex: claimable || mine ? 0 : 1, textDecoration:"none" }}>📅</a>
+                      <a href={`/api/shifts/${shift.id}/ical`} aria-label="Exporteer naar agenda" style={{ ...s.icalBtn, flex: claimable || mine ? 0 : 1, textDecoration:"none", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      </a>
                     </div>
                   </div>
                 );
@@ -359,13 +365,15 @@ export default function RoosterClient({
         <>
           <input
             className={sharedStyles.input}
-            placeholder="🔍 Zoek op naam of datum..."
+            placeholder="Zoek op naam of datum..."
             value={listSearch}
             onChange={e => setListSearch(e.target.value)}
           />
           {monthShifts.length === 0 ? (
             <div style={{ textAlign:"center", padding:"40px 20px", background:"#1a1730", borderRadius:16, border:"1px solid #2e2a4a" }}>
-              <div style={{ fontSize:40, marginBottom:12 }}>📅</div>
+              <div style={{ display:"flex", justifyContent:"center", marginBottom:12 }}>
+                <svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#2e2a4a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              </div>
               <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff", margin:0 }}>Geen diensten</p>
               <p style={{ fontSize:12, color:"#a89ec8", marginTop:4 }}>Er zijn geen diensten gepland voor deze maand.</p>
             </div>
@@ -412,7 +420,9 @@ export default function RoosterClient({
                   </div>
                   <div style={{ textAlign:"right", display:"flex", flexDirection:"column", gap:6, alignItems:"flex-end" }}>
                     <p style={{ fontSize:11, color: accentColor }}>{assigned}/{shift.max_tappers}{assigned >= shift.max_tappers && <span style={{ marginLeft:5, fontSize:10, fontWeight:700, color:"#00e5c3", background:"rgba(0,229,195,0.12)", padding:"1px 6px", borderRadius:10 }}>VOL</span>}</p>
-                    <a href={`/api/shifts/${shift.id}/ical`} aria-label="Exporteer naar agenda" style={{ ...s.icalBtnSm, textDecoration:"none" }}>📅</a>
+                    <a href={`/api/shifts/${shift.id}/ical`} aria-label="Exporteer naar agenda" style={{ ...s.icalBtnSm, textDecoration:"none", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    </a>
                     {canClaim(shift) && <button style={s.claimBtnSm} onClick={() => setClaimModal(shift)}>Inschrijven</button>}
                     {mine && <button style={s.declineBtnSm} onClick={() => handleDecline(shift.id)}>Afmelden</button>}
                   </div>
@@ -461,7 +471,7 @@ export default function RoosterClient({
               Je ontvangt een bevestiging per e-mail en herinneringen 2 weken en 1 week van tevoren.
             </p>
             <button className={sharedStyles.btnPrimary} disabled={loading===claimModal.id} onClick={() => handleClaim(claimModal)}>
-              {loading===claimModal.id ? "Bezig..." : "✅ Ja, ik schrijf me in!"}
+              {loading===claimModal.id ? "Bezig..." : "Ja, ik schrijf me in!"}
             </button>
             <button className={sharedStyles.btnSecondary} style={{ marginTop:8 }} onClick={() => setClaimModal(null)}>Annuleren</button>
           </div>
