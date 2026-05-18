@@ -85,7 +85,7 @@ export default async function DashboardPage() {
 
   const { data: adminMessages } = await supabase
     .from("admin_messages").select("*, sender:profiles!created_by(full_name)")
-    .order("created_at", { ascending: false }).limit(1);
+    .order("created_at", { ascending: false }).limit(5);
 
   return (
     <DashboardClient

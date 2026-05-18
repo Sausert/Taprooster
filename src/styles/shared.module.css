@@ -48,8 +48,10 @@
   box-shadow: 0 4px 20px rgba(0,229,195,0.25);
   transition: box-shadow 0.15s ease, opacity 0.15s ease;
 }
-.btnPrimary:hover:not(:disabled) {
-  box-shadow: 0 6px 28px rgba(0,229,195,0.40);
+@media (hover: hover) {
+  .btnPrimary:hover:not(:disabled) {
+    box-shadow: 0 6px 28px rgba(0,229,195,0.40);
+  }
 }
 .btnPrimary:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -72,8 +74,10 @@
   transition: box-shadow 0.15s ease, opacity 0.15s ease;
   flex-shrink: 0;
 }
-.btnPrimaryCompact:hover:not(:disabled) {
-  box-shadow: 0 6px 28px rgba(0,229,195,0.40);
+@media (hover: hover) {
+  .btnPrimaryCompact:hover:not(:disabled) {
+    box-shadow: 0 6px 28px rgba(0,229,195,0.40);
+  }
 }
 .btnPrimaryCompact:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -95,9 +99,11 @@
   text-decoration: none;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
-.btnSecondary:hover:not(:disabled) {
-  background: #2e2a4a;
-  border-color: #5a4a9e;
+@media (hover: hover) {
+  .btnSecondary:hover:not(:disabled) {
+    background: #2e2a4a;
+    border-color: #5a4a9e;
+  }
 }
 .btnSecondary:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -207,8 +213,10 @@
 .calDay {
   transition: filter 0.12s ease;
 }
-.calDay:hover {
-  filter: brightness(1.18);
+@media (hover: hover) {
+  .calDay:hover {
+    filter: brightness(1.18);
+  }
 }
 
 /* Chip / toggle pill */
@@ -226,7 +234,6 @@
   user-select: none;
   transition: border-color 0.15s ease, color 0.15s ease;
 }
-.chip:hover { border-color: #5a4a9e; color: #c4b5fd; }
 .chipActive      { background: rgba(0,229,195,0.1);  border-color: #00e5c3; color: #00e5c3; }
 .chipUnavailable { background: rgba(255,79,109,0.1); border-color: #ff4f6d; color: #ff4f6d; }
 
@@ -246,10 +253,14 @@
   flex-shrink: 0;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
-.iconBtn:hover { background: #2e2a4a; border-color: #5a4a9e; }
+@media (hover: hover) {
+  .iconBtn:hover { background: #2e2a4a; border-color: #5a4a9e; }
+}
 
 .iconBtnDanger { color: #ff4f6d; }
-.iconBtnDanger:hover { background: rgba(255,79,109,0.1); border-color: #ff4f6d; }
+@media (hover: hover) {
+  .iconBtnDanger:hover { background: rgba(255,79,109,0.1); border-color: #ff4f6d; }
+}
 
 /* Tapper remove pill (× button inside name chip) */
 .removePill {
@@ -270,7 +281,9 @@
   flex-shrink: 0;
   transition: color 0.15s ease, background 0.15s ease;
 }
-.removePill:hover { color: #ff2244; background: rgba(255,79,109,0.15); }
+@media (hover: hover) {
+  .removePill:hover { color: #ff2244; background: rgba(255,79,109,0.15); }
+}
 
 /* Month navigation arrows */
 .navMonthBtn {
@@ -290,7 +303,9 @@
   flex-shrink: 0;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
 }
-.navMonthBtn:hover { background: #2e2a4a; border-color: #5a4a9e; color: #f0eeff; }
+@media (hover: hover) {
+  .navMonthBtn:hover { background: #2e2a4a; border-color: #5a4a9e; color: #f0eeff; }
+}
 .navMonthBtn:active { transform: scale(0.92); }
 
 /* Action-initiating section header (distinct from informational sectionTitle) */

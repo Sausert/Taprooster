@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useAdminShell } from "../AdminShellContext";
 import { AdminShiftCard } from "../components/AdminShiftCard";
 import { AddTapperModal } from "../components/AddTapperModal";
@@ -52,7 +52,7 @@ export function RoosterTab() {
   const [defaultShifts, setDefaultShifts] = useState<Record<DayKey, DayConfig>>({
     monday:    { enabled: false, start: "19:00", end: "23:00" },
     tuesday:   { enabled: false, start: "19:00", end: "23:00" },
-    wednesday: { enabled: true,  start: "19:00", end: "23:00" },
+    wednesday: { enabled: true,  start: "20:00", end: "00:00" },
     thursday:  { enabled: false, start: "19:00", end: "23:00" },
     friday:    { enabled: true,  start: "20:00", end: "00:00" },
     saturday:  { enabled: true,  start: "20:00", end: "00:00" },
@@ -122,16 +122,45 @@ export function RoosterTab() {
     setPublishing(false);
   }
 
+  const ROSTER_TABS: { id: "published" | "concept" | "events"; label: string; icon: React.ReactNode }[] = [
+    {
+      id: "published",
+      label: "Gepubliceerd",
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+          <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+        </svg>
+      ),
+    },
+    {
+      id: "concept",
+      label: "Concept",
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+      ),
+    },
+    {
+      id: "events",
+      label: "Events",
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+      ),
+    },
+  ];
+
   return (
     <>
       <div style={{ display:"flex", gap:8, marginBottom:16 }}>
-        {([
-          { id: "published", label: "📋 Gepubliceerd" },
-          { id: "concept",   label: "🗒 Concept" },
-          { id: "events",    label: "🎉 Events" },
-        ] as const).map(v => (
-          <button key={v.id} onClick={() => setRosterView(v.id)} style={{ flex:1, padding:"10px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:12, cursor:"pointer", background:rosterView === v.id ? "rgba(0,229,195,0.1)" : "#221f38", color:rosterView === v.id ? "#00e5c3" : "#8b80b0", borderWidth:1, borderStyle:"solid", borderColor:rosterView === v.id ? "#00e5c3" : "#2e2a4a" }}>
-            {v.label}
+        {ROSTER_TABS.map(v => (
+          <button key={v.id} onClick={() => setRosterView(v.id)} style={{ flex:1, padding:"10px 6px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer", background:rosterView === v.id ? "rgba(0,229,195,0.1)" : "#221f38", color:rosterView === v.id ? "#00e5c3" : "#8b80b0", borderWidth:1, borderStyle:"solid", borderColor:rosterView === v.id ? "#00e5c3" : "#2e2a4a", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+            {v.icon}{v.label}
           </button>
         ))}
       </div>

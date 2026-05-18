@@ -12,7 +12,7 @@ export async function GET() {
     .from("admin_messages")
     .select("*")
     .order("created_at", { ascending: false })
-    .limit(3);
+    .limit(5);
 
   if (error) return NextResponse.json({ error: "Berichten ophalen mislukt" }, { status: 500 });
   return NextResponse.json({ data: messages });

@@ -23,6 +23,8 @@ export interface Profile {
   id: string;
   email: string;
   full_name: string;
+  first_name?: string;
+  last_name?: string;
   role: UserRole;
   preferred_frequency: number; // 1-100 per year
   preferred_days: ("wednesday" | "friday" | "saturday")[];

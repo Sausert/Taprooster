@@ -9,6 +9,46 @@ import sharedStyles from "@/styles/shared.module.css";
 
 const MEDALS = ["🥇","🥈","🥉"];
 const MONTH_NAMES = ["Jan","Feb","Mrt","Apr","Mei","Jun","Jul","Aug","Sep","Okt","Nov","Dec"];
+const MONTH_NAMES_FULL = ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December"];
+
+// SVG icons for notifications
+const NotifCalendarIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="3" y="4" width="18" height="18" rx="2"/>
+    <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+  </svg>
+);
+const NotifClockIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+  </svg>
+);
+const NotifOpenIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 019.9-1"/>
+  </svg>
+);
+const NotifMessageIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M3 11l18-5v12L3 13M11.6 16.8a3 3 0 11-5.8-1.6"/>
+  </svg>
+);
+
+function getNotifIcon(type: string) {
+  if (type === "roster_published" || type === "shift_assigned") return <NotifCalendarIcon />;
+  if (type.includes("reminder")) return <NotifClockIcon />;
+  if (type === "open_shift" || type === "shift_cancelled") return <NotifOpenIcon />;
+  return <NotifMessageIcon />;
+}
+
+function stripLeadingEmoji(s: string): string {
+  return s.replace(/^[\p{Emoji_Presentation}\p{Emoji}️]\s*/gu, "").trimStart();
+}
+
+function getNotifSortDate(n: Notification): Date {
+  const shiftDate = (n as any).shift?.date;
+  return shiftDate ? new Date(shiftDate + "T00:00:00") : new Date(n.created_at);
+}
 
 export default function AccountClient({ profile: initialProfile, leaderboard, notifications: initialNotifs }: { profile: Profile; leaderboard: any[]; notifications: Notification[]; }) {
   const router = useRouter();
@@ -25,6 +65,12 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
   const [savingProfile, setSavingProfile] = useState(false);
   const [savedProfile, setSavedProfile] = useState(false);
 
+  const [firstName, setFirstName] = useState(
+    profile.first_name || profile.full_name?.split(" ")[0] || ""
+  );
+  const [lastName, setLastName] = useState(
+    profile.last_name || (profile.full_name?.includes(" ") ? profile.full_name.split(" ").slice(1).join(" ") : "")
+  );
   const [phone, setPhone] = useState(profile.phone || "");
   const [email, setEmail] = useState(profile.email || "");
 
@@ -35,8 +81,15 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
   async function handleSavePersonal(e: React.FormEvent) {
     e.preventDefault();
     setSavingProfile(true);
-    await supabase.from("profiles").update({ phone, email }).eq("id", profile.id);
-    setProfile(p => ({ ...p, email, phone }));
+    const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
+    await supabase.from("profiles").update({
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      full_name: fullName,
+      phone,
+      email,
+    }).eq("id", profile.id);
+    setProfile(p => ({ ...p, first_name: firstName.trim(), last_name: lastName.trim(), full_name: fullName, email, phone }));
     setSavingProfile(false);
     setSavedProfile(true);
     setTimeout(() => setSavedProfile(false), 2000);
@@ -114,15 +167,40 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
     { id: "notif", label: "Notificaties" },
   ];
 
+  const displayName = profile.first_name && profile.last_name
+    ? `${profile.first_name} ${profile.last_name}`
+    : profile.full_name || "";
+  const avatarInitials = [
+    (profile.first_name || profile.full_name?.split(" ")[0] || "?")[0],
+    (profile.last_name || profile.full_name?.split(" ")[1] || "")[0],
+  ].filter(Boolean).join("").slice(0, 2).toUpperCase() || "?";
+
+  // Group notifications by month
+  function groupNotifsByMonth(ns: Notification[]): { label: string; items: Notification[] }[] {
+    const sorted = [...ns].sort((a, b) => {
+      return getNotifSortDate(b).getTime() - getNotifSortDate(a).getTime();
+    });
+    const groups: { label: string; items: Notification[] }[] = [];
+    const seen = new Map<string, Notification[]>();
+    for (const n of sorted) {
+      const d = getNotifSortDate(n);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      const label = `${MONTH_NAMES_FULL[d.getMonth()]} ${d.getFullYear()}`;
+      if (!seen.has(key)) { seen.set(key, []); groups.push({ label, items: seen.get(key)! }); }
+      seen.get(key)!.push(n);
+    }
+    return groups;
+  }
+
   return (
     <div style={s.page}>
       {/* Header */}
       <div style={s.profileHeader}>
         <div style={{ ...s.avatar, flexShrink:0 }}>
-          {(profile.full_name || "?").split(" ").map(n => n[0]).join("").slice(0,2)}
+          {avatarInitials}
         </div>
         <div style={{ flex:1, minWidth:0 }}>
-          <p style={s.name}>{profile.full_name}</p>
+          <p style={s.name}>{displayName}</p>
           <p style={s.emailTxt}>{profile.email}</p>
           {profile.role === "admin" && <span className={`${sharedStyles.badge} ${sharedStyles.badgeMint}`} style={{ marginTop:6, display:"inline-block" }}>⚡ Admin</span>}
         </div>
@@ -145,21 +223,33 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
       {/* ── PROFIEL ── */}
       {tab === "profiel" && (
         <>
-          {savedProfile && <div style={s.savedBanner}>✅ Gegevens opgeslagen!</div>}
+          {savedProfile && <div style={s.savedBanner}>Gegevens opgeslagen!</div>}
           <p className={sharedStyles.sectionTitle}>Persoonlijke gegevens</p>
           <form onSubmit={handleSavePersonal}>
             <div className={sharedStyles.card}>
-              <div style={{ background:"#221f38", borderRadius:10, padding:"10px 14px", marginBottom:12 }}>
-                <p style={{ fontSize:11, color:"#a89ec8", marginBottom:4, textTransform:"uppercase", letterSpacing:1, fontWeight:700 }}>Naam</p>
-                <p style={{ fontSize:15, color:"#e8e0ff", fontWeight:600 }}>{profile.full_name}</p>
-                <p style={{ fontSize:11, color:"#a89ec8", marginTop:4 }}>Naam aanpassen? Vraag een admin.</p>
-              </div>
+              <label className={sharedStyles.label}>Voornaam</label>
+              <input
+                className={sharedStyles.input}
+                type="text"
+                value={firstName}
+                onChange={e => setFirstName(e.target.value)}
+                placeholder="Voornaam"
+                required
+              />
+              <label className={sharedStyles.label}>Achternaam</label>
+              <input
+                className={sharedStyles.input}
+                type="text"
+                value={lastName}
+                onChange={e => setLastName(e.target.value)}
+                placeholder="Achternaam"
+              />
               <label className={sharedStyles.label}>E-mailadres</label>
               <input className={sharedStyles.input} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="jij@email.nl" required />
               <label className={sharedStyles.label}>Telefoonnummer</label>
               <input className={sharedStyles.input} type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+31 6 12345678" />
               <button className={sharedStyles.btnPrimary} type="submit" disabled={savingProfile}>
-                {savingProfile ? "Opslaan..." : "💾 Gegevens opslaan"}
+                {savingProfile ? "Opslaan..." : "Gegevens opslaan"}
               </button>
             </div>
           </form>
@@ -171,7 +261,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
       {/* ── VOORKEUREN ── */}
       {tab === "voorkeuren" && (
         <>
-          {saved && <div style={s.savedBanner}>✅ Voorkeuren opgeslagen!</div>}
+          {saved && <div style={s.savedBanner}>Voorkeuren opgeslagen!</div>}
 
           <p className={sharedStyles.sectionTitle}>Tapfrequentie</p>
           <div className={sharedStyles.card}>
@@ -207,10 +297,10 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
           <p className={sharedStyles.sectionTitle}>Ik doe ook mee met</p>
           <div className={sharedStyles.card}>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-              {[["tapper","🍺 Tappen"],["bonnenkassa","Bonnenkassa 🎟"]].map(([v,l]) => (
+              {[["tapper","Tappen"],["bonnenkassa","Bonnenkassa"]].map(([v,l]) => (
                 <button type="button" key={v} className={`${sharedStyles.chip}${profile.preferred_roles.includes(v as any) ? ` ${sharedStyles.chipActive}` : ""}`} style={{ flex:1, textAlign:"center" }} onClick={() => toggleRole(v)}>{l}</button>
               ))}
-              <button type="button" className={`${sharedStyles.chip}${profile.wants_parties ? ` ${sharedStyles.chipActive}` : ""}`} style={{ flex:1, textAlign:"center" }} onClick={() => setProfile(p => ({ ...p, wants_parties: !p.wants_parties }))}>🎉 Feestjes</button>
+              <button type="button" className={`${sharedStyles.chip}${profile.wants_parties ? ` ${sharedStyles.chipActive}` : ""}`} style={{ flex:1, textAlign:"center" }} onClick={() => setProfile(p => ({ ...p, wants_parties: !p.wants_parties }))}>Feestjes</button>
             </div>
           </div>
 
@@ -237,7 +327,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
           </div>
 
           <button className={sharedStyles.btnPrimary} onClick={handleSavePreferences} disabled={saving}>
-            {saving ? "Opslaan..." : "💾 Voorkeuren opslaan"}
+            {saving ? "Opslaan..." : "Voorkeuren opslaan"}
           </button>
         </>
       )}
@@ -268,7 +358,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
             <div style={s.progressWrap}><div style={{ ...s.progressFill, width:`${tapsPctAnimated}%` }} /></div>
           </div>
 
-          <p className={sharedStyles.sectionTitle}>🏆 Leaderboard</p>
+          <p className={sharedStyles.sectionTitle}>Leaderboard</p>
           <div className={sharedStyles.card}>
             {leaderboard.map((lb) => {
               const rankBg = lb.rank===1 ? "rgba(255,215,0,0.07)" : lb.rank===2 ? "rgba(192,192,192,0.07)" : lb.rank===3 ? "rgba(205,127,50,0.07)" : lb.id===profile.id ? "rgba(0,229,195,0.06)" : "transparent";
@@ -295,25 +385,14 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
           {unreadNotifCount > 0 && (
             <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:8 }}>
               <button onClick={markAllRead} style={{ padding:"5px 14px", borderRadius:20, background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"'Exo 2',sans-serif" }}>
-                ✓ Alles gelezen
+                Alles gelezen
               </button>
             </div>
           )}
           {notifs.length === 0 ? (
             <div style={{ textAlign:"center", padding:"40px 0", color:"#a89ec8" }}>Geen notificaties.</div>
           ) : (() => {
-            // Sort: shift-related first by shift date asc; admin_message by created_at desc at the end
-            const shiftNotifs = [...notifs]
-              .filter(n => n.type !== "admin_message")
-              .sort((a, b) => {
-                const da = (a as any).shift?.date || a.created_at;
-                const db = (b as any).shift?.date || b.created_at;
-                return da < db ? -1 : da > db ? 1 : 0;
-              });
-            const msgNotifs = notifs.filter(n => n.type === "admin_message");
-            const groups: { label: string; items: typeof notifs }[] = [];
-            if (shiftNotifs.length > 0) groups.push({ label:"Diensten", items:shiftNotifs });
-            if (msgNotifs.length > 0) groups.push({ label:"Berichten", items:msgNotifs });
+            const groups = groupNotifsByMonth(notifs);
             return groups.map(group => (
               <div key={group.label}>
                 <p style={{ fontSize:10, fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase", color:"#a89ec8", margin:"12px 0 6px" }}>{group.label}</p>
@@ -321,15 +400,16 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
                   const notifHref = n.type === "admin_message" ? "/dashboard" : "/rooster";
                   const shiftDate = (n as any).shift?.date;
                   const shiftTime = (n as any).shift?.start_time;
+                  const isActive = n.type.includes("open") || n.type.includes("reminder");
                   return (
-                  <div key={n.id} className={sharedStyles.card} style={{ opacity:n.read?0.72:1, borderLeft:`4px solid ${n.read ? "#2e2a4a" : n.type.includes("open")||n.type.includes("reminder") ? "#ffb547" : "#00e5c3"}`, cursor:"pointer" }}
+                  <div key={n.id} className={sharedStyles.card} style={{ opacity:n.read?0.72:1, borderLeft:`4px solid ${n.read ? "#2e2a4a" : isActive ? "#ffb547" : "#00e5c3"}`, cursor:"pointer" }}
                     onClick={() => { markRead(n.id); router.push(notifHref); }}>
                     <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
-                      <div style={{ width:36, height:36, borderRadius:10, flexShrink:0, background:n.read ? "rgba(255,255,255,0.03)" : "rgba(0,229,195,0.08)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>
-                        {n.type==="roster_published"?"📅":n.type.includes("reminder")?"⏰":n.type==="open_shift"?"🔓":"📢"}
+                      <div style={{ width:36, height:36, borderRadius:10, flexShrink:0, background:n.read ? "rgba(255,255,255,0.03)" : "rgba(0,229,195,0.08)", display:"flex", alignItems:"center", justifyContent:"center", color: n.read ? "#a89ec8" : isActive ? "#ffb547" : "#00e5c3" }}>
+                        {getNotifIcon(n.type)}
                       </div>
                       <div style={{ flex:1 }}>
-                        <p style={{ fontSize:13, fontWeight:700, color: n.read ? "#a89ec8" : "#f0eeff" }}>{n.title}</p>
+                        <p style={{ fontSize:13, fontWeight:700, color: n.read ? "#a89ec8" : "#f0eeff" }}>{stripLeadingEmoji(n.title)}</p>
                         <p style={{ fontSize:12, color:"#a89ec8", marginTop:2, lineHeight:1.4 }}>{n.message}</p>
                         <p style={{ fontSize:11, color:"#a89ec8", marginTop:6 }}>
                           {shiftDate

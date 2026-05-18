@@ -45,6 +45,18 @@ function getAgendaLink(shift: Shift): { url: string; type: "ical" | "google" } {
   return { url: `/api/shifts/${shift.id}/ical`, type: "ical" };
 }
 
+const CheckIcon = ({ size = 12 }: { size?: number }) => (
+  <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 16 4 11"/>
+  </svg>
+);
+
+const MegaphoneIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b8b0d4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M3 11l18-5v12L3 13M11.6 16.8a3 3 0 11-5.8-1.6"/>
+  </svg>
+);
+
 export default function DashboardClient({
   profile, myUpcoming, claimableShifts, tapsThisYear, incomingPlanned, myRank, adminMessages,
 }: Props) {
@@ -58,15 +70,12 @@ export default function DashboardClient({
   const [claimModal, setClaimModal] = useState<ClaimableShift | null>(null);
   const [declineModal, setDeclineModal] = useState<ShiftAssignment | null>(null);
   const [heroIndex, setHeroIndex] = useState(0);
+  const [msgIndex, setMsgIndex] = useState(0);
   const [confirmedIds, setConfirmedIds] = useState<string[]>(
     myUpcoming.filter(a => a.status === "confirmed").map(a => a.shift_id)
   );
   const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
   const { loading, error: fetchError, setError: setFetchError, shiftAction } = useShiftApi();
-  const [dismissedMessages, setDismissedMessages] = useState<Set<string>>(() => {
-    if (typeof window === "undefined") return new Set();
-    try { return new Set(JSON.parse(localStorage.getItem("dismissedMessages") || "[]")); } catch { return new Set(); }
-  });
 
   // Month navigation for mijn diensten
   const [myMonth, setMyMonth] = useState(() => {
@@ -101,7 +110,7 @@ export default function DashboardClient({
     if (openMonth === 11) { setOpenMonth(0); setOpenYear(y => y + 1); } else setOpenMonth(m => m + 1);
   }
 
-  const firstName = profile?.full_name?.split(" ")[0] || "Tapper";
+  const firstName = profile?.first_name || profile?.full_name?.split(" ")[0] || "Tapper";
   const target = (profile?.preferred_frequency || 4) * 4;
   const pct = Math.min(100, Math.round((tapsThisYear / Math.max(target, 1)) * 100));
 
@@ -131,15 +140,7 @@ export default function DashboardClient({
   const heroWeekday = heroDate ? heroDate.toLocaleDateString("nl-NL", { weekday:"long" }) : "";
   const isCurrentYear = heroDate ? heroDate.getFullYear() === new Date().getFullYear() : true;
   const heroDateLong = heroDate ? heroDate.toLocaleDateString("nl-NL", isCurrentYear ? { day:"numeric", month:"long" } : { day:"numeric", month:"long", year:"numeric" }) : "";
-  const heroProgressPct = daysUntilNext !== null ? Math.min(100, Math.max(0, Math.round((1 - Math.min(daysUntilNext, 7) / 7) * 100))) : 0;
-  const heroFilledDots = daysUntilNext !== null ? Math.min(7, Math.max(0, 7 - daysUntilNext)) : 0;
   const heroIsConfirmed = nextAssignment ? confirmedIds.includes(nextAssignment.shift_id) || nextAssignment.status === "confirmed" : false;
-
-  const [heroPctAnim, setHeroPctAnim] = useState(0);
-  useEffect(() => {
-    const t = setTimeout(() => setHeroPctAnim(heroProgressPct), 80);
-    return () => clearTimeout(t);
-  }, [heroProgressPct]);
 
   const filteredUpcoming = upcoming.filter(a => {
     if (!a.shift?.date) return false;
@@ -152,7 +153,7 @@ export default function DashboardClient({
     return d.getMonth() === openMonth && d.getFullYear() === openYear;
   });
 
-  const visibleMessages = adminMessages.filter(m => !dismissedMessages.has(m.id));
+  const currentMsg = adminMessages[msgIndex] ?? null;
 
   async function handleConfirm(shiftId: string) {
     setConfirmedIds(p => [...p, shiftId]);
@@ -227,7 +228,7 @@ export default function DashboardClient({
       )}
       {claimSuccess && (
         <div className={sharedStyles.bannerIn} style={{background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", borderRadius:12, padding:"10px 14px", fontSize:13, color:"#00e5c3", fontWeight:700, marginBottom:14, display:"flex", alignItems:"center", gap:8}}>
-          ✅ Ingeschreven voor {claimSuccess}!
+          <CheckIcon size={14} /> Ingeschreven voor {claimSuccess}!
         </div>
       )}
 
@@ -240,23 +241,10 @@ export default function DashboardClient({
         </h1>
       </div>
 
-      {/* Next shift hero — Optie 5: Minimal + Progress */}
+      {/* Mijn diensten hero */}
+      <p className={sharedStyles.sectionTitle}>Mijn diensten</p>
       {nextShift ? (
         <div style={{ ...s.heroCard, ...(daysUntilNext === 0 ? { boxShadow:"0 4px 32px rgba(0,229,195,.25), 0 4px 24px rgba(0,0,0,.3)", border:"1px solid rgba(0,229,195,.4)" } : {}) }}>
-          {/* Top urgency bar: fills left→right as shift approaches (7-day window) */}
-          {heroProgressPct > 0 && (
-            <div
-              role="progressbar"
-              aria-label="Tijd tot dienst"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={heroProgressPct}
-              style={s.heroProgressWrap}
-            >
-              <div style={{ ...s.heroProgressFill, width:`${heroPctAnim}%` }}/>
-              <div style={{ flex:1, background:"#2e2a4a" }}/>
-            </div>
-          )}
           <div key={heroIndex} className={sharedStyles.fadeIn} style={{ padding:"16px" }}>
             {/* Row 1: date + badge or multi-shift nav */}
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
@@ -291,13 +279,15 @@ export default function DashboardClient({
             {/* Confirmed or confirm box */}
             {heroIsConfirmed ? (
               <div style={{ display:"flex", gap:8 }}>
-                <span style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"9px", borderRadius:10, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:11, fontWeight:700, fontFamily:"'Exo 2',sans-serif" }}>✅ Bevestigd</span>
+                <span style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"11px", borderRadius:10, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:12, fontWeight:700, fontFamily:"'Exo 2',sans-serif" }}>
+                  <CheckIcon size={13} /> Bevestigd
+                </span>
                 <a
                   href={`/api/shifts/${nextShift.id}/ical`}
-                  style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"9px", borderRadius:10, background:"#221f38", border:"1px solid #2e2a4a", color:"#a89ec8", fontSize:11, fontWeight:700, fontFamily:"'Exo 2',sans-serif", textDecoration:"none" }}
+                  style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"11px", borderRadius:10, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:12, fontWeight:700, fontFamily:"'Exo 2',sans-serif", textDecoration:"none" }}
                   onClick={(e) => { if (typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent)) { e.preventDefault(); handleAgenda(nextShift); } }}
                 >
-                  <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                   Zet in agenda
                 </a>
               </div>
@@ -308,22 +298,10 @@ export default function DashboardClient({
                   <span style={{ fontSize:12, color:"#a89ec8" }}>Ben jij erbij?</span>
                 </div>
                 <div style={{ display:"flex", gap:6 }}>
-                  <button style={{ ...s.heroYes, opacity: loading===nextAssignment.shift_id ? 0.5 : 1 }} disabled={loading===nextAssignment.shift_id} onClick={() => handleConfirm(nextAssignment.shift_id)}>✅ Bevestigen</button>
+                  <button style={{ ...s.heroYes, opacity: loading===nextAssignment.shift_id ? 0.5 : 1 }} disabled={loading===nextAssignment.shift_id} onClick={() => handleConfirm(nextAssignment.shift_id)}>
+                    <CheckIcon size={12} /> Bevestigen
+                  </button>
                   <button style={s.heroNo} onClick={() => setDeclineModal(nextAssignment)}>Afmelden</button>
-                </div>
-              </div>
-            )}
-            {/* Dot countdown — fills right-to-left as shift approaches */}
-            {daysUntilNext !== null && daysUntilNext >= 0 && (
-              <div style={{ marginTop:12, paddingTop:12, borderTop:"1px solid #2e2a4a", display:"flex", justifyContent:"flex-end" }}>
-                <div
-                  role="img"
-                  aria-label={`${heroFilledDots} van 7 dagen verstreken`}
-                  style={{ display:"flex", gap:5 }}
-                >
-                  {Array.from({ length:7 }).map((_,i) => (
-                    <div key={i} aria-hidden={true} style={{ width:6, height:6, borderRadius:"50%", background: i >= Math.max(0, 7 - heroFilledDots) ? "#00e5c3" : "#2e2a4a", transition:"background-color 0.4s ease" }}/>
-                  ))}
                 </div>
               </div>
             )}
@@ -344,29 +322,32 @@ export default function DashboardClient({
       )}
 
       {/* Admin berichten */}
-      {visibleMessages.length > 0 && (
+      {adminMessages.length > 0 && (
         <>
-          <p className={sharedStyles.sectionTitle}>Berichten van admin</p>
-          {visibleMessages.map((msg) => {
-            const senderName = msg.sender?.full_name?.split(" ")[0] || "Admin";
-            return (
-              <div key={msg.id} className={sharedStyles.card}>
-                <div style={{ display:"flex", gap:10 }}>
-                  <span style={{ fontSize:20 }}>📢</span>
-                  <div style={{ flex:1 }}>
-                    <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", marginBottom:2 }}>{msg.title}</p>
-                    <p style={{ fontSize:11, color:"#a89ec8", marginBottom:6 }}>van {senderName} · {new Date(msg.created_at).toLocaleString("nl-NL", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })}</p>
-                    <p style={{ fontSize:12, color:"#b8b0d4", lineHeight:1.5 }}>{msg.body}</p>
-                  </div>
-                  <button onClick={() => {
-                    const next = new Set([...dismissedMessages, msg.id]);
-                    setDismissedMessages(next);
-                    try { localStorage.setItem("dismissedMessages", JSON.stringify([...next])); } catch {}
-                  }} style={{ background:"none", border:"none", color:"#a89ec8", fontSize:16, cursor:"pointer", padding:"0 4px", flexShrink:0, alignSelf:"flex-start", lineHeight:1 }} aria-label="Sluiten">✕</button>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", margin:"20px 0 8px" }}>
+            <p className={sharedStyles.sectionTitle} style={{ margin:0 }}>Berichten van admin</p>
+            {adminMessages.length > 1 && (
+              <div style={{ display:"flex", gap:4, alignItems:"center" }}>
+                <button aria-label="Vorig bericht" onClick={() => setMsgIndex(i => Math.max(0, i - 1))} style={{ ...s.navArrowSm, opacity: msgIndex === 0 ? 0.35 : 1 }}>‹</button>
+                <span style={{ fontSize:10, color:"#a89ec8", fontFamily:"monospace" }}>{msgIndex + 1}/{adminMessages.length}</span>
+                <button aria-label="Volgend bericht" onClick={() => setMsgIndex(i => Math.min(adminMessages.length - 1, i + 1))} style={{ ...s.navArrowSm, opacity: msgIndex === adminMessages.length - 1 ? 0.35 : 1 }}>›</button>
+              </div>
+            )}
+          </div>
+          {currentMsg && (
+            <div className={sharedStyles.card}>
+              <div style={{ display:"flex", gap:10 }}>
+                <div style={{ paddingTop:2, flexShrink:0 }}><MegaphoneIcon /></div>
+                <div style={{ flex:1 }}>
+                  <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", marginBottom:2 }}>{currentMsg.title}</p>
+                  <p style={{ fontSize:11, color:"#a89ec8", marginBottom:6 }}>
+                    van {currentMsg.sender?.full_name?.split(" ")[0] || "Admin"} · {new Date(currentMsg.created_at).toLocaleString("nl-NL", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })}
+                  </p>
+                  <p style={{ fontSize:12, color:"#b8b0d4", lineHeight:1.5 }}>{currentMsg.body}</p>
                 </div>
               </div>
-            );
-          })}
+            </div>
+          )}
         </>
       )}
 
@@ -397,13 +378,13 @@ export default function DashboardClient({
         )}
       </div>
 
-      {/* Mijn diensten */}
+      {/* Mijn diensten lijst */}
       {upcoming.length > 0 && (
         <>
           <div ref={mijnDienstenRef} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", margin:"20px 0 8px" }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <p className={sharedStyles.sectionTitle} style={{ margin:0 }}>Mijn diensten</p>
-              <a href="/api/shifts/my-ical" title="Exporteer alle diensten naar agenda" style={{ fontSize:14, color:"#a89ec8", textDecoration:"none", lineHeight:1 }}>📅</a>
+              <span className={`${sharedStyles.badge} ${sharedStyles.badgeMuted}`}>{upcoming.length}</span>
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
               <button onClick={prevMyMonth} style={s.navArrowSm}>‹</button>
@@ -443,23 +424,21 @@ export default function DashboardClient({
                   </div>
                   <div style={{ display:"flex", flexDirection:"column", gap:6, alignItems:"stretch", minWidth:88 }}>
                     {isConfirmed ? (
-                      <div style={s.actionBtnConfirmed}>✅ Bevestigd</div>
+                      <div style={s.actionBtnConfirmed}>
+                        <CheckIcon size={11} /> Bevestigd
+                      </div>
                     ) : (
-                      <button style={{ ...s.actionBtn, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", opacity: loading===a.shift_id ? 0.5 : 1 }} disabled={loading===a.shift_id} onClick={() => handleConfirm(a.shift_id)}>✅ Bevestigen</button>
+                      <button style={{ ...s.actionBtn, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", opacity: loading===a.shift_id ? 0.5 : 1 }} disabled={loading===a.shift_id} onClick={() => handleConfirm(a.shift_id)}>
+                        <CheckIcon size={11} /> Bevestigen
+                      </button>
                     )}
                     <button style={{ ...s.actionBtn, background:"rgba(255,79,109,0.08)", border:"1px solid #ff4f6d", color:"#ff4f6d", opacity: loading===a.shift_id ? 0.5 : 1 }} disabled={loading===a.shift_id} onClick={() => setDeclineModal(a)}>Afmelden</button>
-                    <div style={{ display:"flex", gap:4 }}>
-                      <a
-                        href={`/api/shifts/${sh.id}/ical`}
-                        style={{ ...s.iconSmBtn, textDecoration:"none", flex:1 }}
-                        onClick={(e) => { if (/Android/i.test(navigator.userAgent)) { e.preventDefault(); handleAgenda(sh); } }}
-                      >📅</a>
-                      {typeof navigator !== "undefined" && "share" in navigator && (
-                        <button style={{ ...s.iconSmBtn, flex:1 }} onClick={() => handleShare(sh)} title="Deel dienst" aria-label="Deel dienst">
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-                        </button>
-                      )}
-                    </div>
+                    {typeof navigator !== "undefined" && "share" in navigator && (
+                      <button style={{ ...s.actionBtn, background:"#221f38", border:"1px solid #2e2a4a", color:"#a89ec8", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }} onClick={() => handleShare(sh)} aria-label="Deel dienst">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                        Delen
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -467,9 +446,10 @@ export default function DashboardClient({
           })}
           <a
             href="/api/shifts/my-ical"
-            style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 14px", borderRadius:12, background:"#1a1730", border:"1px solid #2e2a4a", color:"#a89ec8", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:12, textDecoration:"none", marginTop:8 }}
+            style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"12px 16px", borderRadius:12, background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, textDecoration:"none", marginTop:8 }}
           >
-            📅 Zet al mijn diensten in mijn agenda
+            <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Zet al mijn diensten in agenda
           </a>
         </>
       )}
@@ -526,9 +506,6 @@ export default function DashboardClient({
               </div>
             );
           })}
-          <a href="/rooster" style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, fontSize:12, color:"#00e5c3", textDecoration:"none", padding:"12px 16px", borderRadius:12, background:"#1a1730", border:"1px solid #2e2a4a", marginTop:4 }}>
-            Bekijk alle diensten op de roosterpagina →
-          </a>
         </>
       )}
 
@@ -558,7 +535,7 @@ export default function DashboardClient({
               Je ontvangt een e-mail bevestiging en herinneringen 2 weken en 1 week van tevoren.
             </p>
             <button className={sharedStyles.btnPrimary} disabled={loading===claimModal.id} onClick={() => handleClaim(claimModal)}>
-              {loading===claimModal.id ? "Bezig..." : "✅ Ja, ik schrijf me in!"}
+              {loading===claimModal.id ? "Bezig..." : "Ja, ik schrijf me in!"}
             </button>
             <button className={sharedStyles.btnSecondary} style={{ marginTop:8 }} onClick={() => setClaimModal(null)}>Annuleren</button>
           </div>
@@ -583,7 +560,7 @@ export default function DashboardClient({
             <button className={sharedStyles.btnPrimary} style={{ background:"linear-gradient(135deg,#ff4f6d,#cc3355)", boxShadow:"0 4px 20px rgba(255,79,109,0.3)" }}
               disabled={loading===declineModal.shift_id}
               onClick={() => handleDecline(declineModal)}>
-              {loading===declineModal.shift_id ? "Bezig..." : "🔴 Ja, ik meld me af"}
+              {loading===declineModal.shift_id ? "Bezig..." : "Ja, ik meld me af"}
             </button>
             <button className={sharedStyles.btnSecondary} style={{ marginTop:8 }} onClick={() => setDeclineModal(null)}>Toch niet</button>
           </div>
@@ -598,25 +575,21 @@ const s: Record<string, React.CSSProperties> = {
   errorBanner: { background:"rgba(255,79,109,0.1)", border:"1px solid #ff4f6d", borderRadius:12, padding:"10px 14px", fontSize:13, color:"#ff4f6d", marginBottom:14, display:"flex", alignItems:"center", gap:8 },
   greeting: { fontSize:26, fontWeight:900, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif", display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" },
   heroCard: { background:"#161326", border:"1px solid rgba(0,229,195,.15)", borderRadius:16, overflow:"hidden", boxShadow:"0 4px 24px rgba(0,0,0,.3)", marginBottom:12 },
-  heroProgressWrap: { height:4, display:"flex" },
-  heroProgressFill: { background:"linear-gradient(90deg,#00e5c3,#00b89c)", height:"100%", transition:"width 0.6s ease" },
   heroWeekday: { fontSize:11, fontWeight:600, color:"#a89ec8", textTransform:"capitalize" as const, marginBottom:3 },
   heroDateTxt: { fontSize:14, fontWeight:700, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif" },
   heroDaysBadge: { background:"rgba(0,229,195,.08)", border:"1px solid rgba(0,229,195,.25)", borderRadius:20, padding:"4px 12px", fontSize:11, fontWeight:700, color:"#00e5c3", flexShrink:0 as unknown as number },
   heroTitle: { fontSize:22, fontWeight:900, color:"#fff", marginBottom:4, letterSpacing:"-.01em" },
-  heroTimePill: { fontSize:13, color:"#a89ec8", fontFamily:"'Space Mono',monospace" },
+  heroTimePill: { fontSize:13, color:"#a89ec8", fontFamily:"'Exo 2',sans-serif" },
   heroConfirmBox: { background:"#221f38", borderRadius:10, padding:"12px 14px" },
-  heroYes: { flex:1, padding:"10px", borderRadius:8, background:"rgba(0,229,195,.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:12, cursor:"pointer" },
+  heroYes: { flex:1, padding:"10px", borderRadius:8, background:"rgba(0,229,195,.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 },
   heroNo: { flex:1, padding:"10px", borderRadius:8, background:"rgba(255,79,109,.06)", border:"1px solid rgba(255,79,109,.3)", color:"#ff4f6d", fontFamily:"'Exo 2',sans-serif", fontSize:12, cursor:"pointer" },
-  statRow: { display:"grid", gridTemplateColumns:"1.3fr 1fr", gap:10, marginBottom:12 },
+  statRow: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 },
   statCard: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:16, padding:16, textAlign:"center" },
   statVal: { fontFamily:"monospace", fontSize:28, fontWeight:700, color:"#00e5c3", margin:0 },
   statLabel: { fontSize:10, fontWeight:700, color:"#a89ec8", letterSpacing:"0.08em", textTransform:"uppercase", marginTop:4, margin:0 },
   progressWrap: { background:"#2e2a4a", borderRadius:4, height:6, overflow:"hidden" },
   progressFill: { height:"100%", borderRadius:4, background:"linear-gradient(90deg,#00e5c3,#00b89c)", transition:"width 0.6s ease" },
-  // Consistent action buttons for mijn diensten
-  actionBtn: { fontSize:11, fontWeight:700, padding:"10px 8px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", cursor:"pointer", textAlign:"center" as const, width:"100%" },
-  actionBtnConfirmed: { fontSize:11, fontWeight:700, padding:"6px 8px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", textAlign:"center" as const, width:"100%", background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3" },
-  iconSmBtn: { fontSize:14, padding:"5px 8px", borderRadius:8, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", minHeight:44, boxSizing:"border-box" as const },
+  actionBtn: { fontSize:11, fontWeight:700, padding:"10px 8px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", cursor:"pointer", textAlign:"center" as const, width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:5, boxSizing:"border-box" as const },
+  actionBtnConfirmed: { fontSize:11, fontWeight:700, padding:"10px 8px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", textAlign:"center" as const, width:"100%", background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", display:"flex", alignItems:"center", justifyContent:"center", gap:5, boxSizing:"border-box" as const },
   navArrowSm: { background:"#221f38", border:"1px solid #2e2a4a", borderRadius:6, width:44, height:44, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:16, color:"#b8b0d4", flexShrink:0, padding:0 },
 };
