@@ -44,7 +44,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
   return new NextResponse(ics, {
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": `inline; filename="walhalla-${shift.date}.ics"`,
+      "Content-Disposition": `attachment; filename="walhalla-${shift.date}.ics"`,
     },
   });
 }

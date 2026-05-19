@@ -322,32 +322,30 @@ export default function DashboardClient({
       )}
 
       {/* Admin berichten */}
-      {adminMessages.length > 0 && (
+      {adminMessages.length > 0 && currentMsg && (
         <>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", margin:"20px 0 8px" }}>
-            <p className={sharedStyles.sectionTitle} style={{ margin:0 }}>Berichten van admin</p>
-            {adminMessages.length > 1 && (
-              <div style={{ display:"flex", gap:4, alignItems:"center" }}>
-                <button aria-label="Vorig bericht" onClick={() => setMsgIndex(i => Math.max(0, i - 1))} style={{ ...s.navArrowSm, opacity: msgIndex === 0 ? 0.35 : 1 }}>‹</button>
-                <span style={{ fontSize:10, color:"#a89ec8", fontFamily:"monospace" }}>{msgIndex + 1}/{adminMessages.length}</span>
-                <button aria-label="Volgend bericht" onClick={() => setMsgIndex(i => Math.min(adminMessages.length - 1, i + 1))} style={{ ...s.navArrowSm, opacity: msgIndex === adminMessages.length - 1 ? 0.35 : 1 }}>›</button>
-              </div>
-            )}
-          </div>
-          {currentMsg && (
-            <div className={sharedStyles.card}>
-              <div style={{ display:"flex", gap:10 }}>
-                <div style={{ paddingTop:2, flexShrink:0 }}><MegaphoneIcon /></div>
-                <div style={{ flex:1 }}>
-                  <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", marginBottom:2 }}>{currentMsg.title}</p>
-                  <p style={{ fontSize:11, color:"#a89ec8", marginBottom:6 }}>
-                    van {currentMsg.sender?.full_name?.split(" ")[0] || "Admin"} · {new Date(currentMsg.created_at).toLocaleString("nl-NL", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })}
-                  </p>
-                  <p style={{ fontSize:12, color:"#b8b0d4", lineHeight:1.5 }}>{currentMsg.body}</p>
+          <p className={sharedStyles.sectionTitle} style={{ margin:"20px 0 8px" }}>Berichten van admin</p>
+          <div className={sharedStyles.card}>
+            <div style={{ display:"flex", gap:10 }}>
+              <div style={{ paddingTop:2, flexShrink:0 }}><MegaphoneIcon /></div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8, marginBottom:2 }}>
+                  <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", margin:0 }}>{currentMsg.title}</p>
+                  {adminMessages.length > 1 && (
+                    <div style={{ display:"flex", gap:4, alignItems:"center", flexShrink:0 }}>
+                      <button aria-label="Vorig bericht" onClick={() => setMsgIndex(i => Math.max(0, i - 1))} style={{ ...s.navArrowSm, width:28, height:28, borderRadius:6, fontSize:14, opacity: msgIndex === 0 ? 0.35 : 1 }}>‹</button>
+                      <span style={{ fontSize:10, color:"#a89ec8", fontFamily:"monospace" }}>{msgIndex + 1}/{adminMessages.length}</span>
+                      <button aria-label="Volgend bericht" onClick={() => setMsgIndex(i => Math.min(adminMessages.length - 1, i + 1))} style={{ ...s.navArrowSm, width:28, height:28, borderRadius:6, fontSize:14, opacity: msgIndex === adminMessages.length - 1 ? 0.35 : 1 }}>›</button>
+                    </div>
+                  )}
                 </div>
+                <p style={{ fontSize:11, color:"#a89ec8", marginBottom:6 }}>
+                  van {currentMsg.sender?.full_name?.split(" ")[0] || "Admin"} · {new Date(currentMsg.created_at).toLocaleString("nl-NL", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })}
+                </p>
+                <p style={{ fontSize:12, color:"#b8b0d4", lineHeight:1.5 }}>{currentMsg.body}</p>
               </div>
             </div>
-          )}
+          </div>
         </>
       )}
 
@@ -590,6 +588,6 @@ const s: Record<string, React.CSSProperties> = {
   progressWrap: { background:"#2e2a4a", borderRadius:4, height:6, overflow:"hidden" },
   progressFill: { height:"100%", borderRadius:4, background:"linear-gradient(90deg,#00e5c3,#00b89c)", transition:"width 0.6s ease" },
   actionBtn: { fontSize:11, fontWeight:700, padding:"10px 8px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", cursor:"pointer", textAlign:"center" as const, width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:5, boxSizing:"border-box" as const },
-  actionBtnConfirmed: { fontSize:11, fontWeight:700, padding:"10px 8px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", textAlign:"center" as const, width:"100%", background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", display:"flex", alignItems:"center", justifyContent:"center", gap:5, boxSizing:"border-box" as const },
+  actionBtnConfirmed: { fontSize:11, fontWeight:700, padding:"10px 8px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", textAlign:"center" as const, width:"100%", background:"rgba(0,229,195,0.06)", border:"1px dashed rgba(0,229,195,0.4)", color:"rgba(0,229,195,0.6)", display:"flex", alignItems:"center", justifyContent:"center", gap:5, boxSizing:"border-box" as const, cursor:"default", pointerEvents:"none", userSelect:"none" },
   navArrowSm: { background:"#221f38", border:"1px solid #2e2a4a", borderRadius:6, width:44, height:44, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:16, color:"#b8b0d4", flexShrink:0, padding:0 },
 };

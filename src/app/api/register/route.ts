@@ -13,6 +13,9 @@ const RegisterSchema = z.object({
   firstName: z.string().min(1, "Voornaam is verplicht").max(50),
   lastName: z.string().min(1, "Achternaam is verplicht").max(50),
   phone: z.string().max(30).optional(),
+  preferredDays: z.array(z.enum(["wednesday", "friday", "saturday"])).min(1, "Selecteer minimaal 1 voorkeurdag"),
+  preferredRoles: z.array(z.enum(["tapper", "bonnenkassa"])).optional(),
+  wantsParties: z.boolean().optional(),
   token: z.string().min(1, "Token is verplicht"),
 });
 
@@ -28,7 +31,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: firstError.message }, { status: 400 });
   }
 
-  const { email, password, firstName, lastName, phone, token } = parsed.data;
+  const { email, password, firstName, lastName, phone, preferredDays, preferredRoles, wantsParties, token } = parsed.data;
   const fullName = `${firstName} ${lastName}`.trim();
 
   const supabase = await createServerSupabaseClient();
@@ -64,11 +67,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 
-  // Update profile with split name and phone (trigger may only set full_name)
+  // Update profile with all fields (trigger may only set full_name)
   if (newUser.user?.id) {
     await adminClient
       .from("profiles")
-      .update({ first_name: firstName, last_name: lastName, ...(phone ? { phone } : {}) })
+      .update({
+        first_name: firstName,
+        last_name: lastName,
+        ...(phone ? { phone } : {}),
+        preferred_days: preferredDays,
+        ...(preferredRoles && preferredRoles.length > 0 ? { preferred_roles: preferredRoles } : {}),
+        wants_parties: wantsParties ?? false,
+      })
       .eq("id", newUser.user.id);
   }
 

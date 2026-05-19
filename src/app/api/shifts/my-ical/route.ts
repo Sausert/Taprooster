@@ -19,7 +19,7 @@ export async function GET(_req: NextRequest) {
   const shiftIds = (assignments || []).map(a => a.shift_id);
   if (shiftIds.length === 0) {
     return new NextResponse("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Taprooster//NL\r\nEND:VCALENDAR", {
-      headers: { "Content-Type": "text/calendar; charset=utf-8", "Content-Disposition": 'inline; filename="mijn-tapavonden.ics"' },
+      headers: { "Content-Type": "text/calendar; charset=utf-8", "Content-Disposition": 'attachment; filename="mijn-tapavonden.ics"' },
     });
   }
 
@@ -67,7 +67,7 @@ export async function GET(_req: NextRequest) {
   return new NextResponse(ics, {
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": 'inline; filename="mijn-tapavonden.ics"',
+      "Content-Disposition": 'attachment; filename="mijn-tapavonden.ics"',
     },
   });
 }

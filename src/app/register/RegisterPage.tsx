@@ -18,6 +18,9 @@ function RegisterContent() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [preferredDays, setPreferredDays] = useState<("wednesday"|"friday"|"saturday")[]>([]);
+  const [preferredRoles, setPreferredRoles] = useState<("tapper"|"bonnenkassa")[]>(["tapper"]);
+  const [wantsParties, setWantsParties] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [pwErrors, setPwErrors] = useState<string[]>([]);
@@ -59,6 +62,7 @@ function RegisterContent() {
     const pwErr = validatePassword(password);
     if (pwErr.length > 0) { setPwErrors(pwErr); return; }
     if (password !== confirmPassword) { setError("Wachtwoorden komen niet overeen."); return; }
+    if (preferredDays.length === 0) { setError("Selecteer minimaal 1 voorkeurdag."); return; }
 
     setLoading(true);
 
@@ -66,7 +70,7 @@ function RegisterContent() {
     const regRes = await fetch("/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, firstName, lastName, phone, token }),
+      body: JSON.stringify({ email, password, firstName, lastName, phone, token, preferredDays, preferredRoles, wantsParties }),
     });
     const regData = await regRes.json();
     if (!regRes.ok) {
@@ -177,6 +181,58 @@ function RegisterContent() {
             value={phone}
             onChange={e => setPhone(e.target.value)}
           />
+
+          <div style={{ borderTop:"1px solid #2e2a4a", margin:"4px 0 16px" }} />
+
+          <label style={s.label}>
+            Voorkeursdagen <span style={{ color:"#ff4f6d" }}>*</span>
+          </label>
+          <div style={{ display:"flex", gap:8, marginBottom:14 }}>
+            {(["wednesday","friday","saturday"] as const).map(day => {
+              const label = day === "wednesday" ? "Woensdag" : day === "friday" ? "Vrijdag" : "Zaterdag";
+              const active = preferredDays.includes(day);
+              return (
+                <button
+                  type="button"
+                  key={day}
+                  onClick={() => setPreferredDays(prev => active ? prev.filter(d => d !== day) : [...prev, day])}
+                  style={{ flex:1, padding:"10px 4px", borderRadius:10, border: active ? "1px solid #00e5c3" : "1px solid #2e2a4a", background: active ? "rgba(0,229,195,0.1)" : "#221f38", color: active ? "#00e5c3" : "#a89ec8", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer", textTransform:"uppercase", letterSpacing:"0.05em" }}
+                >
+                  {label.slice(0, 2)}
+                </button>
+              );
+            })}
+          </div>
+
+          <label style={s.label}>Voorkeursdiensten</label>
+          <div style={{ display:"flex", gap:8, marginBottom:8 }}>
+            {(["tapper","bonnenkassa"] as const).map(role => {
+              const label = role === "tapper" ? "Tapper" : "Kassa";
+              const active = preferredRoles.includes(role);
+              return (
+                <button
+                  type="button"
+                  key={role}
+                  onClick={() => setPreferredRoles(prev => active ? prev.filter(r => r !== role) : [...prev, role])}
+                  style={{ flex:1, padding:"10px 4px", borderRadius:10, border: active ? "1px solid #00e5c3" : "1px solid #2e2a4a", background: active ? "rgba(0,229,195,0.1)" : "#221f38", color: active ? "#00e5c3" : "#a89ec8", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer", textTransform:"uppercase", letterSpacing:"0.05em" }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ marginBottom:14 }}>
+            <button
+              type="button"
+              onClick={() => setWantsParties(p => !p)}
+              style={{ width:"100%", padding:"10px", borderRadius:10, border: wantsParties ? "1px solid #c4b5fd" : "1px solid #2e2a4a", background: wantsParties ? "rgba(196,181,253,0.1)" : "#221f38", color: wantsParties ? "#c4b5fd" : "#a89ec8", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer", textTransform:"uppercase", letterSpacing:"0.05em" }}
+            >
+              Feestjes meehelpen
+            </button>
+          </div>
+
+          <div style={{ borderTop:"1px solid #2e2a4a", margin:"4px 0 16px" }} />
 
           <label htmlFor="reg-password" style={s.label}>Wachtwoord</label>
           <input
