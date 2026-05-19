@@ -12,8 +12,10 @@ function RegisterContent() {
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
   const [tokenError, setTokenError] = useState("");
 
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -64,7 +66,7 @@ function RegisterContent() {
     const regRes = await fetch("/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, fullName, token }),
+      body: JSON.stringify({ email, password, firstName, lastName, phone, token }),
     });
     const regData = await regRes.json();
     if (!regRes.ok) {
@@ -124,17 +126,34 @@ function RegisterContent() {
         {error && <div style={s.errorBox}>{error}</div>}
 
         <form onSubmit={handleRegister}>
-          <label htmlFor="reg-name" style={s.label}>Volledige naam</label>
-          <input
-            id="reg-name"
-            style={s.input}
-            type="text"
-            autoComplete="name"
-            placeholder="Naam Achternaam"
-            value={fullName}
-            onChange={e => setFullName(e.target.value)}
-            required
-          />
+          <div style={{ display:"flex", gap:10 }}>
+            <div style={{ flex:1 }}>
+              <label htmlFor="reg-firstname" style={s.label}>Voornaam</label>
+              <input
+                id="reg-firstname"
+                style={s.input}
+                type="text"
+                autoComplete="given-name"
+                placeholder="Jan"
+                value={firstName}
+                onChange={e => setFirstName(e.target.value)}
+                required
+              />
+            </div>
+            <div style={{ flex:1 }}>
+              <label htmlFor="reg-lastname" style={s.label}>Achternaam</label>
+              <input
+                id="reg-lastname"
+                style={s.input}
+                type="text"
+                autoComplete="family-name"
+                placeholder="Jansen"
+                value={lastName}
+                onChange={e => setLastName(e.target.value)}
+                required
+              />
+            </div>
+          </div>
 
           <label htmlFor="reg-email" style={s.label}>E-mailadres</label>
           <input
@@ -146,6 +165,17 @@ function RegisterContent() {
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
+          />
+
+          <label htmlFor="reg-phone" style={s.label}>Telefoonnummer</label>
+          <input
+            id="reg-phone"
+            style={s.input}
+            type="tel"
+            autoComplete="tel"
+            placeholder="+31 6 12345678"
+            value={phone}
+            onChange={e => setPhone(e.target.value)}
           />
 
           <label htmlFor="reg-password" style={s.label}>Wachtwoord</label>

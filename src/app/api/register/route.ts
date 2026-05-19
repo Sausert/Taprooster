@@ -10,7 +10,9 @@ const RegisterSchema = z.object({
     .min(8, "Wachtwoord moet minimaal 8 tekens bevatten")
     .regex(/[0-9]/, "Wachtwoord moet minimaal 1 cijfer bevatten")
     .regex(/[!@#$%^&*]/, "Wachtwoord moet minimaal 1 speciaal teken bevatten (!@#$%^&*)"),
-  fullName: z.string().min(1, "Naam is verplicht").max(100),
+  firstName: z.string().min(1, "Voornaam is verplicht").max(50),
+  lastName: z.string().min(1, "Achternaam is verplicht").max(50),
+  phone: z.string().max(30).optional(),
   token: z.string().min(1, "Token is verplicht"),
 });
 
@@ -26,7 +28,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: firstError.message }, { status: 400 });
   }
 
-  const { email, password, fullName, token } = parsed.data;
+  const { email, password, firstName, lastName, phone, token } = parsed.data;
+  const fullName = `${firstName} ${lastName}`.trim();
 
   const supabase = await createServerSupabaseClient();
 
@@ -50,7 +53,7 @@ export async function POST(req: NextRequest) {
   const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
     email,
     password,
-    user_metadata: { full_name: fullName },
+    user_metadata: { full_name: fullName, first_name: firstName, last_name: lastName },
     email_confirm: true,
   });
 
@@ -59,6 +62,14 @@ export async function POST(req: NextRequest) {
       ? "Er bestaat al een account met dit e-mailadres"
       : "Account aanmaken mislukt";
     return NextResponse.json({ error: msg }, { status: 400 });
+  }
+
+  // Update profile with split name and phone (trigger may only set full_name)
+  if (newUser.user?.id) {
+    await adminClient
+      .from("profiles")
+      .update({ first_name: firstName, last_name: lastName, ...(phone ? { phone } : {}) })
+      .eq("id", newUser.user.id);
   }
 
   // Mark token as used
