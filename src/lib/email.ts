@@ -18,7 +18,9 @@ function getResend() {
   if (!process.env.RESEND_API_KEY) throw new Error("RESEND_API_KEY is not set");
   return new Resend(process.env.RESEND_API_KEY);
 }
-const FROM = process.env.RESEND_FROM_EMAIL || "ojcwalhalla@remigommans.nl";
+const FROM_NAME  = process.env.RESEND_FROM_NAME  || "OJC Walhalla";
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "ojcwalhalla@remigommans.nl";
+const FROM = `${FROM_NAME} <${FROM_EMAIL}>`;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 type Theme = "dark" | "light" | "amber";
@@ -109,7 +111,7 @@ function emailTemplate(title: string, body: string, theme: Theme = DEFAULT_THEME
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">TAP<span>RSTR</span></div>
+      <div class="logo">TAPRO<span>OSTER</span></div>
       <div class="subtitle">${APP_CONFIG.orgName} · ${APP_CONFIG.city}</div>
     </div>
     <div class="content">
@@ -155,7 +157,8 @@ export async function sendShiftReminderEmail(
   shiftTitle: string,
   shiftDate: string,
   shiftTime: string,
-  weeksAhead: 1 | 2
+  weeksAhead: 1 | 2,
+  shiftId: string
 ) {
   const days = weeksAhead === 2 ? 14 : 7;
   await getResend().emails.send({
@@ -166,12 +169,12 @@ export async function sendShiftReminderEmail(
       `Herinnering: nog ${days} dagen`,
       `
       <p>Hey ${escHtml(name)},</p>
-      <p>Je staat ingepland — vergeet je dienst niet te bevestigen!</p>
+      <p>Je staat ingepland voor de volgende dienst.</p>
       <div class="highlight">
         <p><strong>${escHtml(shiftTitle)}</strong></p>
         <p class="meta">📅 ${escHtml(shiftDate)}<br>🕐 ${escHtml(shiftTime)}<br>📍 ${escHtml(APP_CONFIG.location)}</p>
       </div>
-      <a href="${APP_URL}/dashboard" class="btn">Bevestig aanwezigheid →</a>
+      <a href="${APP_URL}/api/shifts/${shiftId}/ical" class="btn">Zet dienst in agenda →</a>
       `
     ),
   });
@@ -220,8 +223,6 @@ export async function sendInviteEmail(to: string, token: string, adminName: stri
       <p>Klik op de knop hieronder om je account aan te maken.</p>
       <a href="${inviteUrl}" class="btn">Maak account aan →</a>
       <p class="meta" style="margin-top:16px;">⏳ Deze link is <strong>7 dagen</strong> geldig.<br>Daarna moet de admin een nieuwe uitnodiging versturen.</p>
-      <hr class="divider">
-      <p style="font-size:12px;">Link niet werken? Kopieer: ${escHtml(inviteUrl)}</p>
       `
     ),
   });

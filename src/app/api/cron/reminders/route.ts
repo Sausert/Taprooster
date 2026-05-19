@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
       const timeLabel = `${shift.start_time}–${shift.end_time}`;
 
       for (const a of (shift.assignments || [])) {
-        if (a.status === "declined") continue;
+        if (a.status !== "confirmed") continue;
         if (!a.profile?.email) continue;
         if (await alreadySent(a.user_id, type, shift.id)) continue;
 
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
         });
 
         try {
-          await sendShiftReminderEmail(a.profile.email, a.profile.full_name, shift.title, dateLabel, timeLabel, weeks);
+          await sendShiftReminderEmail(a.profile.email, a.profile.full_name, shift.title, dateLabel, timeLabel, weeks, shift.id);
           sent++;
         } catch { /* email failure is non-fatal */ }
       }
@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
       });
       if (a.profile?.email) {
         try {
-          await sendShiftReminderEmail(a.profile.email, a.profile.full_name, shift.title, dateLabel, timeLabel, 1);
+          await sendShiftReminderEmail(a.profile.email, a.profile.full_name, shift.title, dateLabel, timeLabel, 1, shift.id);
         } catch { /* email failure is non-fatal */ }
       }
       sent++;
