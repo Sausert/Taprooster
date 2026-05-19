@@ -111,7 +111,7 @@ function emailTemplate(title: string, body: string, theme: Theme = DEFAULT_THEME
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">TAPRO<span>OSTER</span></div>
+      <div class="logo">TAP<span>ROOSTER</span></div>
       <div class="subtitle">${APP_CONFIG.orgName} · ${APP_CONFIG.city}</div>
     </div>
     <div class="content">
