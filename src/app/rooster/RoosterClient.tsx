@@ -180,7 +180,7 @@ export default function RoosterClient({
 
       {/* Maand nav */}
       <div style={s.monthNav}>
-        <button style={s.navArrow} onClick={prevMonth}>‹</button>
+        <button className={sharedStyles.navArrow} onClick={prevMonth} aria-label="Vorige maand">‹</button>
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, position:"relative" }}>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <span style={s.monthLabel} onClick={() => setShowMonthPicker(p => !p)}>
@@ -222,7 +222,7 @@ export default function RoosterClient({
             </>
           )}
         </div>
-        <button style={s.navArrow} onClick={nextMonth}>›</button>
+        <button className={sharedStyles.navArrow} onClick={nextMonth} aria-label="Volgende maand">›</button>
       </div>
 
       {view === "cal" ? (
@@ -267,22 +267,23 @@ export default function RoosterClient({
               const isMineDay = myShiftIds.concat(claimedIds).some(id => dayShifts.some((s: any) => s.id === id));
 
               return (
-                <div key={day} className={sharedStyles.calDay} onClick={() => setSelectedShifts(dayShifts)} style={{
+                <button key={day} type="button" className={sharedStyles.calDay} onClick={() => setSelectedShifts(dayShifts)} aria-label={`${day} ${MONTH_NAMES[viewMonth]}, ${dayShifts.length} dienst${dayShifts.length !== 1 ? "en" : ""}`} style={{
                   aspectRatio:"1", display:"flex", alignItems:"center", justifyContent:"center",
                   fontSize:12, fontWeight:700, borderRadius:8, cursor:"pointer", position:"relative",
                   background: bg, color, borderWidth:1, borderStyle:"solid", borderColor,
                   outline: today ? "2px solid rgba(0,229,195,0.4)" : "none", outlineOffset:2,
                   boxShadow: isMineDay ? "0 0 0 2px #9b87f0, 0 0 10px rgba(155,135,240,0.35)" : undefined,
+                  padding:0,
                 }}>
                   {day}
-                  {isMineDay && <span style={{ position:"absolute", top:1, left:2, fontSize:9, color:"#c4b5fd", lineHeight:1 }}>★</span>}
+                  {isMineDay && <span aria-hidden="true" style={{ position:"absolute", top:1, left:2, fontSize:9, color:"#c4b5fd", lineHeight:1 }}>★</span>}
                   {dayShifts.length > 1 && (
-                    <span style={{ position:"absolute", bottom:2, left:"50%", transform:"translateX(-50%)", width:16, height:3, borderRadius:2, background:color, opacity:0.8, display:"block" }} />
+                    <span aria-hidden="true" style={{ position:"absolute", bottom:2, left:"50%", transform:"translateX(-50%)", width:16, height:3, borderRadius:2, background:color, opacity:0.8, display:"block" }} />
                   )}
                   {dayShifts.length === 1 && hasOpen && !isMineDay && (
-                    <span style={{ position:"absolute", top:1, right:2, fontSize:8, color }}>+</span>
+                    <span aria-hidden="true" style={{ position:"absolute", top:1, right:2, fontSize:8, color }}>+</span>
                   )}
-                </div>
+                </button>
               );
             })}
           </div>
@@ -310,13 +311,13 @@ export default function RoosterClient({
                       <div>
                         <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
                           <p style={{ fontSize:16, fontWeight:700, color:"#f0eeff" }}>{shift.title}</p>
-                          {isParty && <span style={s.warnBadge}>Feestje</span>}
+                          {isParty && <span className={`${sharedStyles.badge} ${sharedStyles.badgeParty}`}>Feestje</span>}
                         </div>
                         <p style={{ fontSize:13, color:"#a89ec8" }}>{formatDate(shift.date)} · {formatTime(shift.start_time)}–{formatTime(shift.end_time)}</p>
                         <p style={{ fontSize:11, color: accentColor, marginTop:2 }}>{assigned.length}/{totalSpots} tappers</p>
                         {shift.admin_note && <p style={{ fontSize:11, color:"#a89ec8", marginTop:4 }}>{shift.admin_note}</p>}
                       </div>
-                      <button onClick={() => setSelectedShifts([])} style={s.closeBtn} aria-label="Sluiten">✕</button>
+                      <button onClick={() => setSelectedShifts([])} style={s.closeBtn} aria-label="Dag detail sluiten">✕</button>
                     </div>
 
                     {/* Tappers */}
@@ -406,7 +407,7 @@ export default function RoosterClient({
                   <div style={{ flex:1 }}>
                     <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:4, flexWrap:"wrap" }}>
                       <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff" }}>{shift.title}</p>
-                      {mine && <span style={s.myBadge}>Jij</span>}
+                      {mine && <span className={`${sharedStyles.badge} ${sharedStyles.badgeViolet}`}>Jij</span>}
                       {isParty && <span style={s.warnBadge}>Feestje</span>}
                       {isPast && <span style={{ fontSize:10, padding:"1px 6px", borderRadius:8, background:"rgba(255,255,255,0.05)", color:"#a89ec8", border:"1px solid #2e2a4a" }}>Verstreken</span>}
                     </div>
@@ -437,7 +438,7 @@ export default function RoosterClient({
       {/* Claim modal */}
       {claimModal && (
         <div className={sharedStyles.overlay} onClick={() => setClaimModal(null)}>
-          <div className={sharedStyles.sheet} role="dialog" aria-modal="true" aria-labelledby="rooster-claim-title" onClick={e => e.stopPropagation()}>
+          <div className={sharedStyles.sheet} role="dialog" aria-modal="true" aria-labelledby="rooster-claim-title" tabIndex={-1} onClick={e => e.stopPropagation()} onKeyDown={(e) => { if (e.key === "Escape") setClaimModal(null); }}>
             <div className={sharedStyles.sheetHandle} />
             <h3 className={sharedStyles.sheetTitle} id="rooster-claim-title">Inschrijven</h3>
             <div style={{ background:"#221f38", borderRadius:12, padding:"12px 14px", marginBottom:16 }}>
@@ -487,16 +488,13 @@ const s: Record<string, React.CSSProperties> = {
   toggleRow: { display:"flex", gap:8, marginBottom:16 },
   toggleBtn: { flex:1, padding:"10px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", transition:"background 0.15s, color 0.15s, border-color 0.15s" },
   monthNav: { display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, position:"relative" },
-  navArrow: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:8, color:"#e8e0ff", fontSize:20, width:44, height:44, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" },
   monthLabel: { fontSize:18, fontWeight:900, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif", minWidth:140, textAlign:"center", cursor:"pointer" },
   calGrid: { display:"grid", gridTemplateColumns:"repeat(7, 1fr)", gap:4, marginBottom:16 },
   dayHeader: { textAlign:"center", fontSize:12, fontWeight:700, color:"#a89ec8", padding:"4px 0" },
-  closeBtn: { background:"none", border:"none", color:"#a89ec8", fontSize:16, cursor:"pointer", width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 },
-  warnBadge: { background:"rgba(244,114,182,0.12)", borderWidth:1, borderStyle:"solid", borderColor:"#f472b6", color:"#f472b6", fontSize:10, fontWeight:700, padding:"2px 10px", borderRadius:20 },
-  myBadge: { background:"rgba(90,74,158,0.35)", borderWidth:1, borderStyle:"solid", borderColor:"#9b87f0", color:"#c4b5fd", fontSize:10, fontWeight:700, padding:"2px 10px", borderRadius:20 },
+  closeBtn: { background:"none", border:"none", color:"#a89ec8", fontSize:16, cursor:"pointer", width:44, height:44, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 },
   claimBtnSm: { padding:"10px 14px", borderRadius:8, background:"rgba(0,229,195,0.1)", borderWidth:1, borderStyle:"solid", borderColor:"#00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer" },
   declineBtn: { padding:"10px 14px", borderRadius:10, background:"rgba(255,79,109,0.1)", borderWidth:1, borderStyle:"solid", borderColor:"#ff4f6d", color:"#ff4f6d", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", textTransform:"uppercase" },
-  declineBtnSm: { padding:"10px 14px", borderRadius:8, background:"rgba(255,79,109,0.1)", borderWidth:1, borderStyle:"solid", borderColor:"#ff4f6d", color:"#ff4f6d", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer" },
+  declineBtnSm: { padding:"10px 14px", borderRadius:8, background:"rgba(255,79,109,0.1)", borderWidth:1, borderStyle:"solid", borderColor:"#ff4f6d", color:"#ff4f6d", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer", textTransform:"uppercase" },
   icalBtn: { padding:"10px 12px", borderRadius:10, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", cursor:"pointer", fontSize:16 },
   icalBtnSm: { padding:"10px 12px", borderRadius:8, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", fontSize:14, cursor:"pointer" },
 };

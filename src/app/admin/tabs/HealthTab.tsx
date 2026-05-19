@@ -36,9 +36,9 @@ const s: Record<string, React.CSSProperties> = {
   statGrid: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:4 },
   statCard: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:16, padding:16, textAlign:"center" },
   statVal: { fontFamily:"monospace", fontSize:30, fontWeight:700, margin:0 },
-  statLabel: { fontSize:10, color:"#8b80b0", letterSpacing:1, textTransform:"uppercase", marginTop:4, margin:0 },
+  statLabel: { fontSize:10, color:"#b8b0d4", letterSpacing:"0.08em", textTransform:"uppercase", marginTop:4, margin:0 },
   healthRow: { display:"flex", alignItems:"center", gap:10, padding:"10px 0", borderBottom:"1px solid #2e2a4a" },
-  addTapperBtn: { padding:"8px 12px", borderRadius:20, background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"'Exo 2', sans-serif" },
+  addTapperBtn: { minHeight:36, padding:"8px 12px", borderRadius:20, background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"'Exo 2', sans-serif" },
 };
 
 export function HealthTab() {
@@ -60,34 +60,38 @@ export function HealthTab() {
   return (
     <>
       <div style={s.statGrid}>
-        <div
-          style={{ ...s.statCard, cursor:"pointer", borderColor: healthFilter === "underfilled" ? "#ff4f6d" : "#2e2a4a", transition:"border-color 0.15s" }}
+        <button
+          type="button"
+          style={{ ...s.statCard, cursor:"pointer", borderColor: healthFilter === "underfilled" ? "#ff4f6d" : "#2e2a4a", transition:"border-color 0.15s", background:"#1a1730", border:`1px solid ${healthFilter === "underfilled" ? "#ff4f6d" : "#2e2a4a"}` }}
           onClick={() => setHealthFilter(f => f === "underfilled" ? "all" : "underfilled")}
-          title="Klik om te filteren op onderbezette diensten"
+          aria-pressed={healthFilter === "underfilled"}
+          aria-label={`Onderbezet: ${underfilled.length} diensten. Klik om te filteren.`}
         >
           <p style={{ ...s.statVal, color:"#ff4f6d" }}>{underfilled.length}</p>
           <p style={s.statLabel}>Onderbezet {healthFilter === "underfilled" && "▾"}</p>
-        </div>
-        <div
-          style={{ ...s.statCard, cursor:"pointer", borderColor: healthFilter === "unconfirmed" ? "#ffb547" : "#2e2a4a", transition:"border-color 0.15s" }}
+        </button>
+        <button
+          type="button"
+          style={{ ...s.statCard, cursor:"pointer", borderColor: healthFilter === "unconfirmed" ? "#ffb547" : "#2e2a4a", transition:"border-color 0.15s", background:"#1a1730", border:`1px solid ${healthFilter === "unconfirmed" ? "#ffb547" : "#2e2a4a"}` }}
           onClick={() => setHealthFilter(f => f === "unconfirmed" ? "all" : "unconfirmed")}
-          title="Klik om te filteren op onbevestigde diensten"
+          aria-pressed={healthFilter === "unconfirmed"}
+          aria-label={`Onbevestigd: ${unconfirmed.length} diensten. Klik om te filteren.`}
         >
           <p style={{ ...s.statVal, color:"#ffb547" }}>{unconfirmed.length}</p>
           <p style={s.statLabel}>Onbevestigd {healthFilter === "unconfirmed" && "▾"}</p>
-        </div>
+        </button>
       </div>
 
       <p className={styles.sectionTitle}>Dienststatus</p>
       <div style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap" }}>
-        <button onClick={() => setStatusMonthFilter("")} style={{ padding:"5px 12px", borderRadius:20, fontSize:11, fontWeight:700, cursor:"pointer", background:statusMonthFilter === "" ? "rgba(0,229,195,0.1)" : "#221f38", color:statusMonthFilter === "" ? "#00e5c3" : "#8b80b0", border:`1px solid ${statusMonthFilter === "" ? "#00e5c3" : "#2e2a4a"}` }}>Alles</button>
+        <button onClick={() => setStatusMonthFilter("")} style={{ minHeight:36, padding:"5px 12px", borderRadius:20, fontSize:11, fontWeight:700, cursor:"pointer", background:statusMonthFilter === "" ? "rgba(0,229,195,0.1)" : "#221f38", color:statusMonthFilter === "" ? "#00e5c3" : "#b8b0d4", border:`1px solid ${statusMonthFilter === "" ? "#00e5c3" : "#2e2a4a"}` }}>Alles</button>
         {[...new Set(allShifts.map(s => s.date?.slice(0, 7)).filter(Boolean))].sort().map(key => {
           if (!key) return null;
           const [year, month] = key.split("-");
           const monthIdx = Number(month) - 1;
           const yearSuffix = year !== String(now.getFullYear()) ? ` '${year.slice(2)}` : "";
           return (
-            <button key={key} onClick={() => setStatusMonthFilter(key)} style={{ padding:"5px 12px", borderRadius:20, fontSize:11, fontWeight:700, cursor:"pointer", background:statusMonthFilter === key ? "rgba(0,229,195,0.1)" : "#221f38", color:statusMonthFilter === key ? "#00e5c3" : "#8b80b0", border:`1px solid ${statusMonthFilter === key ? "#00e5c3" : "#2e2a4a"}` }}>
+            <button key={key} onClick={() => setStatusMonthFilter(key)} style={{ minHeight:36, padding:"5px 12px", borderRadius:20, fontSize:11, fontWeight:700, cursor:"pointer", background:statusMonthFilter === key ? "rgba(0,229,195,0.1)" : "#221f38", color:statusMonthFilter === key ? "#00e5c3" : "#b8b0d4", border:`1px solid ${statusMonthFilter === key ? "#00e5c3" : "#2e2a4a"}` }}>
               {MONTH_NAMES_FULL[monthIdx].slice(0, 3)}{yearSuffix}
             </button>
           );

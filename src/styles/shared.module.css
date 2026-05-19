@@ -190,6 +190,7 @@
   padding: 24px 20px 40px;
   width: 100%;
   max-width: 430px;
+  animation: slideUp 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
 .sheetHandle {
@@ -346,6 +347,51 @@
 
 .bannerIn { animation: bannerIn 0.25s ease both; }
 .fadeIn   { animation: fadeUp 0.2s ease both; }
+
+/* Unified navigation arrow button (‹ ›) used on all pages */
+.navArrow {
+  background: #221f38;
+  border: 1px solid #2e2a4a;
+  border-radius: 8px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  color: #b8b0d4;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+  padding: 0;
+  transition: transform 0.1s ease;
+  font-family: 'Exo 2', sans-serif;
+}
+.navArrow:active { transform: scale(0.92); }
+
+/* Sheet slide-up entry animation */
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+/* Pill-shaped small action button — guarantees 44px tap target */
+.pillBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 22px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  font-family: 'Exo 2', sans-serif;
+  transition: transform 0.1s ease;
+}
+.pillBtn:active { transform: scale(0.96); }
 
 /* Scrollable tab bar wrapper with right-fade scroll hint */
 .tabBarWrap {

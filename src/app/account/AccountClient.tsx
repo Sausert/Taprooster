@@ -209,10 +209,15 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
       <div className={sharedStyles.tabBarWrap}>
         <div style={s.tabBar}>
           {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id as any)} style={{ ...s.tab, color: tab===t.id?"#00e5c3":"#a89ec8", borderBottom:`2px solid ${tab===t.id?"#00e5c3":"transparent"}`, fontWeight: tab===t.id ? 900 : 600, position:"relative" }}>
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id as any)}
+              aria-label={t.id === "notif" && unreadNotifCount > 0 ? `Notificaties (${unreadNotifCount} ongelezen)` : t.label}
+              aria-current={tab === t.id ? "true" : undefined}
+              style={{ ...s.tab, color: tab===t.id?"#00e5c3":"#a89ec8", borderBottom:`2px solid ${tab===t.id?"#00e5c3":"transparent"}`, fontWeight: tab===t.id ? 900 : 600, position:"relative" }}>
               {t.label}
               {t.id === "notif" && unreadNotifCount > 0 && (
-                <span style={{ position:"absolute", top:6, right:6, width:10, height:10, borderRadius:"50%", background:"#ff4f6d", display:"block" }} />
+                <span aria-hidden="true" style={{ position:"absolute", top:4, right:2, width:10, height:10, borderRadius:"50%", background:"#ff4f6d", display:"block" }} />
               )}
             </button>
           ))}
@@ -363,7 +368,7 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
               const rankBg = lb.rank===1 ? "rgba(255,215,0,0.07)" : lb.rank===2 ? "rgba(192,192,192,0.07)" : lb.rank===3 ? "rgba(205,127,50,0.07)" : lb.id===profile.id ? "rgba(0,229,195,0.06)" : "transparent";
               const rankBorder = lb.rank===1 ? "1px solid rgba(255,215,0,0.25)" : lb.rank===2 ? "1px solid rgba(192,192,192,0.2)" : lb.rank===3 ? "1px solid rgba(205,127,50,0.2)" : lb.id===profile.id ? "1px solid rgba(0,229,195,0.2)" : "1px solid transparent";
               return (
-              <div key={lb.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 8px", borderRadius:10, marginBottom:4, background:rankBg, border:rankBorder }}>
+              <div key={lb.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 0", borderRadius:10, marginBottom:4, background:rankBg, border:rankBorder }}>
                 <span style={{ fontSize:lb.rank<=3?20:16, fontFamily:"monospace", width:28, textAlign:"center", color:lb.rank<=3?undefined:"#b8b0d4" }}>
                   {lb.rank<=3?MEDALS[lb.rank-1]:lb.rank}
                 </span>
@@ -417,8 +422,8 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
                         </p>
                       </div>
                       {!n.read ? (
-                        <button onClick={(e) => { e.stopPropagation(); markRead(n.id); }} style={{ flexShrink:0, padding:"4px 10px", borderRadius:20, background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:11, fontWeight:700, cursor:"pointer", alignSelf:"flex-start", marginTop:2 }}>
-                          ✓
+                        <button aria-label="Markeer als gelezen" onClick={(e) => { e.stopPropagation(); markRead(n.id); }} style={{ flexShrink:0, minHeight:44, minWidth:44, padding:"0 10px", borderRadius:20, background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:11, fontWeight:700, cursor:"pointer", alignSelf:"flex-start", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                          <span aria-hidden="true">✓</span>
                         </button>
                       ) : (
                         <span style={{ flexShrink:0, fontSize:14, color:"#4a4470", alignSelf:"flex-start", marginTop:2 }}>✓</span>
@@ -448,7 +453,7 @@ const s: Record<string, React.CSSProperties> = {
   statGrid: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 },
   statCard: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:16, padding:16, textAlign:"center" },
   statVal: { fontFamily:"monospace", fontSize:28, fontWeight:700, color:"#00e5c3", margin:0 },
-  statLabel: { fontSize:10, color:"#a89ec8", letterSpacing:1, textTransform:"uppercase", marginTop:4, margin:0 },
+  statLabel: { fontSize:10, color:"#a89ec8", letterSpacing:"0.08em", textTransform:"uppercase", marginTop:4, margin:0 },
   progressWrap: { background:"#2e2a4a", borderRadius:4, height:6, overflow:"hidden" },
   progressFill: { height:"100%", borderRadius:4, background:"linear-gradient(90deg, #00e5c3, #00b89c)", transition:"width 0.6s ease" },
   avatarSm: { width:30, height:30, borderRadius:8, background:"linear-gradient(135deg, #3b2f6e, #5a4a9e)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:12, color:"#00e5c3", flexShrink:0 },

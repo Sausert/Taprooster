@@ -86,7 +86,7 @@ export default function LoginPage() {
               </button>
             </div>
 
-            <button style={s.btnPrimary} type="submit" disabled={loading}>
+            <button className={sharedStyles.btnPrimary} type="submit" disabled={loading}>
               {loading ? "Bezig..." : "Inloggen →"}
             </button>
 
@@ -110,12 +110,13 @@ export default function LoginPage() {
               required
             />
 
-            <button style={s.btnPrimary} type="submit" disabled={loading}>
+            <button className={sharedStyles.btnPrimary} type="submit" disabled={loading}>
               {loading ? "Bezig..." : "Verstuur herstellink"}
             </button>
             <button
               type="button"
-              style={{ ...s.btnSecondary, marginTop: 8 }}
+              className={sharedStyles.btnSecondary}
+              style={{ marginTop: 8 }}
               onClick={() => setMode("login")}
             >
               ← Terug naar inloggen
@@ -222,35 +223,6 @@ const s: Record<string, React.CSSProperties> = {
     cursor: "pointer",
     fontSize: 13,
     textDecoration: "none",
-  },
-  btnPrimary: {
-    width: "100%",
-    padding: "14px",
-    borderRadius: 12,
-    background: "linear-gradient(135deg, #00e5c3, #00b89c)",
-    color: "#0f0d1a",
-    fontFamily: "'Exo 2', sans-serif",
-    fontSize: 15,
-    fontWeight: 700,
-    letterSpacing: 1,
-    border: "none",
-    cursor: "pointer",
-    textTransform: "uppercase",
-    boxShadow: "0 4px 20px rgba(0,229,195,0.3)",
-  },
-  btnSecondary: {
-    width: "100%",
-    padding: "14px",
-    borderRadius: 12,
-    background: "#221f38",
-    color: "#e8e0ff",
-    fontFamily: "'Exo 2', sans-serif",
-    fontSize: 15,
-    fontWeight: 700,
-    letterSpacing: 1,
-    border: "1px solid #2e2a4a",
-    cursor: "pointer",
-    textTransform: "uppercase",
   },
   registerNote: {
     textAlign: "center",

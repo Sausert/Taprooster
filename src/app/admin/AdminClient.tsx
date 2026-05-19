@@ -64,7 +64,7 @@ export default function AdminClient({
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<AdminTab>("health");
-  const [backHover, setBackHover] = useState(false);
+  const [adminError, setAdminError] = useState<string | null>(null);
 
   // Shared state — passed to all tabs via context
   const [shifts, setShifts] = useState<Shift[]>(initialShifts);
@@ -107,7 +107,8 @@ export default function AdminClient({
       setTapperSearchModal("");
     } else {
       const data = await res.json().catch(() => ({}));
-      alert(`❌ Tapper toevoegen mislukt: ${data.error ?? "Probeer opnieuw."}`);
+      setAdminError(data.error ?? "Tapper toevoegen mislukt. Probeer opnieuw.");
+      setTimeout(() => setAdminError(null), 4000);
     }
     setAddingTapper(null);
   }
@@ -121,7 +122,8 @@ export default function AdminClient({
       setShifts(updateList);
     } else {
       const data = await res.json().catch(() => ({}));
-      alert(`❌ Verwijderen mislukt: ${data.error ?? "Probeer opnieuw."}`);
+      setAdminError(data.error ?? "Verwijderen mislukt. Probeer opnieuw.");
+      setTimeout(() => setAdminError(null), 4000);
     }
   }
 
@@ -134,7 +136,8 @@ export default function AdminClient({
       setShifts(ss => ss.filter(s => s.id !== shiftId));
     } else {
       const data = await res.json().catch(() => ({}));
-      alert(`❌ Verwijderen mislukt: ${data.error ?? "Probeer opnieuw."}`);
+      setAdminError(data.error ?? "Verwijderen mislukt. Probeer opnieuw.");
+      setTimeout(() => setAdminError(null), 4000);
     }
   }
 
@@ -165,7 +168,7 @@ export default function AdminClient({
       <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column", background:"#0f0d1a" }}>
         {/* Header */}
         <header style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 20px", background:"rgba(15,13,26,0.92)", backdropFilter:"blur(16px)", borderBottom:"1px solid #2e2a4a", position:"sticky", top:0, zIndex:50 }}>
-          <button onClick={() => router.push("/account")} onMouseEnter={() => setBackHover(true)} onMouseLeave={() => setBackHover(false)} style={{ background: backHover ? "rgba(0,229,195,0.1)" : "none", border:"none", color:"#00e5c3", fontSize:22, cursor:"pointer", padding:"4px 8px", borderRadius:8, transition:"background 0.15s", lineHeight:1 }}>←</button>
+          <button onClick={() => router.back()} aria-label="Terug" style={{ background:"none", border:"none", color:"#00e5c3", fontSize:22, cursor:"pointer", width:44, height:44, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center" }}>←</button>
           <span style={{ fontSize:14, fontWeight:700, color:"#f0eeff", letterSpacing:1, fontFamily:"'Exo 2', sans-serif" }}>Admin Dashboard</span>
           <div style={{ width:28 }} />
         </header>
@@ -175,10 +178,18 @@ export default function AdminClient({
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id as AdminTab)} style={{ flex:1, minWidth:80, padding:"12px 4px", background:"none", border:"none", fontFamily:"'Exo 2', sans-serif", fontWeight:tab === t.id ? 900 : 600, fontSize:11, cursor:"pointer", whiteSpace:"nowrap", display:"flex", flexDirection:"column", alignItems:"center", gap:2, color:tab === t.id ? "#00e5c3" : "#b8b0d4", borderBottom:`2px solid ${tab === t.id ? "#00e5c3" : "transparent"}`, transition:"color 0.15s" }}>
               {t.icon}
-              <span style={{ fontSize:10, letterSpacing:"0.05em", textTransform:"uppercase" }}>{t.label}</span>
+              <span style={{ fontSize:11, letterSpacing:"0.05em", textTransform:"uppercase" }}>{t.label}</span>
             </button>
           ))}
         </nav>
+
+        {/* Inline error banner */}
+        {adminError && (
+          <div role="alert" style={{ background:"rgba(255,79,109,0.12)", borderBottom:"1px solid #ff4f6d", padding:"10px 16px", fontSize:13, color:"#ff4f6d", display:"flex", justifyContent:"space-between", alignItems:"center", gap:8 }}>
+            <span>❌ {adminError}</span>
+            <button onClick={() => setAdminError(null)} aria-label="Sluit melding" style={{ background:"none", border:"none", color:"#ff4f6d", fontSize:18, cursor:"pointer", padding:0, lineHeight:1 }}>×</button>
+          </div>
+        )}
 
         {/* Tab content */}
         <div style={{ flex:1, overflowY:"auto", padding:"16px 16px 40px" }}>

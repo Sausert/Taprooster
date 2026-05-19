@@ -204,13 +204,13 @@ export default function DashboardClient({
       <div style={{ marginBottom:20 }}>
         <p style={{ fontSize:13, color:"#a89ec8", marginBottom:4 }}>Welkom terug,</p>
         <h1 style={s.greeting}>
-          {firstName} 👋
+          {firstName} <span aria-hidden="true">👋</span>
           {profile?.role === "admin" && <span className={`${sharedStyles.badge} ${sharedStyles.badgeMint}`} style={{ fontSize:11, padding:"2px 10px" }}>⚡ Admin</span>}
         </h1>
       </div>
 
       {/* Mijn diensten hero */}
-      <p className={sharedStyles.sectionTitle}>Mijn diensten</p>
+      <p className={sharedStyles.sectionTitle}>Aankomende dienst</p>
       {nextShift ? (
         <div style={{ ...s.heroCard, ...(daysUntilNext === 0 ? { boxShadow:"0 4px 32px rgba(0,229,195,.25), 0 4px 24px rgba(0,0,0,.3)", border:"1px solid rgba(0,229,195,.4)" } : {}) }}>
           <div key={heroIndex} className={sharedStyles.fadeIn} style={{ padding:"16px" }}>
@@ -222,9 +222,9 @@ export default function DashboardClient({
               </div>
               {upcoming.length > 1 ? (
                 <div style={{ display:"flex", gap:4, alignItems:"center" }}>
-                  <button aria-label="Vorige dienst" onClick={() => setHeroIndex(i => Math.max(0, i - 1))} style={{ ...s.navArrowSm, opacity: heroIndex === 0 ? 0.35 : 1 }}>‹</button>
+                  <button aria-label="Vorige dienst" onClick={() => setHeroIndex(i => Math.max(0, i - 1))} className={sharedStyles.navArrow} style={{ opacity: heroIndex === 0 ? 0.35 : 1 }}>‹</button>
                   <span style={{ fontSize:10, color:"#a89ec8", fontFamily:"monospace" }}>{heroIndex + 1}/{upcoming.length}</span>
-                  <button aria-label="Volgende dienst" onClick={() => setHeroIndex(i => Math.min(upcoming.length - 1, i + 1))} style={{ ...s.navArrowSm, opacity: heroIndex === upcoming.length - 1 ? 0.35 : 1 }}>›</button>
+                  <button aria-label="Volgende dienst" onClick={() => setHeroIndex(i => Math.min(upcoming.length - 1, i + 1))} className={sharedStyles.navArrow} style={{ opacity: heroIndex === upcoming.length - 1 ? 0.35 : 1 }}>›</button>
                 </div>
               ) : (
                 <span style={s.heroDaysBadge}>
@@ -260,11 +260,8 @@ export default function DashboardClient({
                 </a>
               </div>
             ) : (
-              <div style={s.heroConfirmBox}>
-                <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
-                  <div aria-hidden={true} style={{ width:6, height:6, borderRadius:"50%", background:"#ffb547", flexShrink:0 }}/>
-                  <span style={{ fontSize:12, color:"#a89ec8" }}>Ben jij erbij?</span>
-                </div>
+              <div style={{ paddingTop:4 }}>
+                <p style={{ fontSize:12, color:"#a89ec8", marginBottom:8 }}>Ben jij erbij?</p>
                 <div style={{ display:"flex", gap:6 }}>
                   <button style={{ ...s.heroYes, opacity: loading===nextAssignment.shift_id ? 0.5 : 1 }} disabled={loading===nextAssignment.shift_id} onClick={() => handleConfirm(nextAssignment.shift_id)}>
                     <CheckIcon size={12} /> Bevestigen
@@ -301,9 +298,9 @@ export default function DashboardClient({
                   <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", margin:0 }}>{currentMsg.title}</p>
                   {adminMessages.length > 1 && (
                     <div style={{ display:"flex", gap:4, alignItems:"center", flexShrink:0 }}>
-                      <button aria-label="Vorig bericht" onClick={() => setMsgIndex(i => Math.max(0, i - 1))} style={{ ...s.navArrowSm, opacity: msgIndex === 0 ? 0.35 : 1 }}>‹</button>
+                      <button aria-label="Vorig bericht" onClick={() => setMsgIndex(i => Math.max(0, i - 1))} className={sharedStyles.navArrow} style={{ opacity: msgIndex === 0 ? 0.35 : 1 }}>‹</button>
                       <span style={{ fontSize:10, color:"#a89ec8", fontFamily:"monospace" }}>{msgIndex + 1}/{adminMessages.length}</span>
-                      <button aria-label="Volgend bericht" onClick={() => setMsgIndex(i => Math.min(adminMessages.length - 1, i + 1))} style={{ ...s.navArrowSm, opacity: msgIndex === adminMessages.length - 1 ? 0.35 : 1 }}>›</button>
+                      <button aria-label="Volgend bericht" onClick={() => setMsgIndex(i => Math.min(adminMessages.length - 1, i + 1))} className={sharedStyles.navArrow} style={{ opacity: msgIndex === adminMessages.length - 1 ? 0.35 : 1 }}>›</button>
                     </div>
                   )}
                 </div>
@@ -334,9 +331,8 @@ export default function DashboardClient({
           <span style={{ fontSize:12, color:"#a89ec8" }}>Voortgang dit jaar ({tapsThisYear}/{target})</span>
           <span style={{ fontFamily:"monospace", fontSize:12, color:"#00e5c3" }}>{pct}%</span>
         </div>
-        <div style={{ ...s.progressWrap, position:"relative" }}>
+        <div style={s.progressWrap}>
           <div style={{ ...s.progressFill, width:`${pctAnimated}%` }}/>
-          <div style={{ position:"absolute", top:0, left:"50%", transform:"translateX(-50%)", width:1, height:"100%", background:"rgba(255,255,255,0.25)" }}/>
         </div>
         {myRank > 0 && <p style={{ fontSize:11, color:"#a89ec8", marginTop:6 }}>Je staat op plek <strong style={{ color:"#00e5c3" }}>#{myRank}</strong> dit jaar 🏆</p>}
         {tapsThisYear >= Math.round((new Date().getMonth() + 1) / 12 * target) && (
@@ -353,11 +349,11 @@ export default function DashboardClient({
               <span className={`${sharedStyles.badge} ${sharedStyles.badgeMuted}`}>{upcoming.length}</span>
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-              <button onClick={prevMyMonth} style={s.navArrowSm}>‹</button>
+              <button onClick={prevMyMonth} className={sharedStyles.navArrow}>‹</button>
               <span style={{ fontSize:12, fontWeight:700, color:"#e8e0ff", minWidth:82, textAlign:"center" }}>
                 {MONTH_NL[myMonth]} {myYear}
               </span>
-              <button onClick={nextMyMonth} style={s.navArrowSm}>›</button>
+              <button onClick={nextMyMonth} className={sharedStyles.navArrow}>›</button>
             </div>
           </div>
           {filteredUpcoming.length === 0 ? (
@@ -429,11 +425,11 @@ export default function DashboardClient({
               <span className={`${sharedStyles.badge} ${sharedStyles.badgeMuted}`}>{claimable.length}</span>
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-              <button onClick={prevOpenMonth} style={s.navArrowSm}>‹</button>
+              <button onClick={prevOpenMonth} className={sharedStyles.navArrow}>‹</button>
               <span style={{ fontSize:12, fontWeight:700, color:"#e8e0ff", minWidth:82, textAlign:"center" }}>
                 {MONTH_NL[openMonth]} {openYear}
               </span>
-              <button onClick={nextOpenMonth} style={s.navArrowSm}>›</button>
+              <button onClick={nextOpenMonth} className={sharedStyles.navArrow}>›</button>
             </div>
           </div>
           {filteredClaimable.length === 0 ? (
@@ -478,7 +474,7 @@ export default function DashboardClient({
       {/* Claim modal */}
       {claimModal && (
         <div className={sharedStyles.overlay} onClick={() => setClaimModal(null)}>
-          <div ref={claimSheetRef} className={sharedStyles.sheet} role="dialog" aria-modal="true" aria-labelledby="claim-title" tabIndex={-1} onClick={e => e.stopPropagation()} onKeyDown={(e) => { if (e.key !== "Tab") return; const focusable = e.currentTarget.querySelectorAll<HTMLElement>('button,[href],input,[tabindex]:not([tabindex="-1"])'); const first = focusable[0]; const last = focusable[focusable.length - 1]; if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); } }}>
+          <div ref={claimSheetRef} className={sharedStyles.sheet} role="dialog" aria-modal="true" aria-labelledby="claim-title" tabIndex={-1} onClick={e => e.stopPropagation()} onKeyDown={(e) => { if (e.key === "Escape") { setClaimModal(null); return; } if (e.key !== "Tab") return; const focusable = e.currentTarget.querySelectorAll<HTMLElement>('button,[href],input,[tabindex]:not([tabindex="-1"])'); const first = focusable[0]; const last = focusable[focusable.length - 1]; if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); } }}>
             <div className={sharedStyles.sheetHandle}/>
             <h3 id="claim-title" className={sharedStyles.sheetTitle}>Inschrijven voor dienst</h3>
             <div style={{ background:"#221f38", borderRadius:12, padding:"12px 14px", marginBottom:16 }}>
@@ -511,7 +507,7 @@ export default function DashboardClient({
       {/* Decline modal */}
       {declineModal && (
         <div className={sharedStyles.overlay} onClick={() => setDeclineModal(null)}>
-          <div ref={declineSheetRef} className={sharedStyles.sheet} role="dialog" aria-modal="true" aria-labelledby="decline-title" tabIndex={-1} onClick={e => e.stopPropagation()} onKeyDown={(e) => { if (e.key !== "Tab") return; const focusable = e.currentTarget.querySelectorAll<HTMLElement>('button,[href],input,[tabindex]:not([tabindex="-1"])'); const first = focusable[0]; const last = focusable[focusable.length - 1]; if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); } }}>
+          <div ref={declineSheetRef} className={sharedStyles.sheet} role="dialog" aria-modal="true" aria-labelledby="decline-title" tabIndex={-1} onClick={e => e.stopPropagation()} onKeyDown={(e) => { if (e.key === "Escape") { setDeclineModal(null); return; } if (e.key !== "Tab") return; const focusable = e.currentTarget.querySelectorAll<HTMLElement>('button,[href],input,[tabindex]:not([tabindex="-1"])'); const first = focusable[0]; const last = focusable[focusable.length - 1]; if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); } }}>
             <div className={sharedStyles.sheetHandle}/>
             <h3 id="decline-title" className={sharedStyles.sheetTitle}>Afmelden voor dienst</h3>
             <p style={{ fontSize:13, color:"#a89ec8", marginBottom:16 }}>
@@ -546,7 +542,6 @@ const s: Record<string, React.CSSProperties> = {
   heroDaysBadge: { background:"rgba(0,229,195,.08)", border:"1px solid rgba(0,229,195,.25)", borderRadius:20, padding:"4px 12px", fontSize:11, fontWeight:700, color:"#00e5c3", flexShrink:0 as unknown as number },
   heroTitle: { fontSize:22, fontWeight:900, color:"#fff", marginBottom:4, letterSpacing:"-.01em" },
   heroTimePill: { fontSize:13, color:"#a89ec8", fontFamily:"'Exo 2',sans-serif" },
-  heroConfirmBox: { background:"#221f38", borderRadius:10, padding:"12px 14px" },
   heroYes: { flex:1, padding:"10px", borderRadius:8, background:"rgba(0,229,195,.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 },
   heroNo: { flex:1, padding:"10px", borderRadius:8, background:"rgba(255,79,109,.06)", border:"1px solid rgba(255,79,109,.3)", color:"#ff4f6d", fontFamily:"'Exo 2',sans-serif", fontSize:12, cursor:"pointer" },
   statRow: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 },
@@ -557,5 +552,4 @@ const s: Record<string, React.CSSProperties> = {
   progressFill: { height:"100%", borderRadius:4, background:"linear-gradient(90deg,#00e5c3,#00b89c)", transition:"width 0.6s ease" },
   actionBtn: { fontSize:11, fontWeight:700, padding:"10px 8px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", cursor:"pointer", textAlign:"center" as const, width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:5, boxSizing:"border-box" as const },
   actionBtnConfirmed: { fontSize:11, fontWeight:700, padding:"10px 8px", borderRadius:10, fontFamily:"'Exo 2',sans-serif", textAlign:"center" as const, width:"100%", background:"rgba(0,229,195,0.06)", border:"1px dashed rgba(0,229,195,0.4)", color:"rgba(0,229,195,0.6)", display:"flex", alignItems:"center", justifyContent:"center", gap:5, boxSizing:"border-box" as const, cursor:"default", pointerEvents:"none", userSelect:"none" },
-  navArrowSm: { background:"#221f38", border:"1px solid #2e2a4a", borderRadius:6, width:44, height:44, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:16, color:"#b8b0d4", flexShrink:0, padding:0 },
 };
