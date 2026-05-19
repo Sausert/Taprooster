@@ -152,6 +152,35 @@ export async function sendRosterPublishedEmail(
 }
 
 // ── Reminder (2 weken of 1 week) ──────────────────────────────────────────
+export async function sendPartyPublishedEmail(
+  to: string,
+  name: string,
+  partyName: string,
+  partyDate: string,
+  message?: string
+) {
+  await getResend().emails.send({
+    from: FROM,
+    to,
+    subject: `🎉 Feestje gepland: ${partyName}`,
+    html: emailTemplate(
+      `${escHtml(partyName)} 🎉`,
+      `
+      <div class="badge" style="background:rgba(244,114,182,0.15);color:#f472b6;border-color:#f472b6;">🎉 Nieuw feestje</div>
+      <p>Hey ${escHtml(name)},</p>
+      <p>Er is een feestje gepland bij ${escHtml(APP_CONFIG.orgName)}. Schrijf je in en kom erbij!</p>
+      <div class="highlight" style="border-color:#f472b6;background:rgba(244,114,182,0.08);">
+        <p><strong>${escHtml(partyName)}</strong></p>
+        <p class="meta">📅 ${escHtml(partyDate)}<br>📍 ${escHtml(APP_CONFIG.location)}</p>
+      </div>
+      ${message ? `<div class="highlight"><p>${escHtmlPreserveNewlines(message)}</p></div>` : ""}
+      <a href="${APP_URL}/rooster" class="btn" style="background:#f472b6;">Inschrijven →</a>
+      `
+    ),
+  });
+}
+
+// ── Reminder (2 weken of 1 week) ──────────────────────────────────────────
 export async function sendShiftReminderEmail(
   to: string,
   name: string,

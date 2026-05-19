@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-helpers";
 import { createAdminClient } from "@/lib/supabase-server";
-import { sendRosterPublishedEmail } from "@/lib/email";
+import { sendRosterPublishedEmail, sendPartyPublishedEmail } from "@/lib/email";
 import { parseLocalDate } from "@/lib/dates";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
         }))
       );
       await Promise.allSettled(allProfiles.map(p =>
-        sendRosterPublishedEmail(p.email, p.full_name, notifMessage)
+        sendPartyPublishedEmail(p.email, p.full_name, feestjeName, feestjeDate, message)
       ));
     }
 
