@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { parseLocalDate, formatDate, formatDateShort, formatTime } from "@/lib/dates";
+import { openAgenda } from "@/lib/agenda";
 import { useShiftApi } from "@/hooks/useShiftApi";
 import { createClient } from "@/lib/supabase";
 import sharedStyles from "@/styles/shared.module.css";
@@ -350,7 +351,7 @@ export default function RoosterClient({
                           {loading===shift.id ? "..." : "Afmelden"}
                         </button>
                       )}
-                      <a href={`/api/shifts/${shift.id}/ical`} aria-label="Exporteer naar agenda" style={{ ...s.icalBtn, flex: claimable || mine ? 0 : 1, textDecoration:"none", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      <a href={`/api/shifts/${shift.id}/ical`} aria-label="Exporteer naar agenda" onClick={(e) => { e.preventDefault(); openAgenda(shift); }} style={{ ...s.icalBtn, flex: claimable || mine ? 0 : 1, textDecoration:"none", display:"flex", alignItems:"center", justifyContent:"center" }}>
                         <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                       </a>
                     </div>
@@ -420,7 +421,7 @@ export default function RoosterClient({
                   </div>
                   <div style={{ textAlign:"right", display:"flex", flexDirection:"column", gap:6, alignItems:"flex-end" }}>
                     <p style={{ fontSize:11, color: accentColor }}>{assigned}/{shift.max_tappers}{assigned >= shift.max_tappers && <span style={{ marginLeft:5, fontSize:10, fontWeight:700, color:"#00e5c3", background:"rgba(0,229,195,0.12)", padding:"1px 6px", borderRadius:10 }}>VOL</span>}</p>
-                    <a href={`/api/shifts/${shift.id}/ical`} aria-label="Exporteer naar agenda" style={{ ...s.icalBtnSm, textDecoration:"none", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <a href={`/api/shifts/${shift.id}/ical`} aria-label="Exporteer naar agenda" onClick={(e) => { e.preventDefault(); openAgenda(shift); }} style={{ ...s.icalBtnSm, textDecoration:"none", display:"flex", alignItems:"center", justifyContent:"center" }}>
                       <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                     </a>
                     {canClaim(shift) && <button style={s.claimBtnSm} onClick={() => setClaimModal(shift)}>Inschrijven</button>}

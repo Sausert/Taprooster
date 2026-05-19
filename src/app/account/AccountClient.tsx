@@ -46,8 +46,7 @@ function stripLeadingEmoji(s: string): string {
 }
 
 function getNotifSortDate(n: Notification): Date {
-  const shiftDate = (n as any).shift?.date;
-  return shiftDate ? new Date(shiftDate + "T00:00:00") : new Date(n.created_at);
+  return new Date(n.created_at);
 }
 
 export default function AccountClient({ profile: initialProfile, leaderboard, notifications: initialNotifs }: { profile: Profile; leaderboard: any[]; notifications: Notification[]; }) {

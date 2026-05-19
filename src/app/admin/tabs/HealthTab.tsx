@@ -137,7 +137,7 @@ export function HealthTab() {
                   <p style={{ fontSize:11, color, margin:0 }}>{assigned}/{shift.max_tappers} bezet · {confirmed} bevestigd</p>
                 </div>
                 <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-                  {assigned < shift.max_tappers && <span className={`${styles.badge} ${styles.badgeRed}`}>{shift.max_tappers - assigned} open</span>}
+                  {assigned < shift.max_tappers && <span className={`${styles.badge} ${styles.badgeRed}`} style={{ padding:"8px 12px", fontSize:11 }}>{shift.max_tappers - assigned} open</span>}
                   {assigned < shift.max_tappers && <button style={s.addTapperBtn} onClick={() => setAddTapperModal(shift)}>+ Tapper</button>}
                 </div>
               </div>

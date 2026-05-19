@@ -2,8 +2,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Profile, Shift, ShiftAssignment, AdminMessage } from "@/types";
-import { APP_CONFIG } from "@/lib/config";
 import { parseLocalDate, formatDate, formatDateShort, formatTime } from "@/lib/dates";
+import { openAgenda } from "@/lib/agenda";
 import { useShiftApi } from "@/hooks/useShiftApi";
 import sharedStyles from "@/styles/shared.module.css";
 
@@ -20,29 +20,6 @@ interface Props {
   incomingPlanned: number;
   myRank: number;
   adminMessages: AdminMessageWithSender[];
-}
-
-function getAgendaLink(shift: Shift): { url: string; type: "ical" | "google" } {
-  const isAndroid = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
-  if (isAndroid) {
-    const parseLocal = (d: string) => { const [y,m,day] = d.split("-").map(Number); return new Date(y,m-1,day); };
-    const start = parseLocal(shift.date);
-    const [sh, sm] = shift.start_time.split(":").map(Number);
-    const [eh, em] = shift.end_time.split(":").map(Number);
-    start.setHours(sh, sm);
-    const end = parseLocal(shift.date);
-    end.setHours(eh, em);
-    const fmt = (d: Date) => d.toISOString().replace(/[-:]/g,"").split(".")[0] + "Z";
-    const params = new URLSearchParams({
-      action: "TEMPLATE",
-      text: `🍺 ${shift.title}`,
-      dates: `${fmt(start)}/${fmt(end)}`,
-      details: `Tapavond ${APP_CONFIG.orgName}`,
-      location: APP_CONFIG.location,
-    });
-    return { url: `https://calendar.google.com/calendar/render?${params}`, type: "google" };
-  }
-  return { url: `/api/shifts/${shift.id}/ical`, type: "ical" };
 }
 
 const CheckIcon = ({ size = 12 }: { size?: number }) => (
@@ -194,16 +171,7 @@ export default function DashboardClient({
   }
 
   function handleAgenda(shift: Shift) {
-    const { url, type } = getAgendaLink(shift);
-    if (type === "google") {
-      window.open(url, "_blank");
-    } else {
-      const a = document.createElement("a");
-      a.href = url;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
+    openAgenda(shift);
   }
 
   function openShiftBorderColor(shift: ClaimableShift) {
@@ -285,7 +253,7 @@ export default function DashboardClient({
                 <a
                   href={`/api/shifts/${nextShift.id}/ical`}
                   style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"11px", borderRadius:10, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:12, fontWeight:700, fontFamily:"'Exo 2',sans-serif", textDecoration:"none" }}
-                  onClick={(e) => { if (typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent)) { e.preventDefault(); handleAgenda(nextShift); } }}
+                  onClick={(e) => { e.preventDefault(); handleAgenda(nextShift); }}
                 >
                   <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                   Zet in agenda
