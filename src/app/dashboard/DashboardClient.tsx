@@ -279,7 +279,7 @@ export default function DashboardClient({
             {/* Confirmed or confirm box */}
             {heroIsConfirmed ? (
               <div style={{ display:"flex", gap:8 }}>
-                <span style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"11px", borderRadius:10, background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontSize:12, fontWeight:700, fontFamily:"'Exo 2',sans-serif" }}>
+                <span style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"11px", borderRadius:10, background:"rgba(0,229,195,0.06)", border:"1px dashed rgba(0,229,195,0.4)", color:"rgba(0,229,195,0.6)", fontSize:12, fontWeight:700, fontFamily:"'Exo 2',sans-serif", cursor:"default", pointerEvents:"none", userSelect:"none" }}>
                   <CheckIcon size={13} /> Bevestigd
                 </span>
                 <a
@@ -333,9 +333,9 @@ export default function DashboardClient({
                   <p style={{ fontSize:13, fontWeight:700, color:"#f0eeff", margin:0 }}>{currentMsg.title}</p>
                   {adminMessages.length > 1 && (
                     <div style={{ display:"flex", gap:4, alignItems:"center", flexShrink:0 }}>
-                      <button aria-label="Vorig bericht" onClick={() => setMsgIndex(i => Math.max(0, i - 1))} style={{ ...s.navArrowSm, width:28, height:28, borderRadius:6, fontSize:14, opacity: msgIndex === 0 ? 0.35 : 1 }}>‹</button>
+                      <button aria-label="Vorig bericht" onClick={() => setMsgIndex(i => Math.max(0, i - 1))} style={{ ...s.navArrowSm, opacity: msgIndex === 0 ? 0.35 : 1 }}>‹</button>
                       <span style={{ fontSize:10, color:"#a89ec8", fontFamily:"monospace" }}>{msgIndex + 1}/{adminMessages.length}</span>
-                      <button aria-label="Volgend bericht" onClick={() => setMsgIndex(i => Math.min(adminMessages.length - 1, i + 1))} style={{ ...s.navArrowSm, width:28, height:28, borderRadius:6, fontSize:14, opacity: msgIndex === adminMessages.length - 1 ? 0.35 : 1 }}>›</button>
+                      <button aria-label="Volgend bericht" onClick={() => setMsgIndex(i => Math.min(adminMessages.length - 1, i + 1))} style={{ ...s.navArrowSm, opacity: msgIndex === adminMessages.length - 1 ? 0.35 : 1 }}>›</button>
                     </div>
                   )}
                 </div>
