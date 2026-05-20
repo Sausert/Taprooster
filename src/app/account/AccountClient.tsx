@@ -235,23 +235,32 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
           <p className={sharedStyles.sectionTitle}>Persoonlijke gegevens</p>
           <form onSubmit={handleSavePersonal}>
             <div className={sharedStyles.card}>
-              <label className={sharedStyles.label}>Voornaam</label>
-              <input
-                className={sharedStyles.input}
-                type="text"
-                value={firstName}
-                onChange={e => setFirstName(e.target.value)}
-                placeholder="Voornaam"
-                required
-              />
-              <label className={sharedStyles.label}>Achternaam</label>
-              <input
-                className={sharedStyles.input}
-                type="text"
-                value={lastName}
-                onChange={e => setLastName(e.target.value)}
-                placeholder="Achternaam"
-              />
+              {profile.role === "admin" ? (
+                <>
+                  <label className={sharedStyles.label}>Voornaam</label>
+                  <input
+                    className={sharedStyles.input}
+                    type="text"
+                    value={firstName}
+                    onChange={e => setFirstName(e.target.value)}
+                    placeholder="Voornaam"
+                    required
+                  />
+                  <label className={sharedStyles.label}>Achternaam</label>
+                  <input
+                    className={sharedStyles.input}
+                    type="text"
+                    value={lastName}
+                    onChange={e => setLastName(e.target.value)}
+                    placeholder="Achternaam"
+                  />
+                </>
+              ) : (
+                <>
+                  <label className={sharedStyles.label}>Naam</label>
+                  <p style={{ fontSize:15, color:"#f0eeff", fontWeight:600, marginBottom:14 }}>{profile.full_name || "—"}</p>
+                </>
+              )}
               <label className={sharedStyles.label}>E-mailadres</label>
               <input className={sharedStyles.input} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="jij@email.nl" required />
               <label className={sharedStyles.label}>Telefoonnummer</label>

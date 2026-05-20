@@ -36,18 +36,16 @@ export async function POST(req: NextRequest) {
     sunday:    { jsDay: 0, title: "Zondag" },
   };
 
-  // Default shift config (can be overridden by admin)
   const defaultShifts = body.defaultShifts || {
-    monday:    { enabled: false, start: "19:00", end: "23:00" },
-    tuesday:   { enabled: false, start: "19:00", end: "23:00" },
-    wednesday: { enabled: true,  start: "19:00", end: "23:00" },
-    thursday:  { enabled: false, start: "19:00", end: "23:00" },
-    friday:    { enabled: true,  start: "20:00", end: "00:00" },
-    saturday:  { enabled: true,  start: "20:00", end: "00:00" },
-    sunday:    { enabled: false, start: "20:00", end: "00:00" },
+    monday:    { enabled: false, start: "19:00", end: "23:00", max_tappers: 2, mode: "auto" },
+    tuesday:   { enabled: false, start: "19:00", end: "23:00", max_tappers: 2, mode: "auto" },
+    wednesday: { enabled: true,  start: "19:00", end: "23:00", max_tappers: 2, mode: "open" },
+    thursday:  { enabled: false, start: "19:00", end: "23:00", max_tappers: 2, mode: "auto" },
+    friday:    { enabled: true,  start: "20:00", end: "00:00", max_tappers: 2, mode: "auto" },
+    saturday:  { enabled: true,  start: "20:00", end: "00:00", max_tappers: 2, mode: "auto" },
+    sunday:    { enabled: false, start: "20:00", end: "00:00", max_tappers: 2, mode: "auto" },
   };
 
-  // Support both date range (from/to) and months array
   let rangeStart: Date;
   let rangeEnd: Date;
 
@@ -55,11 +53,9 @@ export async function POST(req: NextRequest) {
     if (!DATE_RE.test(body.dateFrom) || !DATE_RE.test(body.dateTo)) {
       return NextResponse.json({ error: "Ongeldig datumformaat (verwacht YYYY-MM-DD)" }, { status: 400 });
     }
-    // Direct date range from datepicker
     rangeStart = parseLocalDate(body.dateFrom);
     rangeEnd = parseLocalDate(body.dateTo);
   } else {
-    // Legacy months array
     const months: string[] = Array.isArray(body.months) ? body.months : body.month ? [body.month] : [];
     if (months.length === 0) return NextResponse.json({ error: "Geen periode opgegeven" }, { status: 400 });
     const firstParts = months[0].split("-").map(Number);
@@ -71,7 +67,6 @@ export async function POST(req: NextRequest) {
   const rangeStartStr = toLocalDateStr(rangeStart);
   const rangeEndStr = toLocalDateStr(rangeEnd);
 
-  // Skip dates that already have ANY tapavond (published or concept) to avoid duplicates
   const { data: existingTapavonden } = await supabase
     .from("shifts")
     .select("date")
@@ -85,25 +80,28 @@ export async function POST(req: NextRequest) {
 
   const shiftsToCreate: any[] = [];
 
-  // Generate shifts for all enabled days — skip any date that already has a tapavond
+  // Track which dates should auto-assign (mode === "auto")
+  const autoAssignDates = new Set<string>();
+
   for (const [dayName, { jsDay, title }] of Object.entries(DAY_MAP)) {
     const cfg = defaultShifts[dayName];
     if (!cfg || cfg.enabled === false) continue;
+    const maxTappers = Number(cfg.max_tappers) || 2;
+    const mode = cfg.mode ?? "auto";
     for (const d of getDatesForDayInRange(jsDay, rangeStart, rangeEnd)) {
       const dateStr = toLocalDateStr(d);
       if (!existingTapavondDates.has(dateStr)) {
-        shiftsToCreate.push({ title:`Tapavond ${title}`, date:dateStr, start_time:cfg.start, end_time:cfg.end, type:"tapavond", role:"tapper", max_tappers:2, status:"concept", created_by:user.id });
+        shiftsToCreate.push({ title: `Tapavond ${title}`, date: dateStr, start_time: cfg.start, end_time: cfg.end, type: "tapavond", role: "tapper", max_tappers: maxTappers, status: "concept", created_by: user.id });
+        if (mode === "auto") autoAssignDates.add(dateStr);
       }
     }
   }
 
-  // Sla nieuwe shifts op
   if (shiftsToCreate.length > 0) {
     const { error } = await supabase.from("shifts").insert(shiftsToCreate);
     if (error) return NextResponse.json({ error: "Shifts aanmaken mislukt" }, { status: 500 });
   }
 
-  // Haal ALLE concept shifts op voor de periode (incl. net aangemaakte)
   const { data: allConceptShifts } = await supabase
     .from("shifts")
     .select("*")
@@ -111,40 +109,39 @@ export async function POST(req: NextRequest) {
     .gte("date", rangeStartStr)
     .lte("date", rangeEndStr);
 
-  // Woensdag NIET automatisch inplannen — tappers schrijven zelf in
-  const shiftsForAutoAssign = (allConceptShifts || []).filter((s: any) => {
-    const d = parseLocalDate(s.date);
-    return !(s.type === "tapavond" && d.getDay() === 3);
-  });
+  // Auto-assign only for shifts where the day config has mode === "auto"
+  const shiftsForAutoAssign = (allConceptShifts || []).filter((s: any) =>
+    s.type === "tapavond" && autoAssignDates.has(s.date)
+  );
 
-  const { data: profiles } = await supabase.from("profiles").select("*");
-  const { data: existingAssignments } = await supabase.from("shift_assignments").select("*");
-  // Fetch published shifts for the current year so quota counting works across schedule periods
-  const yearStart = `${rangeStart.getFullYear()}-01-01`;
-  const yearEnd = `${rangeStart.getFullYear()}-12-31`;
-  const { data: publishedShiftsForContext } = await supabase
-    .from("shifts")
-    .select("*")
-    .eq("status", "published")
-    .gte("date", yearStart)
-    .lte("date", yearEnd);
+  if (shiftsForAutoAssign.length > 0) {
+    const { data: profiles } = await supabase.from("profiles").select("*");
+    const { data: existingAssignments } = await supabase.from("shift_assignments").select("*");
+    const yearStart = `${rangeStart.getFullYear()}-01-01`;
+    const yearEnd = `${rangeStart.getFullYear()}-12-31`;
+    const { data: publishedShiftsForContext } = await supabase
+      .from("shifts")
+      .select("*")
+      .eq("status", "published")
+      .gte("date", yearStart)
+      .lte("date", yearEnd);
 
-  const suggestions = generateSchedule({
-    profiles: profiles || [],
-    shifts: shiftsForAutoAssign,
-    existingAssignments: existingAssignments || [],
-    contextShifts: publishedShiftsForContext || [],
-  });
+    const suggestions = generateSchedule({
+      profiles: profiles || [],
+      shifts: shiftsForAutoAssign,
+      existingAssignments: existingAssignments || [],
+      contextShifts: publishedShiftsForContext || [],
+    });
 
-  if (suggestions.length > 0) {
-    const { error: upsertError } = await supabase.from("shift_assignments").upsert(
-      suggestions.map(s => ({ shift_id: s.shiftId, user_id: s.userId, status: "assigned" })),
-      { onConflict: "shift_id,user_id" }
-    );
-    if (upsertError) return NextResponse.json({ error: "Inplannen mislukt" }, { status: 500 });
+    if (suggestions.length > 0) {
+      const { error: upsertError } = await supabase.from("shift_assignments").upsert(
+        suggestions.map(s => ({ shift_id: s.shiftId, user_id: s.userId, status: "assigned" })),
+        { onConflict: "shift_id,user_id" }
+      );
+      if (upsertError) return NextResponse.json({ error: "Inplannen mislukt" }, { status: 500 });
+    }
   }
 
-  // Geef conceptrooster terug met assignments
   const { data: updatedShifts } = await supabase
     .from("shifts")
     .select("*, assignments:shift_assignments(user_id, status, profile:profiles(id, full_name))")
@@ -155,7 +152,6 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     data: {
-      suggestions: suggestions.length,
       shiftsCreated: shiftsToCreate.length,
       shifts: updatedShifts || [],
       rangeStart: rangeStartStr,

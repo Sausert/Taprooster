@@ -8,7 +8,7 @@ import { parseLocalDate } from "@/lib/dates";
 import styles from "@/styles/shared.module.css";
 
 type DayKey = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
-type DayConfig = { enabled: boolean; start: string; end: string };
+type DayConfig = { enabled: boolean; start: string; end: string; max_tappers: number; mode: "auto" | "open" };
 
 const WEEK_DAYS: { key: DayKey; label: string }[] = [
   { key: "monday",    label: "Maandag" },
@@ -49,13 +49,13 @@ export function RoosterTab() {
   const [rosterView, setRosterView] = useState<"published" | "concept" | "events">("published");
   const [generating, setGenerating] = useState(false);
   const [defaultShifts, setDefaultShifts] = useState<Record<DayKey, DayConfig>>({
-    monday:    { enabled: false, start: "19:00", end: "23:00" },
-    tuesday:   { enabled: false, start: "19:00", end: "23:00" },
-    wednesday: { enabled: true,  start: "20:00", end: "00:00" },
-    thursday:  { enabled: false, start: "19:00", end: "23:00" },
-    friday:    { enabled: true,  start: "20:00", end: "00:00" },
-    saturday:  { enabled: true,  start: "20:00", end: "00:00" },
-    sunday:    { enabled: false, start: "20:00", end: "00:00" },
+    monday:    { enabled: false, start: "19:00", end: "23:00", max_tappers: 2, mode: "auto" },
+    tuesday:   { enabled: false, start: "19:00", end: "23:00", max_tappers: 2, mode: "auto" },
+    wednesday: { enabled: true,  start: "20:00", end: "00:00", max_tappers: 2, mode: "open" },
+    thursday:  { enabled: false, start: "19:00", end: "23:00", max_tappers: 2, mode: "auto" },
+    friday:    { enabled: true,  start: "20:00", end: "00:00", max_tappers: 2, mode: "auto" },
+    saturday:  { enabled: true,  start: "20:00", end: "00:00", max_tappers: 2, mode: "auto" },
+    sunday:    { enabled: false, start: "20:00", end: "00:00", max_tappers: 2, mode: "auto" },
   });
 
   const now = new Date();
@@ -275,16 +275,38 @@ export function RoosterTab() {
                       </div>
                     </div>
                     {cfg.enabled && (
-                      <div style={{ display:"flex", gap:8 }}>
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <label className={styles.label} style={{ fontSize:10 }}>Start</label>
-                          <TimeSelect value={cfg.start} onChange={v => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], start: v } }))} />
+                      <>
+                        <div style={{ display:"flex", gap:8, marginBottom:8 }}>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <label className={styles.label} style={{ fontSize:10 }}>Start</label>
+                            <TimeSelect value={cfg.start} onChange={v => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], start: v } }))} />
+                          </div>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <label className={styles.label} style={{ fontSize:10 }}>Eind</label>
+                            <TimeSelect value={cfg.end} onChange={v => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], end: v } }))} />
+                          </div>
+                          <div style={{ minWidth:60 }}>
+                            <label className={styles.label} style={{ fontSize:10 }}>Tappers</label>
+                            <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                              <button type="button" onClick={() => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], max_tappers: Math.max(1, d[day].max_tappers - 1) } }))} style={{ width:28, height:36, borderRadius:6, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", cursor:"pointer", fontSize:14, flexShrink:0 }}>−</button>
+                              <span style={{ minWidth:20, textAlign:"center", fontSize:14, fontWeight:700, color:"#e8e0ff" }}>{cfg.max_tappers}</span>
+                              <button type="button" onClick={() => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], max_tappers: Math.min(10, d[day].max_tappers + 1) } }))} style={{ width:28, height:36, borderRadius:6, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", cursor:"pointer", fontSize:14, flexShrink:0 }}>+</button>
+                            </div>
+                          </div>
                         </div>
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <label className={styles.label} style={{ fontSize:10 }}>Eind</label>
-                          <TimeSelect value={cfg.end} onChange={v => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], end: v } }))} />
+                        <div style={{ display:"flex", gap:6 }}>
+                          {(["auto", "open"] as const).map(m => (
+                            <button
+                              key={m}
+                              type="button"
+                              onClick={() => setDefaultShifts(d => ({ ...d, [day]: { ...d[day], mode: m } }))}
+                              style={{ flex:1, padding:"6px 4px", borderRadius:8, fontSize:10, fontWeight:700, cursor:"pointer", fontFamily:"'Exo 2',sans-serif", textTransform:"uppercase", letterSpacing:"0.05em", border:"1px solid", borderColor: cfg.mode === m ? (m === "auto" ? "#00e5c3" : "#ffb547") : "#2e2a4a", background: cfg.mode === m ? (m === "auto" ? "rgba(0,229,195,0.1)" : "rgba(255,181,71,0.1)") : "#221f38", color: cfg.mode === m ? (m === "auto" ? "#00e5c3" : "#ffb547") : "#8b80b0" }}
+                            >
+                              {m === "auto" ? "Auto inplannen" : "Open plekken"}
+                            </button>
+                          ))}
                         </div>
-                      </div>
+                      </>
                     )}
                   </div>
                 );

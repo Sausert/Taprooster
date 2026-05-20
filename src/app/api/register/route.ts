@@ -82,8 +82,8 @@ export async function POST(req: NextRequest) {
       .eq("id", newUser.user.id);
   }
 
-  // Mark token as used
-  await supabase
+  // Mark token as used — use adminClient to bypass RLS (no session exists yet during registration)
+  await adminClient
     .from("invite_tokens")
     .update({ status: "used", used_at: new Date().toISOString() })
     .eq("id", invite.id)
