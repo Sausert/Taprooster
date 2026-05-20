@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { redirect } from "next/navigation";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase-server";
 import DashboardClient from "./DashboardClient";
 
 export default async function DashboardPage() {
@@ -47,8 +47,10 @@ export default async function DashboardPage() {
       .in("shift_id", futureShiftIds);
 
     if ((myFutureAssignments || []).length > 0) {
-      const { data: futureShiftDetails } = await supabase
-        .from("shifts").select("*, assignments:shift_assignments(user_id, status)")
+      // Use adminClient so RLS doesn't hide other tappers' assignments
+      const adminClient = createAdminClient();
+      const { data: futureShiftDetails } = await adminClient
+        .from("shifts").select("*, assignments:shift_assignments(user_id, status, profile:profiles(id, full_name))")
         .in("id", (myFutureAssignments || []).map((a: any) => a.shift_id))
         .order("date", { ascending: true });
 
@@ -63,8 +65,9 @@ export default async function DashboardPage() {
   const myShiftIds = myUpcoming.map((a: any) => a.shift_id);
   const incomingPlanned = myUpcoming.length; // count of future planned shifts
 
-  // Open diensten — fetch via shifts table to include assignment names
-  const { data: openShiftsRaw } = await supabase
+  // Open diensten — use adminClient so RLS doesn't hide other tappers' assignments
+  const adminClientForOpen = createAdminClient();
+  const { data: openShiftsRaw } = await adminClientForOpen
     .from("shifts")
     .select("*, assignments:shift_assignments(user_id, status, profile:profiles(id, full_name))")
     .eq("status", "published")

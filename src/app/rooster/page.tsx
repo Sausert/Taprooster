@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { redirect } from "next/navigation";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase-server";
 import RoosterClient from "./RoosterClient";
 
 export default async function RoosterPage() {
@@ -10,12 +10,13 @@ export default async function RoosterPage() {
 
   const now = new Date();
   const start = now.toISOString().split("T")[0];
-  // Toon shifts tot eind volgend jaar zodat het volledige gepubliceerde rooster zichtbaar is
   const endOfNextYear = `${now.getFullYear() + 1}-12-31`;
 
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
 
-  const { data: shifts } = await supabase
+  // Use adminClient so RLS doesn't hide other tappers' assignments
+  const adminClient = createAdminClient();
+  const { data: shifts } = await adminClient
     .from("shifts")
     .select("*, assignments:shift_assignments(user_id, status, profile:profiles(id, full_name))")
     .eq("status", "published")
