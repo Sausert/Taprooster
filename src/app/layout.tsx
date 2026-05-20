@@ -17,11 +17,13 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   title: "Taprooster — OJC Walhalla",
   description: "Het taprooster van OJC Walhalla, Sevenum",
-  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "Taprooster",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
   },
 };
 
@@ -29,7 +31,6 @@ export const viewport: Viewport = {
   themeColor: "#0f0d1a",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

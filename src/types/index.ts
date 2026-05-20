@@ -11,8 +11,10 @@ export type NotificationType =
   | "roster_published"
   | "reminder_2weeks"
   | "reminder_1week"
+  | "unconfirmed_reminder"
   | "open_shift"
   | "shift_claimed"
+  | "shift_assigned"
   | "shift_cancelled"
   | "admin_message";
 export type InviteStatus = "pending" | "used" | "expired";
@@ -21,12 +23,17 @@ export interface Profile {
   id: string;
   email: string;
   full_name: string;
+  first_name?: string;
+  last_name?: string;
   role: UserRole;
   preferred_frequency: number; // 1-100 per year
   preferred_days: ("wednesday" | "friday" | "saturday")[];
   preferred_roles: ShiftRole[];
   wants_parties: boolean;
   language: "nl" | "en";
+  phone?: string;
+  unavailable_months?: number[];
+  avatar_url?: string;
   created_at: string;
   updated_at: string;
 }

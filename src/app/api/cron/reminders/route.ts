@@ -3,21 +3,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
 import { sendShiftReminderEmail } from "@/lib/email";
-
-function parseLocalDate(d: string): Date {
-  const [y,m,day] = d.split("-").map(Number);
-  return new Date(y, m-1, day);
-}
-function toLocalDateStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-}
-function addDays(d: Date, n: number): Date {
-  const r = new Date(d); r.setDate(r.getDate()+n); return r;
-}
+import { parseLocalDate, toLocalDateStr, addDays } from "@/lib/dates";
 
 export async function GET(req: NextRequest) {
-  const secret = req.headers.get("x-cron-secret");
-  if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
+  // Vercel sends: Authorization: Bearer <CRON_SECRET>
+  const authHeader = req.headers.get("authorization");
+  const secret = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -48,7 +40,8 @@ export async function GET(req: NextRequest) {
       const timeLabel = `${shift.start_time}–${shift.end_time}`;
 
       for (const a of (shift.assignments || [])) {
-        if (a.status === "declined") continue;
+        if (a.status !== "confirmed") continue;
+        if (!a.profile?.email) continue;
         if (await alreadySent(a.user_id, type, shift.id)) continue;
 
         await supabase.from("notifications").insert({
@@ -59,9 +52,9 @@ export async function GET(req: NextRequest) {
         });
 
         try {
-          await sendShiftReminderEmail(a.profile.email, a.profile.full_name, shift.title, dateLabel, timeLabel, weeks);
-        } catch(e) { console.error(`Email ${weeks}w failed:`, e); }
-        sent++;
+          await sendShiftReminderEmail(a.profile.email, a.profile.full_name, shift.title, dateLabel, timeLabel, weeks, shift.id);
+          sent++;
+        } catch { /* email failure is non-fatal */ }
       }
     }
   }
@@ -81,6 +74,7 @@ export async function GET(req: NextRequest) {
 
   for (const shift of upcoming || []) {
     const dateLabel = parseLocalDate(shift.date).toLocaleDateString("nl-NL",{weekday:"long",day:"numeric",month:"long"});
+    const timeLabel = `${shift.start_time}–${shift.end_time}`;
     for (const a of (shift.assignments || [])) {
       if (a.status !== "assigned") continue; // alleen onbevestigd
       if (await alreadySent(a.user_id, "unconfirmed_reminder", shift.id)) continue;
@@ -90,6 +84,11 @@ export async function GET(req: NextRequest) {
         message: `Je hebt nog niet bevestigd voor ${shift.title} op ${dateLabel}.`,
         shift_id: shift.id, read: false,
       });
+      if (a.profile?.email) {
+        try {
+          await sendShiftReminderEmail(a.profile.email, a.profile.full_name, shift.title, dateLabel, timeLabel, 1, shift.id);
+        } catch { /* email failure is non-fatal */ }
+      }
       sent++;
     }
   }

@@ -1,5 +1,6 @@
+export const dynamic = 'force-dynamic';
 import { redirect } from "next/navigation";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase-server";
 import RoosterClient from "./RoosterClient";
 
 export default async function RoosterPage() {
@@ -9,13 +10,17 @@ export default async function RoosterPage() {
 
   const now = new Date();
   const start = now.toISOString().split("T")[0];
-  const in3months = new Date(now.getFullYear(), now.getMonth() + 3, 0).toISOString().split("T")[0];
+  const endOfNextYear = `${now.getFullYear() + 1}-12-31`;
 
-  const { data: shifts } = await supabase
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+
+  // Use adminClient so RLS doesn't hide other tappers' assignments
+  const adminClient = createAdminClient();
+  const { data: shifts } = await adminClient
     .from("shifts")
     .select("*, assignments:shift_assignments(user_id, status, profile:profiles(id, full_name))")
     .eq("status", "published")
-    .gte("date", start).lte("date", in3months)
+    .gte("date", start).lte("date", endOfNextYear)
     .order("date", { ascending: true });
 
   const { data: myAssignments } = await supabase
@@ -33,6 +38,7 @@ export default async function RoosterPage() {
       myShiftIds={myShiftIds}
       userId={user.id}
       userAssignments={myAssignments || []}
+      isAdmin={profile?.role === "admin"}
     />
   );
 }

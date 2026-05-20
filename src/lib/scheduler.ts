@@ -1,5 +1,7 @@
 // lib/scheduler.ts — Strict availability + rotation scheduler
 import type { Profile, Shift, ShiftAssignment } from "@/types";
+import { APP_CONFIG } from "@/lib/config";
+import { parseLocalDate } from "@/lib/dates";
 
 type DayOfWeek = "wednesday" | "friday" | "saturday";
 
@@ -14,12 +16,11 @@ interface ScheduleInput {
   profiles: Profile[];
   shifts: Shift[];
   existingAssignments: ShiftAssignment[];
+  // Optional broader set of shifts for quota counting (includes previously published shifts).
+  // When omitted, falls back to `shifts` (which may undercount cross-period assignments).
+  contextShifts?: Shift[];
 }
 
-function parseLocalDate(dateStr: string): Date {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
 
 function getDayOfWeek(dateStr: string): DayOfWeek | null {
   const day = parseLocalDate(dateStr).getDay();
@@ -54,6 +55,25 @@ function countUserShiftsInMonth(
     if (a.user_id !== userId || a.status === "declined") return false;
     const shift = allShifts.find(s => s.id === a.shift_id);
     return shift && getMonthKey(shift.date) === monthKey;
+  }).length;
+}
+
+function getQuarterKey(dateStr: string): string {
+  const d = parseLocalDate(dateStr);
+  const q = Math.floor(d.getMonth() / 3) + 1;
+  return `${d.getFullYear()}-Q${q}`;
+}
+
+function countUserShiftsInQuarter(
+  userId: string,
+  quarterKey: string,
+  assignments: ShiftAssignment[],
+  allShifts: Shift[]
+): number {
+  return assignments.filter(a => {
+    if (a.user_id !== userId || a.status === "declined") return false;
+    const shift = allShifts.find(s => s.id === a.shift_id);
+    return shift && getQuarterKey(shift.date) === quarterKey;
   }).length;
 }
 
@@ -119,11 +139,11 @@ function isUserEligible(
     return { eligible: false, reason: "Geen bonnenkassa voorkeur" };
   }
 
-  // 5. Monthly frequency limit — HARD CAP (most important!)
-  const monthKey = getMonthKey(shift.date);
-  const shiftsThisMonth = countUserShiftsInMonth(user.id, monthKey, allAssignments, allShifts);
-  if (shiftsThisMonth >= user.preferred_frequency) {
-    return { eligible: false, reason: `Maandlimiet bereikt: ${shiftsThisMonth}/${user.preferred_frequency}` };
+  // 5. Quarterly frequency limit — HARD CAP (most important!)
+  const quarterKey = getQuarterKey(shift.date);
+  const shiftsThisQuarter = countUserShiftsInQuarter(user.id, quarterKey, allAssignments, allShifts);
+  if (shiftsThisQuarter >= user.preferred_frequency) {
+    return { eligible: false, reason: `Kwartaallimiet bereikt: ${shiftsThisQuarter}/${user.preferred_frequency}` };
   }
 
   // 6. No double-booking on same day
@@ -149,9 +169,9 @@ function scoreUser(
   const weekNum = getWeekNumber(shift.date);
 
   // Fairness: users with more remaining quota get priority
-  const monthKey = getMonthKey(shift.date);
-  const shiftsThisMonth = countUserShiftsInMonth(user.id, monthKey, allAssignments, allShifts);
-  const remaining = user.preferred_frequency - shiftsThisMonth;
+  const quarterKey = getQuarterKey(shift.date);
+  const shiftsThisQuarter = countUserShiftsInQuarter(user.id, quarterKey, allAssignments, allShifts);
+  const remaining = user.preferred_frequency - shiftsThisQuarter;
   score += remaining * 15; // More remaining = higher priority
 
   // Fairness: users who have tapped less this year get priority
@@ -177,6 +197,10 @@ function scoreUser(
 
 export function generateSchedule(input: ScheduleInput): AssignmentSuggestion[] {
   const { profiles, shifts, existingAssignments } = input;
+  // Use contextShifts for quota counting so cross-period assignments are included
+  const allShiftsForContext = input.contextShifts
+    ? [...input.contextShifts, ...shifts.filter(s => !input.contextShifts!.some(c => c.id === s.id))]
+    : shifts;
   const suggestions: AssignmentSuggestion[] = [];
   const tempAssignments = [...existingAssignments];
 
@@ -195,9 +219,9 @@ export function generateSchedule(input: ScheduleInput): AssignmentSuggestion[] {
     const eligible = profiles
       .filter(p => !tempAssignments.some(a => a.shift_id === shift.id && a.user_id === p.id))
       .map(p => {
-        const { eligible, reason } = isUserEligible(p, shift, shifts, tempAssignments);
+        const { eligible, reason } = isUserEligible(p, shift, allShiftsForContext, tempAssignments);
         if (!eligible) return null;
-        const score = scoreUser(p, shift, shifts, tempAssignments);
+        const score = scoreUser(p, shift, allShiftsForContext, tempAssignments);
         return { userId: p.id, score };
       })
       .filter((x): x is { userId: string; score: number } => x !== null)
@@ -225,14 +249,21 @@ export function generateICalEvent(shift: Shift): string {
   const d = parseLocalDate(shift.date);
   const fmt = (n: number) => String(n).padStart(2, "0");
   const dateStr = `${d.getFullYear()}${fmt(d.getMonth()+1)}${fmt(d.getDate())}`;
+  const startStr = shift.start_time.replace(/:/g, "").slice(0, 4);
+  const endStr = shift.end_time.replace(/:/g, "").slice(0, 4);
+  // Shifts ending past midnight get DTEND on the next day
+  const endDate = endStr < startStr
+    ? new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)
+    : d;
+  const endDateStr = `${endDate.getFullYear()}${fmt(endDate.getMonth()+1)}${fmt(endDate.getDate())}`;
   return [
-    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//OJC Walhalla//Taprooster//NL",
+    `BEGIN:VCALENDAR`, "VERSION:2.0", `PRODID:-//${APP_CONFIG.orgName}//Taprooster//NL`,
     "BEGIN:VEVENT",
-    `UID:shift-${shift.id}@ojcwalhalla.nl`,
-    `DTSTART:${dateStr}T${shift.start_time.replace(":","")}00`,
-    `DTEND:${dateStr}T${shift.end_time.replace(":","")}00`,
+    `UID:shift-${shift.id}@${APP_CONFIG.domain}`,
+    `DTSTART:${dateStr}T${startStr}00`,
+    `DTEND:${endDateStr}T${endStr}00`,
     `SUMMARY:🍺 ${shift.title}`,
-    "LOCATION:De Donckstraat 24/26\\, 5975 AC Sevenum",
+    `LOCATION:${APP_CONFIG.locationIcal}`,
     `DTSTAMP:${new Date().toISOString().replace(/[-:]/g,"").split(".")[0]}Z`,
     "END:VEVENT", "END:VCALENDAR",
   ].join("\r\n");

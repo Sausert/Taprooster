@@ -39,15 +39,14 @@ export async function GET(req: NextRequest) {
 
 // POST — nieuw evenement aanmaken
 export async function POST(req: NextRequest) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { requireAdmin } = await import("@/lib/api-helpers");
+  const auth = await requireAdmin();
+  if ("error" in auth) return auth.error;
+  const { user, supabase } = auth;
 
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-  const body = await req.json();
-  const parsed = EventSchema.safeParse(body);
+  let rawBody: unknown;
+  try { rawBody = await req.json(); } catch { return NextResponse.json({ error: "Ongeldige request body" }, { status: 400 }); }
+  const parsed = EventSchema.safeParse(rawBody);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
   const { title, date, shifts } = parsed.data;

@@ -1,26 +1,37 @@
 // PATCH /api/shifts/[id] — dienst bewerken (admin only)
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { z } from "zod";
+import { requireAdmin } from "@/lib/api-helpers";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const PatchSchema = z.object({
+  title:      z.string().min(1).optional(),
+  start_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  end_time:   z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  max_tappers:z.number().min(1).max(20).optional(),
+});
 
 export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!UUID_RE.test(id)) return NextResponse.json({ error: "Ongeldig shift-ID" }, { status: 400 });
+  const auth = await requireAdmin();
+  if ("error" in auth) return auth.error;
+  const { supabase } = auth;
 
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-  const body = await req.json();
-  const { title, start_time, end_time, max_tappers, admin_note } = body;
+  let body: unknown;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "Ongeldige request body" }, { status: 400 }); }
+  const parsed = PatchSchema.safeParse(body);
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
   const { data, error } = await supabase
     .from("shifts")
-    .update({ title, start_time, end_time, max_tappers, admin_note, updated_at: new Date().toISOString() })
+    .update({ ...parsed.data, updated_at: new Date().toISOString() })
     .eq("id", id)
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Bijwerken mislukt" }, { status: 500 });
+  if (!data) return NextResponse.json({ error: "Shift niet gevonden" }, { status: 404 });
   return NextResponse.json({ data });
 }

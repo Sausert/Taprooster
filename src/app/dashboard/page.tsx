@@ -1,5 +1,6 @@
+export const dynamic = 'force-dynamic';
 import { redirect } from "next/navigation";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase-server";
 import DashboardClient from "./DashboardClient";
 
 export default async function DashboardPage() {
@@ -46,8 +47,10 @@ export default async function DashboardPage() {
       .in("shift_id", futureShiftIds);
 
     if ((myFutureAssignments || []).length > 0) {
-      const { data: futureShiftDetails } = await supabase
-        .from("shifts").select("*")
+      // Use adminClient so RLS doesn't hide other tappers' assignments
+      const adminClient = createAdminClient();
+      const { data: futureShiftDetails } = await adminClient
+        .from("shifts").select("*, assignments:shift_assignments(user_id, status, profile:profiles(id, full_name))")
         .in("id", (myFutureAssignments || []).map((a: any) => a.shift_id))
         .order("date", { ascending: true });
 
@@ -62,27 +65,30 @@ export default async function DashboardPage() {
   const myShiftIds = myUpcoming.map((a: any) => a.shift_id);
   const incomingPlanned = myUpcoming.length; // count of future planned shifts
 
-  // Open diensten
-  const { data: openShiftsRaw } = await supabase
-    .from("shift_occupancy")
-    .select("*")
+  // Open diensten — use adminClient so RLS doesn't hide other tappers' assignments
+  const adminClientForOpen = createAdminClient();
+  const { data: openShiftsRaw } = await adminClientForOpen
+    .from("shifts")
+    .select("*, assignments:shift_assignments(user_id, status, profile:profiles(id, full_name))")
     .eq("status", "published")
-    .gt("open_spots", 0)
     .gte("date", today)
     .order("date", { ascending: true })
-    .limit(10);
+    .limit(100);
 
-  const claimableShifts = (openShiftsRaw || []).filter(
-    (s: any) => !myShiftIds.includes(s.id)
-  );
+  const claimableShifts = (openShiftsRaw || [])
+    .map((s: any) => {
+      const filled = (s.assignments || []).filter((a: any) => a.status !== "declined").length;
+      return { ...s, open_spots: Math.max(0, s.max_tappers - filled) };
+    })
+    .filter((s: any) => s.open_spots > 0 && !myShiftIds.includes(s.id));
 
   const { data: leaderboard } = await supabase
     .from("leaderboard").select("*").order("rank", { ascending: true });
   const myRank = leaderboard?.find((l: any) => l.id === user.id)?.rank || 0;
 
   const { data: adminMessages } = await supabase
-    .from("admin_messages").select("*")
-    .order("created_at", { ascending: false }).limit(3);
+    .from("admin_messages").select("*, sender:profiles!created_by(full_name)")
+    .order("created_at", { ascending: false }).limit(5);
 
   return (
     <DashboardClient

@@ -1,20 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { requireAdmin } from "@/lib/api-helpers";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id: shiftId } = await context.params;
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!UUID_RE.test(shiftId)) return NextResponse.json({ error: "Ongeldig shift-ID" }, { status: 400 });
+  const auth = await requireAdmin();
+  if ("error" in auth) return auth.error;
+  const { supabase } = auth;
 
-  const { data: adminProfile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (adminProfile?.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-  const { userId } = await req.json();
+  let body: Record<string, unknown>;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "Ongeldige request body" }, { status: 400 }); }
+  const userId = body.userId as string | undefined;
+  if (!userId) return NextResponse.json({ error: "userId is verplicht" }, { status: 400 });
+  if (!UUID_RE.test(userId)) return NextResponse.json({ error: "Ongeldig gebruikers-ID" }, { status: 400 });
   const { error } = await supabase.from("shift_assignments")
     .update({ status: "declined", declined_at: new Date().toISOString() })
     .eq("shift_id", shiftId).eq("user_id", userId);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Bijwerken mislukt" }, { status: 500 });
   return NextResponse.json({ data: { removed: true } });
 }

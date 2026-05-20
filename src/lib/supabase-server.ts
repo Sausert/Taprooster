@@ -1,6 +1,6 @@
+import "server-only";
 // ============================================================
 // lib/supabase-server.ts — Server client (Server Components & API routes)
-// Importeer DIT bestand NOOIT in een Client Component ("use client")
 // ============================================================
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";

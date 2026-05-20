@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { requireAdmin } from "@/lib/api-helpers";
 
 export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAdmin();
+  if ("error" in auth) return auth.error;
+  const { user, supabase } = auth;
 
-  const { data: admin } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (admin?.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  console.error(`[AUDIT] Statistieken gereset: target=${id} door admin=${user.id} om ${new Date().toISOString()}`);
 
   // Reset: set all assignments of this year to declined (soft reset)
   const thisYear = new Date().getFullYear();

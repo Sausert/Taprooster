@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=430, initial-scale=1">
+<title>Volgende Dienst — 5 Ontwerpen</title>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0f0d1a; font-family:'Exo 2',sans-serif; padding:24px 16px 60px; }
+  .page { max-width:390px; margin:0 auto; }
+  .section-label {
+    font-size:11px; font-weight:700; letter-spacing:.15em; text-transform:uppercase;
+    color:#5a4a9e; margin:36px 0 12px; padding:0 4px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .section-label::after { content:''; flex:1; height:1px; background:#2e2a4a; }
+  .option-num {
+    display:inline-block; width:22px; height:22px; background:#221f38;
+    border:1px solid #3e3a5a; border-radius:6px; text-align:center;
+    line-height:22px; font-size:11px; color:#00e5c3; font-weight:900; flex-shrink:0;
+  }
+
+  /* ─── OPTIE 1 — Glassmorphism ─── */
+  .opt1 {
+    position:relative; border-radius:20px; padding:0; overflow:hidden;
+    box-shadow:0 16px 48px rgba(0,0,0,.5), 0 0 0 1px rgba(0,229,195,.18);
+    margin-bottom:4px;
+  }
+  .opt1-bg {
+    position:absolute; inset:0;
+    background:linear-gradient(135deg, rgba(0,229,195,.14) 0%, rgba(59,47,110,.6) 50%, rgba(15,13,26,.9) 100%);
+  }
+  .opt1-noise {
+    position:absolute; inset:0;
+    background:repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,.015) 2px, rgba(255,255,255,.015) 4px);
+    pointer-events:none;
+  }
+  .opt1-inner {
+    position:relative; z-index:1; padding:20px 20px 16px;
+  }
+  .opt1-eyebrow {
+    font-size:10px; font-weight:700; letter-spacing:.15em; text-transform:uppercase;
+    color:rgba(0,229,195,.7); margin-bottom:14px; display:flex; align-items:center; gap:6px;
+  }
+  .opt1-eyebrow::before { content:''; width:20px; height:1.5px; background:#00e5c3; opacity:.5; }
+  .opt1-main { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:14px; }
+  .opt1-date-big {
+    font-family:'Space Mono',monospace; font-size:64px; font-weight:700;
+    color:#fff; line-height:1; letter-spacing:-.03em;
+  }
+  .opt1-date-month {
+    font-size:14px; font-weight:700; color:rgba(255,255,255,.5);
+    text-transform:uppercase; letter-spacing:.1em; margin-bottom:8px;
+  }
+  .opt1-countdown {
+    text-align:right;
+  }
+  .opt1-countdown-num {
+    font-family:'Space Mono',monospace; font-size:36px; font-weight:700;
+    color:#00e5c3; line-height:1;
+  }
+  .opt1-countdown-label {
+    font-size:10px; color:rgba(0,229,195,.6); letter-spacing:.1em; text-transform:uppercase;
+  }
+  .opt1-title {
+    font-size:22px; font-weight:900; color:#fff; margin-bottom:4px; line-height:1.1;
+  }
+  .opt1-time {
+    display:inline-flex; align-items:center; gap:6px;
+    background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12);
+    border-radius:20px; padding:4px 12px; font-size:12px; color:rgba(255,255,255,.7);
+  }
+  .opt1-time-dot { width:5px; height:5px; background:#00e5c3; border-radius:50%; }
+  .opt1-divider { height:1px; background:rgba(255,255,255,.07); margin:14px 0; }
+  .opt1-actions { display:flex; gap:8px; }
+  .opt1-btn-yes {
+    flex:2; padding:12px; border-radius:12px;
+    background:linear-gradient(135deg,#00e5c3,#00b89c);
+    color:#0f0d1a; border:none; font-family:'Exo 2',sans-serif;
+    font-weight:900; font-size:13px; cursor:pointer; letter-spacing:.03em;
+  }
+  .opt1-btn-no {
+    flex:1; padding:12px; border-radius:12px;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+    color:rgba(255,255,255,.5); font-family:'Exo 2',sans-serif;
+    font-size:13px; cursor:pointer;
+  }
+
+  /* ─── OPTIE 2 — Event Ticket ─── */
+  .opt2 {
+    border-radius:16px; overflow:hidden; display:flex;
+    box-shadow:0 8px 32px rgba(0,0,0,.4), 0 0 0 1px rgba(46,42,74,.8);
+    margin-bottom:4px;
+  }
+  .opt2-stub {
+    width:68px; flex-shrink:0;
+    background:linear-gradient(180deg,#00e5c3,#00b89c);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:16px 8px; position:relative;
+  }
+  .opt2-stub::after {
+    content:''; position:absolute; right:-1px; top:0; bottom:0; width:1px;
+    background:repeating-linear-gradient(to bottom, transparent, transparent 4px, #0f0d1a 4px, #0f0d1a 10px);
+  }
+  .opt2-stub-day { font-family:'Space Mono',monospace; font-size:36px; font-weight:700; color:#0f0d1a; line-height:1; }
+  .opt2-stub-month { font-size:10px; font-weight:900; color:rgba(15,13,26,.7); letter-spacing:.12em; text-transform:uppercase; margin-top:3px; }
+  .opt2-stub-label {
+    writing-mode:vertical-rl; text-orientation:mixed; transform:rotate(180deg);
+    font-size:9px; font-weight:900; color:rgba(15,13,26,.5); letter-spacing:.2em;
+    text-transform:uppercase; margin-top:14px;
+  }
+  .opt2-body { flex:1; background:#1a1730; padding:16px 14px; }
+  .opt2-type {
+    display:inline-block; font-size:9px; font-weight:900; letter-spacing:.15em;
+    text-transform:uppercase; color:#00e5c3; border:1px solid rgba(0,229,195,.3);
+    border-radius:4px; padding:2px 8px; margin-bottom:10px;
+  }
+  .opt2-title { font-size:18px; font-weight:900; color:#f0eeff; margin-bottom:6px; line-height:1.1; }
+  .opt2-time { font-size:13px; color:#a89ec8; margin-bottom:10px; }
+  .opt2-countdown {
+    display:inline-flex; align-items:center; gap:6px;
+    background:rgba(0,229,195,.08); border:1px solid rgba(0,229,195,.2);
+    border-radius:8px; padding:5px 10px; font-size:12px; color:#00e5c3; font-weight:700; margin-bottom:12px;
+  }
+  .opt2-actions { display:flex; gap:6px; }
+  .opt2-btn-yes {
+    flex:1; padding:9px; border-radius:8px;
+    background:rgba(0,229,195,.1); border:1px solid #00e5c3;
+    color:#00e5c3; font-family:'Exo 2',sans-serif; font-weight:700; font-size:12px; cursor:pointer;
+  }
+  .opt2-btn-no {
+    padding:9px 12px; border-radius:8px;
+    background:rgba(255,79,109,.08); border:1px solid rgba(255,79,109,.3);
+    color:#ff4f6d; font-family:'Exo 2',sans-serif; font-size:12px; cursor:pointer;
+  }
+
+  /* ─── OPTIE 3 — Split Header ─── */
+  .opt3 {
+    border-radius:20px; overflow:hidden;
+    box-shadow:0 8px 32px rgba(0,0,0,.4);
+    margin-bottom:4px;
+    border:1px solid rgba(46,42,74,.8);
+  }
+  .opt3-header {
+    background:linear-gradient(135deg,#0b3d35,#0e2e26);
+    padding:20px 20px 18px; position:relative; overflow:hidden;
+  }
+  .opt3-header-glow {
+    position:absolute; right:-40px; top:-40px; width:140px; height:140px;
+    background:radial-gradient(circle, rgba(0,229,195,.25), transparent 70%);
+    pointer-events:none;
+  }
+  .opt3-eyebrow {
+    font-size:10px; font-weight:700; letter-spacing:.15em; text-transform:uppercase;
+    color:rgba(0,229,195,.6); margin-bottom:10px;
+  }
+  .opt3-date-row { display:flex; align-items:baseline; gap:10px; margin-bottom:6px; }
+  .opt3-day { font-family:'Space Mono',monospace; font-size:48px; font-weight:700; color:#fff; line-height:1; }
+  .opt3-month-wrap { display:flex; flex-direction:column; gap:2px; }
+  .opt3-weekday { font-size:12px; font-weight:600; color:rgba(255,255,255,.5); text-transform:capitalize; }
+  .opt3-month-txt { font-size:16px; font-weight:700; color:rgba(0,229,195,.8); text-transform:uppercase; letter-spacing:.05em; }
+  .opt3-pills { display:flex; gap:6px; flex-wrap:wrap; }
+  .opt3-pill {
+    display:inline-flex; align-items:center; gap:5px;
+    background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12);
+    border-radius:20px; padding:3px 10px; font-size:11px; color:rgba(255,255,255,.6);
+  }
+  .opt3-body { background:#1a1730; padding:16px 20px; }
+  .opt3-title { font-size:21px; font-weight:900; color:#f0eeff; margin-bottom:8px; }
+  .opt3-countdown { display:flex; align-items:center; gap:6px; margin-bottom:14px; }
+  .opt3-cdown-num { font-family:'Space Mono',monospace; font-size:28px; font-weight:700; color:#00e5c3; line-height:1; }
+  .opt3-cdown-label { font-size:11px; color:#a89ec8; }
+  .opt3-actions { display:flex; gap:8px; }
+  .opt3-btn-yes {
+    flex:2; padding:13px; border-radius:12px;
+    background:linear-gradient(135deg,#00e5c3,#00b89c);
+    color:#0f0d1a; border:none; font-family:'Exo 2',sans-serif;
+    font-weight:900; font-size:13px; cursor:pointer;
+  }
+  .opt3-btn-no {
+    flex:1; padding:13px; border-radius:12px;
+    background:rgba(255,255,255,.05); border:1px solid #2e2a4a;
+    color:#a89ec8; font-family:'Exo 2',sans-serif; font-size:12px; cursor:pointer;
+  }
+
+  /* ─── OPTIE 4 — Neon Countdown ─── */
+  .opt4 {
+    border-radius:20px; padding:22px 20px; position:relative; overflow:hidden;
+    background:#12102a; border:1px solid #2e2a4a;
+    box-shadow:0 8px 40px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.04);
+    margin-bottom:4px;
+  }
+  .opt4-glow1 {
+    position:absolute; bottom:-60px; left:-40px; width:200px; height:200px;
+    background:radial-gradient(circle, rgba(0,229,195,.12), transparent 70%); pointer-events:none;
+  }
+  .opt4-glow2 {
+    position:absolute; top:-40px; right:-20px; width:120px; height:120px;
+    background:radial-gradient(circle, rgba(90,74,158,.3), transparent 70%); pointer-events:none;
+  }
+  .opt4-eyebrow {
+    font-size:10px; font-weight:700; letter-spacing:.2em; text-transform:uppercase;
+    color:rgba(0,229,195,.5); margin-bottom:16px;
+  }
+  .opt4-hero { display:flex; align-items:flex-end; gap:0; margin-bottom:18px; }
+  .opt4-big-num {
+    font-family:'Space Mono',monospace; font-size:88px; font-weight:700;
+    color:#00e5c3; line-height:1; letter-spacing:-.04em;
+    text-shadow:0 0 40px rgba(0,229,195,.5), 0 0 80px rgba(0,229,195,.2);
+  }
+  .opt4-big-label {
+    margin-bottom:14px; margin-left:10px;
+    display:flex; flex-direction:column; gap:2px;
+  }
+  .opt4-big-label-top { font-size:12px; color:rgba(0,229,195,.5); font-weight:700; text-transform:uppercase; letter-spacing:.1em; }
+  .opt4-big-label-bot { font-size:12px; color:rgba(0,229,195,.5); font-weight:700; text-transform:uppercase; letter-spacing:.1em; }
+  .opt4-info { margin-bottom:18px; }
+  .opt4-title { font-size:19px; font-weight:900; color:#f0eeff; margin-bottom:3px; }
+  .opt4-date { font-size:13px; color:#a89ec8; }
+  .opt4-divider { height:1px; background:linear-gradient(90deg,rgba(0,229,195,.3),transparent); margin-bottom:14px; }
+  .opt4-actions { display:flex; gap:8px; }
+  .opt4-btn-yes {
+    flex:1; padding:13px; border-radius:12px;
+    background:linear-gradient(135deg,#00e5c3,#00b89c);
+    color:#0f0d1a; border:none; font-family:'Exo 2',sans-serif;
+    font-weight:900; font-size:13px; cursor:pointer;
+    box-shadow:0 4px 20px rgba(0,229,195,.3);
+  }
+  .opt4-btn-no {
+    padding:13px 16px; border-radius:12px;
+    background:transparent; border:1px solid #2e2a4a;
+    color:#a89ec8; font-family:'Exo 2',sans-serif; font-size:13px; cursor:pointer;
+  }
+
+  /* ─── OPTIE 5 — Minimal Timeline ─── */
+  .opt5 {
+    background:#161326; border:1px solid #2e2a4a; border-radius:16px;
+    overflow:hidden; margin-bottom:4px;
+    box-shadow:0 4px 24px rgba(0,0,0,.3);
+  }
+  .opt5-topbar {
+    display:flex; align-items:stretch; height:4px;
+  }
+  .opt5-topbar-fill { background:linear-gradient(90deg,#00e5c3,#5a4a9e); flex:1; }
+  .opt5-topbar-empty { background:#2e2a4a; flex:2; }
+  .opt5-inner { padding:16px 18px; }
+  .opt5-row1 { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
+  .opt5-date-block { display:flex; flex-direction:column; }
+  .opt5-weekday { font-size:11px; font-weight:600; color:#a89ec8; text-transform:capitalize; margin-bottom:1px; }
+  .opt5-date-txt { font-size:16px; font-weight:900; color:#f0eeff; font-family:'Exo 2',sans-serif; }
+  .opt5-badge {
+    background:rgba(0,229,195,.08); border:1px solid rgba(0,229,195,.25);
+    border-radius:20px; padding:4px 12px; font-size:11px; font-weight:700; color:#00e5c3;
+  }
+  .opt5-title { font-size:22px; font-weight:900; color:#fff; margin-bottom:4px; letter-spacing:-.01em; }
+  .opt5-meta { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+  .opt5-time { font-size:13px; color:#a89ec8; font-family:'Space Mono',monospace; }
+  .opt5-sep { width:3px; height:3px; background:#3e3a5a; border-radius:50%; }
+  .opt5-role { font-size:11px; color:#5a4a9e; font-weight:700; text-transform:uppercase; letter-spacing:.08em; }
+  .opt5-confirm-row { background:#0f0d1a; border:1px solid #2e2a4a; border-radius:10px; padding:12px 14px; margin-bottom:12px; }
+  .opt5-q { font-size:12px; color:#a89ec8; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+  .opt5-q-dot { width:6px; height:6px; background:#ffb547; border-radius:50%; }
+  .opt5-actions { display:flex; gap:6px; }
+  .opt5-btn-yes {
+    flex:1; padding:10px; border-radius:8px;
+    background:rgba(0,229,195,.1); border:1px solid #00e5c3;
+    color:#00e5c3; font-family:'Exo 2',sans-serif; font-weight:700; font-size:12px; cursor:pointer;
+  }
+  .opt5-btn-no {
+    flex:1; padding:10px; border-radius:8px;
+    background:transparent; border:1px solid #2e2a4a;
+    color:#a89ec8; font-family:'Exo 2',sans-serif; font-size:12px; cursor:pointer;
+  }
+  .opt5-dots { display:flex; gap:5px; justify-content:flex-end; }
+  .opt5-dot { width:6px; height:6px; border-radius:50%; }
+
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div style="text-align:center; margin-bottom:32px; padding-top:8px;">
+    <p style="font-size:11px; color:#5a4a9e; letter-spacing:.15em; text-transform:uppercase; margin-bottom:6px;">Volgende dienst — 5 ontwerpen</p>
+    <p style="font-size:13px; color:#a89ec8; line-height:1.5;">Klik op het ontwerp dat je het mooiste vindt.</p>
+  </div>
+
+  <!-- ─── OPTIE 1 ─── -->
+  <div class="section-label"><span class="option-num">1</span> Glassmorphism</div>
+  <div class="opt1">
+    <div class="opt1-bg"></div>
+    <div class="opt1-noise"></div>
+    <div class="opt1-inner">
+      <div class="opt1-eyebrow">Volgende dienst</div>
+      <div class="opt1-main">
+        <div>
+          <div class="opt1-date-month">Vrijdag · Mei</div>
+          <div class="opt1-date-big">23</div>
+        </div>
+        <div class="opt1-countdown">
+          <div class="opt1-countdown-num">7</div>
+          <div class="opt1-countdown-label">dagen</div>
+        </div>
+      </div>
+      <div class="opt1-title">Tapavond vrijdag</div>
+      <div class="opt1-time">
+        <span class="opt1-time-dot"></span>
+        20:00 – 00:00
+      </div>
+      <div class="opt1-divider"></div>
+      <div class="opt1-actions">
+        <button class="opt1-btn-yes">✅ Ik ben erbij</button>
+        <button class="opt1-btn-no">Afmelden</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── OPTIE 2 ─── -->
+  <div class="section-label"><span class="option-num">2</span> Ticket Stub</div>
+  <div class="opt2">
+    <div class="opt2-stub">
+      <div class="opt2-stub-day">23</div>
+      <div class="opt2-stub-month">Mei</div>
+      <div class="opt2-stub-label">Tapavond</div>
+    </div>
+    <div class="opt2-body">
+      <div class="opt2-type">Volgende dienst</div>
+      <div class="opt2-title">Tapavond vrijdag</div>
+      <div class="opt2-time">Vrijdag 23 mei · 20:00 – 00:00</div>
+      <div class="opt2-countdown">⏳ nog 7 dagen</div>
+      <div class="opt2-actions">
+        <button class="opt2-btn-yes">✅ Ik ben erbij</button>
+        <button class="opt2-btn-no">Afmelden</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── OPTIE 3 ─── -->
+  <div class="section-label"><span class="option-num">3</span> Split Header</div>
+  <div class="opt3">
+    <div class="opt3-header">
+      <div class="opt3-header-glow"></div>
+      <div class="opt3-eyebrow">Volgende dienst</div>
+      <div class="opt3-date-row">
+        <div class="opt3-day">23</div>
+        <div class="opt3-month-wrap">
+          <div class="opt3-weekday">Vrijdag</div>
+          <div class="opt3-month-txt">Mei 2025</div>
+        </div>
+      </div>
+      <div class="opt3-pills">
+        <div class="opt3-pill">⏰ 20:00 – 00:00</div>
+        <div class="opt3-pill">7 dagen</div>
+      </div>
+    </div>
+    <div class="opt3-body">
+      <div class="opt3-title">Tapavond vrijdag</div>
+      <div class="opt3-countdown">
+        <div class="opt3-cdown-num">7</div>
+        <div class="opt3-cdown-label">dagen tot jouw dienst</div>
+      </div>
+      <div class="opt3-actions">
+        <button class="opt3-btn-yes">✅ Ik ben erbij</button>
+        <button class="opt3-btn-no">Afmelden</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── OPTIE 4 ─── -->
+  <div class="section-label"><span class="option-num">4</span> Neon Countdown</div>
+  <div class="opt4">
+    <div class="opt4-glow1"></div>
+    <div class="opt4-glow2"></div>
+    <div class="opt4-eyebrow">Volgende dienst</div>
+    <div class="opt4-hero">
+      <div class="opt4-big-num">7</div>
+      <div class="opt4-big-label">
+        <div class="opt4-big-label-top">dagen</div>
+        <div class="opt4-big-label-bot">te gaan</div>
+      </div>
+    </div>
+    <div class="opt4-divider"></div>
+    <div class="opt4-info">
+      <div class="opt4-title">Tapavond vrijdag</div>
+      <div class="opt4-date">Vrijdag 23 mei · 20:00 – 00:00</div>
+    </div>
+    <div class="opt4-actions">
+      <button class="opt4-btn-yes">✅ Ik ben erbij</button>
+      <button class="opt4-btn-no">Afmelden</button>
+    </div>
+  </div>
+
+  <!-- ─── OPTIE 5 ─── -->
+  <div class="section-label"><span class="option-num">5</span> Minimal + Progress</div>
+  <div class="opt5">
+    <div class="opt5-topbar">
+      <div class="opt5-topbar-fill" style="flex:1;"></div><!-- 1/7 weken = ~14% -->
+      <div class="opt5-topbar-empty" style="flex:6;"></div>
+    </div>
+    <div class="opt5-inner">
+      <div class="opt5-row1">
+        <div class="opt5-date-block">
+          <div class="opt5-weekday">Vrijdag</div>
+          <div class="opt5-date-txt">23 mei 2025</div>
+        </div>
+        <div class="opt5-badge">nog 7 dagen</div>
+      </div>
+      <div class="opt5-title">Tapavond vrijdag</div>
+      <div class="opt5-meta">
+        <span class="opt5-time">20:00 – 00:00</span>
+        <span class="opt5-sep"></span>
+        <span class="opt5-role">Tapper</span>
+      </div>
+      <div class="opt5-confirm-row">
+        <div class="opt5-q">
+          <div class="opt5-q-dot"></div>
+          Ben jij erbij?
+        </div>
+        <div class="opt5-actions">
+          <button class="opt5-btn-yes">✅ Bevestigen</button>
+          <button class="opt5-btn-no">Afmelden</button>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:10px; color:#3e3a5a; font-weight:700; letter-spacing:.1em; text-transform:uppercase;">Week 1 van 7</span>
+        <div class="opt5-dots">
+          <div class="opt5-dot" style="background:#00e5c3;"></div>
+          <div class="opt5-dot" style="background:#2e2a4a;"></div>
+          <div class="opt5-dot" style="background:#2e2a4a;"></div>
+          <div class="opt5-dot" style="background:#2e2a4a;"></div>
+          <div class="opt5-dot" style="background:#2e2a4a;"></div>
+          <div class="opt5-dot" style="background:#2e2a4a;"></div>
+          <div class="opt5-dot" style="background:#2e2a4a;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

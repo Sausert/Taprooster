@@ -1,21 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase-server";
 import { sendOpenShiftEmail } from "@/lib/email";
+import { parseLocalDate } from "@/lib/dates";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id: shiftId } = await context.params;
+  if (!UUID_RE.test(shiftId)) return NextResponse.json({ error: "Ongeldig shift-ID" }, { status: 400 });
+
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await req.json();
-  const { action } = body;
+  let body: Record<string, unknown>;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "Ongeldige request body" }, { status: 400 }); }
+  const action = body.action as string | undefined;
 
   // Admin can assign on behalf of another user
   const { data: adminProfile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   const isAdmin = adminProfile?.role === "admin";
-  // If admin passes targetUserId, use that; otherwise use logged-in user
-  const targetUserId = (isAdmin && body.targetUserId) ? body.targetUserId : user.id;
+
+  let targetUserId = user.id;
+  if (isAdmin && body.targetUserId) {
+    const candidateId = body.targetUserId as string;
+    if (!UUID_RE.test(candidateId)) {
+      return NextResponse.json({ error: "Ongeldig gebruikers-ID" }, { status: 400 });
+    }
+    // Verify the target user exists
+    const { data: targetProfile } = await supabase.from("profiles").select("id").eq("id", candidateId).single();
+    if (!targetProfile) return NextResponse.json({ error: "Gebruiker niet gevonden" }, { status: 404 });
+    targetUserId = candidateId;
+  }
 
   if (action === "claim") {
     // Check capacity
@@ -32,7 +48,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
         // Re-activate
         const { data, error } = await supabase.from("shift_assignments")
           .update({ status: "assigned", declined_at: null }).eq("id", existing.id).select().single();
-        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        if (error) return NextResponse.json({ error: "Inschrijven mislukt" }, { status: 500 });
         return NextResponse.json({ data });
       }
       return NextResponse.json({ error: "Al ingeschreven" }, { status: 409 });
@@ -40,7 +56,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
     const { data, error } = await supabase.from("shift_assignments")
       .insert({ shift_id: shiftId, user_id: targetUserId, status: "assigned" }).select().single();
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: "Inschrijven mislukt" }, { status: 500 });
     return NextResponse.json({ data });
   }
 
@@ -48,28 +64,38 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
     const { data, error } = await supabase.from("shift_assignments")
       .update({ status: "confirmed", confirmed_at: new Date().toISOString() })
       .eq("shift_id", shiftId).eq("user_id", targetUserId).select().single();
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: "Bevestigen mislukt" }, { status: 500 });
     return NextResponse.json({ data });
   }
 
   if (action === "decline") {
-    await supabase.from("shift_assignments")
+    const { error: declineError } = await supabase.from("shift_assignments")
       .update({ status: "declined", declined_at: new Date().toISOString() })
       .eq("shift_id", shiftId).eq("user_id", targetUserId);
+    if (declineError) return NextResponse.json({ error: "Afmelden mislukt" }, { status: 500 });
 
     const { data: shift } = await supabase.from("shifts")
       .select("*, assignments:shift_assignments(user_id, status)").eq("id", shiftId).single();
 
     if (shift) {
+      // Notify profiles that are not already actively assigned and not the decliner
+      const activeAssignedIds = new Set(
+        (shift.assignments || [])
+          .filter((a: { user_id: string; status: string }) => a.status !== "declined")
+          .map((a: { user_id: string }) => a.user_id)
+      );
+      activeAssignedIds.add(targetUserId); // exclude the person who just declined
       const { data: allProfiles } = await supabase.from("profiles")
-        .select("id, email, full_name").neq("id", targetUserId);
-      const shiftDate = new Date(shift.date).toLocaleDateString("nl-NL", { weekday:"long", day:"numeric", month:"long" });
+        .select("id, email, full_name");
+      const eligibleProfiles = (allProfiles || []).filter(p => !activeAssignedIds.has(p.id));
+      const shiftDate = parseLocalDate(shift.date).toLocaleDateString("nl-NL", { weekday:"long", day:"numeric", month:"long" });
       const shiftTime = `${shift.start_time}–${shift.end_time}`;
-      if (allProfiles) {
-        await supabase.from("notifications").insert(
-          allProfiles.map(p => ({ user_id:p.id, type:"open_shift", title:"🔓 Open dienst!", message:`Er is een open plek voor ${shift.title} op ${shiftDate}.`, shift_id:shiftId, read:false }))
+      if (eligibleProfiles.length > 0) {
+        const adminClient = createAdminClient();
+        await adminClient.from("notifications").insert(
+          eligibleProfiles.map(p => ({ user_id:p.id, type:"open_shift", title:"🔓 Open dienst!", message:`Er is een open plek voor ${shift.title} op ${shiftDate}.`, shift_id:shiftId, read:false }))
         );
-        Promise.allSettled(allProfiles.map(p => sendOpenShiftEmail(p.email, p.full_name, shift.title, shiftDate, shiftTime, shiftId)));
+        await Promise.allSettled(eligibleProfiles.map(p => sendOpenShiftEmail(p.email, p.full_name, shift.title, shiftDate, shiftTime, shiftId)));
       }
     }
     return NextResponse.json({ data: { declined: true } });
