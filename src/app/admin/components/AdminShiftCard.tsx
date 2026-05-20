@@ -38,8 +38,6 @@ export function AdminShiftCard({ shift, source }: { shift: Shift & Record<string
           </div>
           <label className={styles.label}>Max tappers</label>
           <input className={styles.input} style={{ width:80 }} type="number" min={1} max={20} value={shift.max_tappers} onChange={e => updateShiftInList(shift.id, "max_tappers", Number(e.target.value), list, setList)} />
-          <label className={styles.label}>Notitie</label>
-          <input className={styles.input} value={(shift.admin_note as string) || ""} onChange={e => updateShiftInList(shift.id, "admin_note", e.target.value, list, setList)} placeholder="Optionele notitie..." />
           {shiftEditError && editingShiftId === shift.id && (
             <div style={{ background:"rgba(255,79,109,0.1)", border:"1px solid #ff4f6d", borderRadius:8, padding:"8px 12px", fontSize:12, color:"#ff4f6d", marginBottom:8 }}>{shiftEditError}</div>
           )}
@@ -59,7 +57,6 @@ export function AdminShiftCard({ shift, source }: { shift: Shift & Record<string
             </div>
             <p style={{ fontSize:12, color:"#b8b0d4", lineHeight:1.5 }}>{formatDate(shift.date)} · {shift.start_time}–{shift.end_time}</p>
             <p style={{ fontSize:12, fontWeight:700, color:open > 0 ? "#ffb547" : "#00e5c3", marginTop:2 }}>{assigned.length}/{shift.max_tappers}{open > 0 ? ` · ${open} open` : ""}</p>
-            {shift.admin_note && <p style={{ fontSize:11, color:"#b8b0d4", marginTop:4, lineHeight:1.5 }}>{shift.admin_note as string}</p>}
             <div style={{ display:"flex", gap:4, marginTop:8, flexWrap:"wrap" }}>
               {assigned.map((a: any) => (
                 <div key={a.user_id} style={{ display:"flex", alignItems:"center", gap:4, background:"#221f38", borderRadius:20, padding:"3px 8px 3px 10px", border:"1px solid #2e2a4a" }}>

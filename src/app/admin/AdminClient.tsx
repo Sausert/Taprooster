@@ -150,7 +150,7 @@ export default function AdminClient({
 
   async function saveShiftEdit(shift: Shift & Record<string, unknown>) {
     setShiftEditError(null);
-    const res = await fetch(`/api/shifts/${shift.id}`, { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ title: shift.title, start_time: shift.start_time, end_time: shift.end_time, max_tappers: shift.max_tappers, admin_note: shift.admin_note }) });
+    const res = await fetch(`/api/shifts/${shift.id}`, { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ title: shift.title, start_time: shift.start_time, end_time: shift.end_time, max_tappers: shift.max_tappers }) });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setShiftEditError(data.error ?? "Opslaan mislukt. Probeer opnieuw.");

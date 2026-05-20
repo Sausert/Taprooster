@@ -10,7 +10,6 @@ const PatchSchema = z.object({
   start_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   end_time:   z.string().regex(/^\d{2}:\d{2}$/).optional(),
   max_tappers:z.number().min(1).max(20).optional(),
-  admin_note: z.string().optional(),
 });
 
 export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
