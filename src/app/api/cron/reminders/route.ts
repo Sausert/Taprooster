@@ -7,9 +7,8 @@ import { parseLocalDate, toLocalDateStr, addDays } from "@/lib/dates";
 
 export async function GET(req: NextRequest) {
   // Vercel sends: Authorization: Bearer <CRON_SECRET>
-  // Fallback to x-cron-secret for manual testing via curl
   const authHeader = req.headers.get("authorization");
-  const secret = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : req.headers.get("x-cron-secret");
+  const secret = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
   if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

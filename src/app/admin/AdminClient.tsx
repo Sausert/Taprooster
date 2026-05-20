@@ -87,6 +87,7 @@ export default function AdminClient({
   const [addingTapper, setAddingTapper] = useState<string | null>(null);
   const [editingShiftId, setEditingShiftId] = useState<string | null>(null);
   const [shiftEditError, setShiftEditError] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ shiftId: string; source: "concept" | "published" } | null>(null);
 
   // Shared list mutation helper (used by AdminShiftCard)
   function updateShiftInList(id: string, field: string, value: unknown, list: Shift[], setList: React.Dispatch<React.SetStateAction<Shift[]>>) {
@@ -128,7 +129,13 @@ export default function AdminClient({
   }
 
   async function handleDeleteShift(shiftId: string, source: "concept" | "published") {
-    if (!confirm("Weet je zeker dat je deze dienst wilt verwijderen?")) return;
+    setDeleteConfirm({ shiftId, source });
+  }
+
+  async function confirmDeleteShift() {
+    if (!deleteConfirm) return;
+    const { shiftId, source } = deleteConfirm;
+    setDeleteConfirm(null);
     const res = await fetch(`/api/admin/shifts/${shiftId}/delete`, { method:"DELETE" });
     if (res.ok) {
       if (source === "published") setPublished(ps => ps.filter(s => s.id !== shiftId));
@@ -202,6 +209,20 @@ export default function AdminClient({
 
         {/* Global add-tapper modal (opened from health + rooster tabs) */}
         <AddTapperModal />
+
+        {/* Delete confirmation modal */}
+        {deleteConfirm && (
+          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:100, padding:20 }}>
+            <div style={{ background:"#1a1730", border:"1px solid #ff4f6d", borderRadius:16, padding:24, maxWidth:320, width:"100%" }}>
+              <p style={{ fontSize:15, fontWeight:700, color:"#f0eeff", marginBottom:8, fontFamily:"'Exo 2', sans-serif" }}>Dienst verwijderen?</p>
+              <p style={{ fontSize:13, color:"#b8b0d4", marginBottom:20, lineHeight:1.5 }}>Deze actie kan niet ongedaan worden gemaakt.</p>
+              <div style={{ display:"flex", gap:10 }}>
+                <button onClick={() => setDeleteConfirm(null)} style={{ flex:1, padding:"11px", borderRadius:10, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", fontFamily:"'Exo 2', sans-serif", fontWeight:700, fontSize:13, cursor:"pointer" }}>Annuleren</button>
+                <button onClick={confirmDeleteShift} style={{ flex:1, padding:"11px", borderRadius:10, background:"rgba(255,79,109,0.15)", border:"1px solid #ff4f6d", color:"#ff4f6d", fontFamily:"'Exo 2', sans-serif", fontWeight:700, fontSize:13, cursor:"pointer" }}>Verwijderen</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AdminShellContext.Provider>
   );

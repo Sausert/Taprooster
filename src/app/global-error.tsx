@@ -1,6 +1,5 @@
 "use client";
 import { useEffect } from "react";
-import { APP_CONFIG } from "@/lib/config";
 
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
@@ -8,15 +7,19 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
   }, [error]);
 
   return (
-    <div style={s.screen}>
-      <div style={s.glow} />
-      <div style={s.icon}>⚠️</div>
-      <h1 style={s.title}>Er ging iets mis</h1>
-      <p style={s.sub}>Er is een onverwachte fout opgetreden. Probeer het opnieuw of neem contact op met een admin.</p>
-      <button style={s.btn} onClick={reset}>Opnieuw proberen</button>
-      <a href="/dashboard" style={s.link}>← Terug naar dashboard</a>
-      <p style={s.footer}>{APP_CONFIG.orgName}</p>
-    </div>
+    <html lang="nl">
+      <body>
+        <div style={s.screen}>
+          <div style={s.glow} />
+          <div style={s.icon}>⚠️</div>
+          <h1 style={s.title}>Er ging iets mis</h1>
+          <p style={s.sub}>Er is een onverwachte fout opgetreden. Probeer het opnieuw of neem contact op met een admin.</p>
+          <button style={s.btn} onClick={reset}>Opnieuw proberen</button>
+          <a href="/dashboard" style={s.link}>← Terug naar dashboard</a>
+          <p style={s.footer}>OJC Walhalla</p>
+        </div>
+      </body>
+    </html>
   );
 }
 

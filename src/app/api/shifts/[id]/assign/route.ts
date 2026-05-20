@@ -78,17 +78,24 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       .select("*, assignments:shift_assignments(user_id, status)").eq("id", shiftId).single();
 
     if (shift) {
-      // Notify ALL active profiles — do not exclude the decliner to prevent identity disclosure
+      // Notify profiles that are not already actively assigned and not the decliner
+      const activeAssignedIds = new Set(
+        (shift.assignments || [])
+          .filter((a: { user_id: string; status: string }) => a.status !== "declined")
+          .map((a: { user_id: string }) => a.user_id)
+      );
+      activeAssignedIds.add(targetUserId); // exclude the person who just declined
       const { data: allProfiles } = await supabase.from("profiles")
         .select("id, email, full_name");
+      const eligibleProfiles = (allProfiles || []).filter(p => !activeAssignedIds.has(p.id));
       const shiftDate = parseLocalDate(shift.date).toLocaleDateString("nl-NL", { weekday:"long", day:"numeric", month:"long" });
       const shiftTime = `${shift.start_time}–${shift.end_time}`;
-      if (allProfiles) {
+      if (eligibleProfiles.length > 0) {
         const adminClient = createAdminClient();
         await adminClient.from("notifications").insert(
-          allProfiles.map(p => ({ user_id:p.id, type:"open_shift", title:"🔓 Open dienst!", message:`Er is een open plek voor ${shift.title} op ${shiftDate}.`, shift_id:shiftId, read:false }))
+          eligibleProfiles.map(p => ({ user_id:p.id, type:"open_shift", title:"🔓 Open dienst!", message:`Er is een open plek voor ${shift.title} op ${shiftDate}.`, shift_id:shiftId, read:false }))
         );
-        await Promise.allSettled(allProfiles.map(p => sendOpenShiftEmail(p.email, p.full_name, shift.title, shiftDate, shiftTime, shiftId)));
+        await Promise.allSettled(eligibleProfiles.map(p => sendOpenShiftEmail(p.email, p.full_name, shift.title, shiftDate, shiftTime, shiftId)));
       }
     }
     return NextResponse.json({ data: { declined: true } });

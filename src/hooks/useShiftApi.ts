@@ -1,9 +1,6 @@
 "use client";
 import { useState } from "react";
 
-// Shared hook for claim/confirm/decline API calls.
-// Provides loading state per shift ID + error state.
-// Each component handles its own optimistic state updates.
 export function useShiftApi() {
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -12,7 +9,7 @@ export function useShiftApi() {
     shiftId: string,
     action: "claim" | "confirm" | "decline",
     extra?: Record<string, unknown>,
-  ): Promise<boolean> {
+  ): Promise<{ ok: boolean; data?: Record<string, unknown> }> {
     setLoading(shiftId);
     setError(null);
     try {
@@ -22,11 +19,12 @@ export function useShiftApi() {
         body: JSON.stringify({ action, ...extra }),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error ?? "Er ging iets mis. Probeer opnieuw.");
-        return false;
+        const body = await res.json().catch(() => ({}));
+        setError(body.error ?? "Er ging iets mis. Probeer opnieuw.");
+        return { ok: false };
       }
-      return true;
+      const body = await res.json().catch(() => ({}));
+      return { ok: true, data: body.data };
     } finally {
       setLoading(null);
     }

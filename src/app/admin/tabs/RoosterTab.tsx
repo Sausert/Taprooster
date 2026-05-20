@@ -2,7 +2,6 @@
 import React, { useState } from "react";
 import { useAdminShell } from "../AdminShellContext";
 import { AdminShiftCard } from "../components/AdminShiftCard";
-import { AddTapperModal } from "../components/AddTapperModal";
 import { EventsTab } from "./EventsTab";
 import { TimeSelect } from "../components/TimeSelect";
 import { parseLocalDate } from "@/lib/dates";
@@ -113,8 +112,12 @@ export function RoosterTab() {
       const notified = data.data?.notified || 0;
       setPublishResult({ ok: true, text: `Rooster gepubliceerd! ${notified} tapper${notified !== 1 ? "s" : ""} genotificeerd.` });
       setTimeout(() => setPublishResult(null), 6000);
-      setPublished(ps => [...ps, ...conceptShifts.map(s => ({ ...s, status: "published" as const }))]);
-      setConceptShifts([]);
+      const publishedInRange = conceptShifts.filter((s: any) =>
+        (!dateFrom || s.date >= dateFrom) && (!dateTo || s.date <= dateTo)
+      );
+      const publishedIds = new Set(publishedInRange.map((s: any) => s.id));
+      setPublished(ps => [...ps, ...publishedInRange.map((s: any) => ({ ...s, status: "published" as const }))]);
+      setConceptShifts(cs => (cs as any[]).filter((s: any) => !publishedIds.has(s.id)));
       setPublishMsg("");
     } else {
       setPublishResult({ ok: false, text: `Publiceren mislukt: ${data.error ?? "Probeer opnieuw."}` });
@@ -292,8 +295,6 @@ export function RoosterTab() {
       )}
 
       {rosterView === "events" && <EventsTab />}
-
-      <AddTapperModal />
     </>
   );
 }

@@ -134,19 +134,22 @@ export default function DashboardClient({
 
   async function handleConfirm(shiftId: string) {
     setConfirmedIds(p => [...p, shiftId]);
-    const ok = await shiftAction(shiftId, "confirm");
+    const { ok } = await shiftAction(shiftId, "confirm");
     if (!ok) setConfirmedIds(p => p.filter(id => id !== shiftId));
   }
 
   async function handleClaim(shift: ClaimableShift) {
-    const ok = await shiftAction(shift.id, "claim");
+    const { ok, data } = await shiftAction(shift.id, "claim");
     if (ok) {
       setClaimable(cs => cs.filter(s => s.id !== shift.id));
-      setUpcoming(u => [...u, {
-        id: "", user_id: "", created_at: "",
-        shift_id: shift.id, status: "assigned" as const,
-        shift: { ...shift },
-      }].sort((a,b) => a.shift!.date.localeCompare(b.shift!.date)));
+      const assignment: ShiftAssignment = data
+        ? { ...(data as unknown as ShiftAssignment), shift: { ...shift } }
+        : { id: "", user_id: profile?.id ?? "", created_at: new Date().toISOString(), shift_id: shift.id, status: "assigned" as const, shift: { ...shift } };
+      setUpcoming(u => [...u, assignment].sort((a,b) => a.shift!.date.localeCompare(b.shift!.date)));
+      // Navigate month view to the claimed shift's month
+      const shiftDate = parseLocalDate(shift.date);
+      setMyMonth(shiftDate.getMonth());
+      setMyYear(shiftDate.getFullYear());
       setClaimSuccess(shift.title);
       setTimeout(() => setClaimSuccess(null), 3000);
       setTimeout(() => mijnDienstenRef.current?.scrollIntoView({ behavior:"smooth", block:"start" }), 300);
@@ -155,7 +158,7 @@ export default function DashboardClient({
   }
 
   async function handleDecline(assignment: ShiftAssignment) {
-    const ok = await shiftAction(assignment.shift_id, "decline");
+    const { ok } = await shiftAction(assignment.shift_id, "decline");
     if (ok) { setUpcoming(u => u.filter(a => a.shift_id !== assignment.shift_id)); setHeroIndex(0); }
     setDeclineModal(null);
   }

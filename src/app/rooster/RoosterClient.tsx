@@ -140,7 +140,7 @@ export default function RoosterClient({
   const isMyShift = (shift: any) => myShiftIds.includes(shift.id) || claimedIds.includes(shift.id);
 
   async function handleClaim(shift: any) {
-    const ok = await shiftAction(shift.id, "claim");
+    const { ok } = await shiftAction(shift.id, "claim");
     if (ok) {
       setClaimedIds(p => [...p, shift.id]);
       setClaimModal(null);
@@ -152,7 +152,7 @@ export default function RoosterClient({
   }
 
   async function handleDecline(shiftId: string) {
-    const ok = await shiftAction(shiftId, "decline");
+    const { ok } = await shiftAction(shiftId, "decline");
     if (ok) setDeclinedIds(p => [...p, shiftId]);
   }
 
@@ -492,9 +492,9 @@ const s: Record<string, React.CSSProperties> = {
   calGrid: { display:"grid", gridTemplateColumns:"repeat(7, 1fr)", gap:4, marginBottom:16 },
   dayHeader: { textAlign:"center", fontSize:12, fontWeight:700, color:"#a89ec8", padding:"4px 0" },
   closeBtn: { background:"none", border:"none", color:"#a89ec8", fontSize:16, cursor:"pointer", width:44, height:44, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 },
-  claimBtnSm: { padding:"10px 14px", borderRadius:8, background:"rgba(0,229,195,0.1)", borderWidth:1, borderStyle:"solid", borderColor:"#00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer" },
+  claimBtnSm: { padding:"10px 14px", borderRadius:8, background:"rgba(0,229,195,0.1)", borderWidth:1, borderStyle:"solid", borderColor:"#00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer", minHeight:44 },
   declineBtn: { padding:"10px 14px", borderRadius:10, background:"rgba(255,79,109,0.1)", borderWidth:1, borderStyle:"solid", borderColor:"#ff4f6d", color:"#ff4f6d", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", textTransform:"uppercase" },
-  declineBtnSm: { padding:"10px 14px", borderRadius:8, background:"rgba(255,79,109,0.1)", borderWidth:1, borderStyle:"solid", borderColor:"#ff4f6d", color:"#ff4f6d", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer", textTransform:"uppercase" },
+  declineBtnSm: { padding:"10px 14px", borderRadius:8, background:"rgba(255,79,109,0.1)", borderWidth:1, borderStyle:"solid", borderColor:"#ff4f6d", color:"#ff4f6d", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer", textTransform:"uppercase", minHeight:44 },
   icalBtn: { padding:"10px 12px", borderRadius:10, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", cursor:"pointer", fontSize:16 },
-  icalBtnSm: { padding:"10px 12px", borderRadius:8, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", fontSize:14, cursor:"pointer" },
+  icalBtnSm: { padding:"10px 12px", borderRadius:8, background:"#221f38", border:"1px solid #2e2a4a", color:"#e8e0ff", fontSize:14, cursor:"pointer", minHeight:44 },
 };

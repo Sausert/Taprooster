@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-helpers";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id: shiftId } = await context.params;
+  if (!UUID_RE.test(shiftId)) return NextResponse.json({ error: "Ongeldig shift-ID" }, { status: 400 });
   const auth = await requireAdmin();
   if ("error" in auth) return auth.error;
   const { supabase } = auth;
@@ -11,6 +14,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Ongeldige request body" }, { status: 400 }); }
   const userId = body.userId as string | undefined;
   if (!userId) return NextResponse.json({ error: "userId is verplicht" }, { status: 400 });
+  if (!UUID_RE.test(userId)) return NextResponse.json({ error: "Ongeldig gebruikers-ID" }, { status: 400 });
   const { error } = await supabase.from("shift_assignments")
     .update({ status: "declined", declined_at: new Date().toISOString() })
     .eq("shift_id", shiftId).eq("user_id", userId);

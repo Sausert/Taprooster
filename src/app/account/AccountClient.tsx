@@ -88,6 +88,10 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
       phone,
       email,
     }).eq("id", profile.id);
+    // Update auth email if changed (sends confirmation to new address)
+    if (email !== profile.email) {
+      await supabase.auth.updateUser({ email });
+    }
     setProfile(p => ({ ...p, first_name: firstName.trim(), last_name: lastName.trim(), full_name: fullName, email, phone }));
     setSavingProfile(false);
     setSavedProfile(true);
