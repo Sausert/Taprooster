@@ -11,11 +11,15 @@ jobs:
     steps:
       - name: Roep reminder endpoint aan
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" -L \
+          body=$(curl -s -L \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             https://remigommans.nl/api/cron/reminders)
-          echo "HTTP status: $response"
-          if [ "$response" != "200" ]; then
-            echo "Fout: endpoint gaf status $response terug"
+          status=$(curl -s -o /dev/null -w "%{http_code}" -L \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://remigommans.nl/api/cron/reminders)
+          echo "HTTP status: $status"
+          echo "Response: $body"
+          if [ "$status" != "200" ]; then
+            echo "Fout: endpoint gaf status $status terug"
             exit 1
           fi
