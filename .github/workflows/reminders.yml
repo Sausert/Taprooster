@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Roep reminder endpoint aan
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" \
+          response=$(curl -s -o /dev/null -w "%{http_code}" -L \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             https://remigommans.nl/api/cron/reminders)
           echo "HTTP status: $response"
