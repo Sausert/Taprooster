@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     email,
     password,
     user_metadata: { full_name: fullName, first_name: firstName, last_name: lastName },
-    email_confirm: true,
+    email_confirm: false,
   });
 
   if (createError) {

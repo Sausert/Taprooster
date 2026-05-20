@@ -24,6 +24,7 @@ function RegisterContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [pwErrors, setPwErrors] = useState<string[]>([]);
+  const [registered, setRegistered] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -79,16 +80,24 @@ function RegisterContent() {
       return;
     }
 
-    // Sign in to get a session after server-created account
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    if (signInError) {
-      setError("Account aangemaakt, maar inloggen mislukt. Ga naar de loginpagina.");
-      setLoading(false);
-      return;
-    }
-
-    router.push("/dashboard");
+    setRegistered(true);
     setLoading(false);
+  }
+
+  if (registered) {
+    return (
+      <div style={s.screen}>
+        <div style={s.bgGlow1} />
+        <div style={s.logoMark}>📧</div>
+        <h1 style={{ ...s.title, fontSize: 22 }}>Check je e-mail</h1>
+        <p style={{ color: "#a89ec8", textAlign: "center", maxWidth: 300, marginBottom: 24, lineHeight: 1.5 }}>
+          We hebben een bevestigingslink gestuurd naar{" "}
+          <strong style={{ color: "#f0eeff" }}>{email}</strong>.
+          Klik op de link om je account te activeren.
+        </p>
+        <a href="/login" style={s.btnPrimary}>Naar inloggen →</a>
+      </div>
+    );
   }
 
   if (tokenValid === null) {
