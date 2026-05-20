@@ -148,16 +148,24 @@ export default function TapperHandleiding() {
               </p>
               <div className="hd-color-legend">
                 <div className="hd-color-item">
-                  <span className="hd-dot hd-dot-green" />
-                  <span><strong>Groen</strong> — jouw ingeplande dienst</span>
+                  <span className="hd-dot hd-dot-purple" />
+                  <span><strong>Paars</strong> — jouw ingeplande dienst</span>
+                </div>
+                <div className="hd-color-item">
+                  <span className="hd-dot hd-dot-mint" />
+                  <span><strong>Mintgroen</strong> — dienst is vol</span>
                 </div>
                 <div className="hd-color-item">
                   <span className="hd-dot hd-dot-amber" />
-                  <span><strong>Oranje</strong> — dienst nog niet vol, je kunt je aanmelden</span>
+                  <span><strong>Oranje</strong> — dienst is niet vol, je kunt je aanmelden</span>
                 </div>
                 <div className="hd-color-item">
-                  <span className="hd-dot hd-dot-gray" />
-                  <span><strong>Grijs</strong> — dienst is vol</span>
+                  <span className="hd-dot hd-dot-red" />
+                  <span><strong>Rood</strong> — dienst is nog helemaal leeg</span>
+                </div>
+                <div className="hd-color-item">
+                  <span className="hd-dot hd-dot-pink" />
+                  <span><strong>Roze</strong> — feestje of speciaal evenement</span>
                 </div>
               </div>
               <p>
@@ -263,9 +271,11 @@ const styles = `
   .hd-color-legend { margin: 12px 0 16px; display: flex; flex-direction: column; gap: 8px; }
   .hd-color-item { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #8b80b0; }
   .hd-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-  .hd-dot-green { background: #00e5c3; }
+  .hd-dot-purple { background: #c4b5fd; }
+  .hd-dot-mint { background: #00e5c3; }
   .hd-dot-amber { background: #ffb547; }
-  .hd-dot-gray { background: #3e3a5a; border: 1px solid #5a5480; }
+  .hd-dot-red { background: #ff4f6d; }
+  .hd-dot-pink { background: #f472b6; }
   .hd-notif-table { width: 100%; border-collapse: collapse; margin: 8px 0; }
   .hd-notif-table td { padding: 8px 6px; color: #8b80b0; font-size: 14px; vertical-align: top; line-height: 1.5; border-bottom: 1px solid #2e2a4a; }
   .hd-notif-table tr:last-child td { border-bottom: none; }

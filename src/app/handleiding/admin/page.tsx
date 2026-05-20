@@ -22,6 +22,7 @@ export default function AdminHandleiding() {
 
           <hr className="hd-divider" />
 
+          {/* 1. Admin-menu */}
           <div className="hd-section">
             <div className="hd-step-num">1</div>
             <div className="hd-step-body">
@@ -32,86 +33,88 @@ export default function AdminHandleiding() {
               </p>
               <p>Het admin-gedeelte heeft vijf tabbladen bovenaan:</p>
               <div className="hd-tab-overview">
-                <div className="hd-tab-item"><span>📊</span><span><strong>Status</strong> — overzicht van diensten &amp; bezetting</span></div>
-                <div className="hd-tab-item"><span>👥</span><span><strong>Tappers</strong> — tappers beheren &amp; uitnodigen</span></div>
-                <div className="hd-tab-item"><span>📅</span><span><strong>Rooster</strong> — concept aanmaken &amp; publiceren</span></div>
-                <div className="hd-tab-item"><span>🎉</span><span><strong>Events</strong> — feestjes aanmaken</span></div>
-                <div className="hd-tab-item"><span>📢</span><span><strong>Berichten</strong> — bericht sturen naar alle tappers</span></div>
+                <div className="hd-tab-item"><span>📊</span><span><strong>Status</strong> — overzicht bezetting en dienststatus</span></div>
+                <div className="hd-tab-item"><span>👥</span><span><strong>Tappers</strong> — tappergegevens bekijken en aanpassen</span></div>
+                <div className="hd-tab-item"><span>📅</span><span><strong>Rooster</strong> — gepubliceerd rooster, concept genereren en feestjes aanmaken</span></div>
+                <div className="hd-tab-item"><span>💬</span><span><strong>Berichten</strong> — bericht sturen naar alle tappers</span></div>
+                <div className="hd-tab-item"><span>🔗</span><span><strong>Uitnodiging</strong> — uitnodigingslink of QR-code genereren voor nieuwe tappers</span></div>
               </div>
             </div>
           </div>
 
           <hr className="hd-divider" />
 
+          {/* 2. Status */}
           <div className="hd-section">
             <div className="hd-step-num">2</div>
             <div className="hd-step-body">
               <h2>Status &amp; overzicht</h2>
               <p>
                 Het <strong>Status</strong>-tabblad toont een overzicht van alle geplande en gepubliceerde diensten dit jaar.
-                Je ziet per tapper hoeveel diensten zij hebben gedraaid en de algehele bezetting.
+                Je ziet per dienst de bezetting en hoeveel tappers al bevestigd hebben.
               </p>
               <ul>
-                <li>De <strong>tapbar</strong> toont wie de meeste diensten heeft gedraaid</li>
-                <li>Concept-diensten worden getoond met een <span className="hd-badge-inline">Concept</span>-label</li>
-                <li>Snel een tapper toevoegen via de <strong>&quot;+ Tapper&quot;</strong>-knop naast een dienst</li>
+                <li>Bovenaan twee filters: <strong>Onderbezet</strong> (rood) en <strong>Onbevestigd</strong> (oranje) — klik erop om snel de probleemgevallen te zien</li>
+                <li>Per dienst staat de bezetting <em>X/Y bezet · Z bevestigd</em></li>
+                <li>Concept-diensten zijn gemarkeerd met een <span className="hd-badge-inline">Concept</span>-label</li>
+                <li>Snel een tapper toevoegen via de <strong>+ Tapper</strong>-knop naast een dienst</li>
+                <li>Onderaan: de <strong>Tapscore</strong> ranglijst van dit jaar</li>
               </ul>
             </div>
           </div>
 
           <hr className="hd-divider" />
 
+          {/* 3. Tappers */}
           <div className="hd-section">
             <div className="hd-step-num">3</div>
             <div className="hd-step-body">
               <h2>Tappers beheren</h2>
-              <p>Onder het <strong>Tappers</strong>-tabblad zie je alle geregistreerde tappers.</p>
-
-              <h3>Tapper uitnodigen</h3>
-              <ol>
-                <li>Vul het e-mailadres van de nieuwe tapper in</li>
-                <li>Klik <strong>&quot;Uitnodiging sturen&quot;</strong></li>
-                <li>De tapper ontvangt een e-mail met een registratielink</li>
-                <li>De link is <strong>7 dagen geldig</strong> en kan maar <strong>één keer gebruikt</strong> worden</li>
-              </ol>
+              <p>
+                Onder het <strong>Tappers</strong>-tabblad zie je alle geregistreerde tappers.
+                Hier pas je tappergegevens aan of verwijder je een tapper.
+                (Nieuwe tappers uitnodigen doe je via het aparte <strong>Uitnodiging</strong>-tabblad — zie stap 9.)
+              </p>
 
               <h3>Tapper aanpassen</h3>
               <ol>
-                <li>Klik op de naam van de tapper in de lijst</li>
-                <li>Pas naam, telefoonnummer, voorkeursdagen of beschikbaarheid aan</li>
-                <li>Klik <strong>&quot;Opslaan&quot;</strong></li>
+                <li>Klik op <strong>Bewerken</strong> naast de tapper</li>
+                <li>Pas in het <strong>Info</strong>-tabblad aan: naam, e-mailadres, telefoonnummer, rol (tapper/admin)</li>
+                <li>Pas in het <strong>Voorkeuren</strong>-tabblad aan: tapfrequentie, voorkeursdagen, voorkeursdiensten en onbeschikbare maanden</li>
+                <li>Klik <strong>Opslaan</strong></li>
               </ol>
 
               <h3>Tapper verwijderen</h3>
               <ol>
-                <li>Klik op de tapper → klik <strong>&quot;Verwijder tapper&quot;</strong></li>
+                <li>Klik op <strong>Bewerken</strong> naast de tapper</li>
+                <li>Klik <strong>Tapper verwijderen</strong> onderin het formulier</li>
                 <li>Bevestig in het dialoogvenster</li>
               </ol>
               <div className="hd-warning">
-                <p>⚠️ <strong>Let op:</strong> Het verwijderen van een tapper kan niet ongedaan gemaakt worden.
-                Alle dienstgegevens van deze tapper worden verwijderd.</p>
+                <p>⚠️ <strong>Let op:</strong> Verwijderen kan niet ongedaan gemaakt worden. Alle dienstgegevens van deze tapper worden verwijderd.</p>
               </div>
             </div>
           </div>
 
           <hr className="hd-divider" />
 
+          {/* 4. Conceptrooster */}
           <div className="hd-section">
             <div className="hd-step-num">4</div>
             <div className="hd-step-body">
               <h2>Conceptrooster genereren</h2>
               <p>
-                Ga naar <strong>Rooster</strong> → klik op het tabblad <strong>&quot;Concept&quot;</strong>.
-                Hier genereer je een nieuw rooster voor een bepaalde periode.
+                Ga naar <strong>Rooster</strong> → klik op het sub-tabblad <strong>Concept</strong>.
+                Scroll naar beneden naar de sectie <em>Tapavonden genereren</em>.
               </p>
               <ol>
-                <li>Kies een <strong>startdatum</strong> en <strong>einddatum</strong></li>
+                <li>Kies een <strong>startdatum</strong> (Van) en <strong>einddatum</strong> (Tot en met)</li>
                 <li>
-                  Stel per dag (wo / vr / za) in:
+                  Stel per dag in:
                   <ul>
-                    <li><strong>Ingeschakeld</strong> — wordt er een tapavond ingepland?</li>
+                    <li>Aan/uit via de schakelaar</li>
                     <li><strong>Start- en eindtijd</strong></li>
-                    <li><strong>Aantal tappers</strong> via de + / − knoppen</li>
+                    <li><strong>Aantal tappers</strong> via de + / − knoppen (max 10)</li>
                     <li>
                       <strong>Modus:</strong>
                       <ul>
@@ -127,12 +130,12 @@ export default function AdminHandleiding() {
                     </li>
                   </ul>
                 </li>
-                <li>Klik <strong>&quot;Genereer rooster&quot;</strong></li>
+                <li>Klik <strong>Genereer conceptrooster</strong></li>
               </ol>
               <div className="hd-highlight">
                 <p>
-                  💡 Het systeem houdt rekening met voorkeursdagen, al ingeplande diensten en
-                  onbeschikbare maanden van tappers.
+                  💡 Het systeem houdt rekening met voorkeursdagen, al ingeplande diensten en onbeschikbare maanden van tappers.
+                  Bestaande diensten in de gekozen periode worden niet overschreven.
                 </p>
               </div>
             </div>
@@ -140,27 +143,28 @@ export default function AdminHandleiding() {
 
           <hr className="hd-divider" />
 
+          {/* 5. Conceptdiensten aanpassen */}
           <div className="hd-section">
             <div className="hd-step-num">5</div>
             <div className="hd-step-body">
               <h2>Conceptdiensten aanpassen</h2>
               <p>
-                Na het genereren verschijnen de concept-diensten in de lijst.
-                Je kunt nog wijzigingen aanbrengen vóór publicatie.
+                Na het genereren verschijnen de concept-diensten bovenaan in de <strong>Concept</strong>-weergave.
+                Je kunt hier nog wijzigingen aanbrengen vóór publicatie.
               </p>
 
               <h3>Dienst bewerken</h3>
               <ol>
                 <li>Klik op het <strong>potlood-icoon</strong> naast de dienst</li>
-                <li>Pas naam, datum, start-/eindtijd of aantal tappers aan</li>
-                <li>Klik <strong>&quot;Opslaan&quot;</strong></li>
+                <li>Pas naam, datum, start-/eindtijd of max. tapperaantal aan</li>
+                <li>Klik <strong>Opslaan</strong></li>
               </ol>
 
               <h3>Tapper toevoegen of verwijderen</h3>
               <ol>
-                <li>Klik op een dienst</li>
-                <li>Klik <strong>&quot;+ Tapper toevoegen&quot;</strong> en kies een tapper</li>
-                <li>Of klik op het <strong>×</strong> naast een naam om de tapper te verwijderen</li>
+                <li>Klik op een dienst om de detailweergave te openen</li>
+                <li>Klik <strong>+ Tapper toevoegen</strong> en kies een tapper uit de lijst</li>
+                <li>Klik op het <strong>×</strong> naast een naam om de tapper te verwijderen uit de dienst</li>
               </ol>
 
               <h3>Dienst verwijderen</h3>
@@ -170,24 +174,108 @@ export default function AdminHandleiding() {
 
           <hr className="hd-divider" />
 
+          {/* 6. Publiceren */}
           <div className="hd-section">
             <div className="hd-step-num">6</div>
             <div className="hd-step-body">
               <h2>Rooster publiceren</h2>
               <p>
                 Als je tevreden bent met het concept, publiceer je het rooster.
-                Alle concept-diensten in de periode worden gepubliceerd.
+                Alle concept-diensten in de geselecteerde periode worden in één keer gepubliceerd.
               </p>
               <ol>
-                <li>Controleer de bezetting van elke dienst</li>
-                <li>Klik <strong>&quot;Publiceer rooster&quot;</strong></li>
-                <li>Optioneel: voeg een begeleidend bericht toe (verschijnt in de e-mail)</li>
-                <li>Alle tappers ontvangen automatisch een e-mail met een link naar het rooster</li>
+                <li>Controleer de bezetting van elke dienst in de Concept-weergave</li>
+                <li>Scroll naar de sectie <em>Rooster publiceren</em> en kies de periode</li>
+                <li>Voeg optioneel een begeleidend bericht toe (verschijnt in de e-mail aan tappers)</li>
+                <li>Klik <strong>Rooster publiceren</strong></li>
               </ol>
               <div className="hd-highlight">
                 <p>
                   ✅ Na publicatie zijn de diensten zichtbaar voor alle tappers in het Rooster-overzicht.
-                  Tappers kunnen zichzelf nu ook aanmelden voor open diensten.
+                  Tappers ontvangen automatisch een e-mail. Diensten met open plekken kunnen door tappers geclaimd worden.
+                </p>
+              </div>
+
+              <h3>Gepubliceerd rooster inzien</h3>
+              <p>
+                Via het sub-tabblad <strong>Gepubliceerd</strong> zie je per maand alle gepubliceerde diensten.
+                Je kunt hier nog steeds diensten bewerken of tappers toevoegen/verwijderen.
+              </p>
+            </div>
+          </div>
+
+          <hr className="hd-divider" />
+
+          {/* 7. Feestje */}
+          <div className="hd-section">
+            <div className="hd-step-num">7</div>
+            <div className="hd-step-body">
+              <h2>Feestje aanmaken</h2>
+              <p>
+                Ga naar <strong>Rooster</strong> → klik op het sub-tabblad <strong>Events</strong>.
+                Hier maak je een feestje aan met meerdere diensten (bijv. tappers én kassamedewerkers).
+              </p>
+              <ol>
+                <li>Vul de <strong>naam</strong> van het feestje in</li>
+                <li>Kies de <strong>datum</strong></li>
+                <li>
+                  Voeg één of meer diensten toe via <strong>+ Dienst toevoegen</strong>:
+                  <ul>
+                    <li>Kies de rol: <strong>Tapper</strong> of <strong>Kassa</strong></li>
+                    <li>Stel start- en eindtijd in</li>
+                    <li>Kies het aantal benodigde mensen</li>
+                  </ul>
+                </li>
+                <li>Klik <strong>Feestje aanmaken</strong></li>
+              </ol>
+              <p>
+                Na het aanmaken kun je het feestje direct publiceren (tappers ontvangen een e-mail) of later publiceren via het <strong>Concept</strong>-sub-tabblad.
+              </p>
+            </div>
+          </div>
+
+          <hr className="hd-divider" />
+
+          {/* 8. Berichten */}
+          <div className="hd-section">
+            <div className="hd-step-num">8</div>
+            <div className="hd-step-body">
+              <h2>Bericht sturen</h2>
+              <p>
+                Via het <strong>Berichten</strong>-tabblad stuur je een bericht naar alle tappers tegelijk.
+                Handig voor aankondigingen, herinneringen of wijzigingen.
+              </p>
+              <ol>
+                <li>Vul een <strong>onderwerp</strong> in</li>
+                <li>Schrijf de <strong>berichttekst</strong></li>
+                <li>Klik <strong>Versturen</strong></li>
+              </ol>
+              <p>
+                Tappers ontvangen het bericht als e-mail en zien het ook bovenaan hun dashboard.
+              </p>
+            </div>
+          </div>
+
+          <hr className="hd-divider" />
+
+          {/* 9. Uitnodiging */}
+          <div className="hd-section">
+            <div className="hd-step-num">9</div>
+            <div className="hd-step-body">
+              <h2>Nieuwe tapper uitnodigen</h2>
+              <p>
+                Ga naar het <strong>Uitnodiging</strong>-tabblad om een nieuwe tapper toe te voegen aan het systeem.
+              </p>
+              <ol>
+                <li>Vul optioneel een <strong>e-mailadres</strong> in — de link wordt dan ook direct per e-mail verstuurd</li>
+                <li>Klik <strong>🔗 Genereer uitnodigingslink</strong></li>
+                <li>Kopieer de link via <strong>📋 Kopieer link</strong> en stuur deze naar de nieuwe tapper</li>
+                <li>Of download de <strong>QR-code</strong> en deel die (bijv. op een bord of in een app)</li>
+              </ol>
+              <div className="hd-highlight">
+                <p>
+                  🔒 De uitnodigingslink is <strong>7 dagen geldig</strong> en kan maar <strong>één keer gebruikt</strong> worden.
+                  Na registratie moet de nieuwe tapper zijn e-mailadres bevestigen via de verificatiemail.
                 </p>
               </div>
             </div>
@@ -195,59 +283,9 @@ export default function AdminHandleiding() {
 
           <hr className="hd-divider" />
 
+          {/* 10. Tips */}
           <div className="hd-section">
-            <div className="hd-step-num">7</div>
-            <div className="hd-step-body">
-              <h2>Feestje aanmaken</h2>
-              <p>
-                Ga naar <strong>Admin → Events</strong>.
-                Hier maak je een feestje aan met meerdere diensten (bijv. tappers én kassamedewerkers).
-              </p>
-              <ol>
-                <li>Vul de <strong>naam</strong> van het feestje in</li>
-                <li>Kies de <strong>datum</strong></li>
-                <li>
-                  Voeg diensten toe via <strong>&quot;+ Dienst toevoegen&quot;</strong>:
-                  <ul>
-                    <li>Kies de rol: <strong>Tapper</strong> of <strong>Bonnenkassa</strong></li>
-                    <li>Stel start- en eindtijd in</li>
-                    <li>Kies het aantal benodigde mensen</li>
-                  </ul>
-                </li>
-                <li>Klik <strong>&quot;Feestje aanmaken&quot;</strong></li>
-              </ol>
-              <p>
-                Het feestje verschijnt als concept in het Rooster-tabblad. Publiceer het via het
-                Rooster-tabblad om tappers op de hoogte te stellen.
-              </p>
-            </div>
-          </div>
-
-          <hr className="hd-divider" />
-
-          <div className="hd-section">
-            <div className="hd-step-num">8</div>
-            <div className="hd-step-body">
-              <h2>Bericht sturen</h2>
-              <p>
-                Via <strong>Admin → Berichten</strong> stuur je een bericht naar alle tappers tegelijk.
-                Handig voor aankondigingen, herinneringen of wijzigingen.
-              </p>
-              <ol>
-                <li>Vul een <strong>onderwerp</strong> in</li>
-                <li>Schrijf de <strong>berichttekst</strong></li>
-                <li>Klik <strong>&quot;Versturen&quot;</strong></li>
-              </ol>
-              <p>
-                Tappers ontvangen het bericht als e-mail en zien het ook op hun dashboard.
-              </p>
-            </div>
-          </div>
-
-          <hr className="hd-divider" />
-
-          <div className="hd-section">
-            <div className="hd-step-num">9</div>
+            <div className="hd-step-num">10</div>
             <div className="hd-step-body">
               <h2>Handige tips</h2>
               <div className="hd-tip">
@@ -311,13 +349,14 @@ const styles = `
   .hd-step-body p { color: #8b80b0; font-size: 15px; line-height: 1.65; margin-bottom: 12px; }
   .hd-step-body p:last-child { margin-bottom: 0; }
   .hd-step-body strong { color: #e8e0ff; }
+  .hd-step-body em { color: #a89ec8; font-style: normal; }
   .hd-step-body ul, .hd-step-body ol { color: #8b80b0; font-size: 15px; line-height: 1.8; padding-left: 20px; margin-bottom: 12px; }
   .hd-step-body li { margin-bottom: 4px; }
   .hd-tab-overview { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
   .hd-tab-item { display: flex; align-items: center; gap: 12px; background: #221f38; border: 1px solid #2e2a4a; border-radius: 10px; padding: 10px 14px; font-size: 14px; color: #8b80b0; }
   .hd-tab-item span:first-child { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
   .hd-mode-auto { display: inline-block; background: rgba(0,229,195,0.12); color: #00e5c3; border: 1px solid rgba(0,229,195,0.3); border-radius: 6px; padding: 2px 8px; font-size: 12px; font-weight: 700; }
-  .hd-mode-open { display: inline-block; background: rgba(196,181,253,0.12); color: #c4b5fd; border: 1px solid rgba(196,181,253,0.3); border-radius: 6px; padding: 2px 8px; font-size: 12px; font-weight: 700; }
+  .hd-mode-open { display: inline-block; background: rgba(255,181,71,0.12); color: #ffb547; border: 1px solid rgba(255,181,71,0.3); border-radius: 6px; padding: 2px 8px; font-size: 12px; font-weight: 700; }
   .hd-highlight { background: rgba(0,229,195,0.07); border: 1px solid rgba(0,229,195,0.35); border-radius: 10px; padding: 14px 18px; margin: 12px 0; }
   .hd-highlight p { color: #b8f0e8 !important; margin: 0 !important; font-size: 14px !important; }
   .hd-tip { background: rgba(196,181,253,0.07); border: 1px solid rgba(196,181,253,0.3); border-radius: 10px; padding: 14px 18px; margin: 12px 0; }
