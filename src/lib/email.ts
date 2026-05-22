@@ -258,6 +258,27 @@ export async function sendInviteEmail(to: string, token: string, adminName: stri
   });
 }
 
+// ── E-mailadres bevestigen (bij registratie) ───────────────────────────────
+export async function sendEmailVerificationEmail(to: string, name: string, confirmLink: string) {
+  await getResend().emails.send({
+    from: FROM,
+    to,
+    subject: "✅ Bevestig je e-mailadres — Taprooster",
+    html: emailTemplate(
+      "Bevestig je account",
+      `
+      <p>Hey ${escHtml(name)},</p>
+      <p>Welkom bij ${escHtml(APP_CONFIG.orgName)}! Klik op de knop hieronder om je e-mailadres te bevestigen en je account te activeren.</p>
+      <a href="${confirmLink}" class="btn">Bevestig e-mailadres →</a>
+      <p class="meta" style="margin-top:16px;">⏳ Deze link is <strong>24 uur</strong> geldig.</p>
+      <div class="warning">
+        <p>🔒 Heb je je niet aangemeld bij ${escHtml(APP_CONFIG.orgName)}? Dan hoef je niets te doen.</p>
+      </div>
+      `
+    ),
+  });
+}
+
 // ── Wachtwoord reset ───────────────────────────────────────────────────────
 export async function sendPasswordResetEmail(to: string, resetLink: string) {
   await getResend().emails.send({
