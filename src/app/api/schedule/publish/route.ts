@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/api-helpers";
 import { createAdminClient } from "@/lib/supabase-server";
 import { sendRosterPublishedEmail, sendPartyPublishedEmail } from "@/lib/email";
 import { parseLocalDate } from "@/lib/dates";
+import { sendPushToAll, sendPushToUsers } from "@/lib/push";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -59,9 +60,10 @@ export async function POST(req: NextRequest) {
           read: false,
         }))
       );
-      await Promise.allSettled(allProfiles.map(p =>
-        sendPartyPublishedEmail(p.email, p.full_name, feestjeName, feestjeDate, message)
-      ));
+      await Promise.allSettled([
+        ...allProfiles.map(p => sendPartyPublishedEmail(p.email, p.full_name, feestjeName, feestjeDate, message)),
+        sendPushToAll({ title: "🎉 Nieuw feestje gepubliceerd!", body: notifMessage, url: "/rooster", tag: "roster_published" }),
+      ]);
     }
 
     return NextResponse.json({ data: { published: true, notified: allProfiles?.length || 0 } });
@@ -147,9 +149,16 @@ export async function POST(req: NextRequest) {
   }
 
   if (allProfiles) {
-    await Promise.allSettled(allProfiles.map(p =>
-      sendRosterPublishedEmail(p.email, p.full_name, message)
-    ));
+    const assignedUserIds = (publishedShifts || [])
+      .flatMap(s => (s.assignments || []).map((a: { user_id: string }) => a.user_id));
+    const uniqueAssignedIds = [...new Set(assignedUserIds)];
+    await Promise.allSettled([
+      ...allProfiles.map(p => sendRosterPublishedEmail(p.email, p.full_name, message)),
+      sendPushToAll({ title: "📅 Rooster gepubliceerd!", body: notifMessage, url: "/dashboard", tag: "roster_published" }),
+      uniqueAssignedIds.length > 0
+        ? sendPushToUsers(uniqueAssignedIds, { title: "🍺 Jij staat ingepland!", body: `Bekijk jouw diensten in het dashboard.`, url: "/dashboard", tag: "shift_assigned" })
+        : Promise.resolve(),
+    ]);
   }
 
   return NextResponse.json({ data: { published: true, notified: allProfiles?.length || 0 } });

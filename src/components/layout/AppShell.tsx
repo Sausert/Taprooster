@@ -1,5 +1,5 @@
 "use client";
-import { useState, createContext, useContext } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { Profile } from "@/types";
 
@@ -60,6 +60,44 @@ export default function AppShell({
   const pathname = usePathname();
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(initialUnread);
+  const [pushStatus, setPushStatus] = useState<"unsupported" | "default" | "granted" | "denied" | "loading">("unsupported");
+
+  useEffect(() => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    setPushStatus(Notification.permission === "granted" ? "granted" : Notification.permission === "denied" ? "denied" : "default");
+    navigator.serviceWorker.register("/sw.js").then(async (reg) => {
+      if (Notification.permission !== "granted") return;
+      const existing = await reg.pushManager.getSubscription();
+      if (existing) return; // already subscribed
+      await subscribeAndSave(reg);
+    }).catch(() => {/* SW registration failed — non-fatal */});
+  }, []);
+
+  async function subscribeAndSave(reg?: ServiceWorkerRegistration) {
+    try {
+      const registration = reg ?? await navigator.serviceWorker.ready;
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidKey) return;
+      const sub = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+      });
+      const json = sub.toJSON();
+      await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ endpoint: sub.endpoint, keys: json.keys }),
+      });
+      setPushStatus("granted");
+    } catch { setPushStatus("denied"); }
+  }
+
+  async function handleEnablePush() {
+    setPushStatus("loading");
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") { setPushStatus(permission as "denied"); return; }
+    await subscribeAndSave();
+  }
 
   const isAdmin = profile?.role === "admin";
   const NAV_ITEMS = isAdmin ? [...NAV_ITEMS_BASE, NAV_ITEM_ADMIN] : NAV_ITEMS_BASE;
@@ -87,6 +125,19 @@ export default function AppShell({
             {unreadCount > 0 && <span style={s.notifDot} />}
           </button>
         </header>
+
+        {/* Push permission prompt */}
+        {pushStatus === "default" && (
+          <button style={s.pushBanner} onClick={handleEnablePush}>
+            <span style={{ fontSize: 14 }}>🔔</span>
+            <span style={{ flex: 1, textAlign: "left", fontSize: 12, lineHeight: 1.3 }}>
+              <strong style={{ color: "#00e5c3" }}>Meldingen aanzetten</strong>
+              <br />
+              <span style={{ color: "#b8b0d4" }}>Ontvang push-meldingen voor diensten &amp; berichten</span>
+            </span>
+            <span style={{ fontSize: 11, color: "#00e5c3", fontWeight: 700 }}>AAN →</span>
+          </button>
+        )}
 
         {/* Page content */}
         <main style={s.main}>{children}</main>
@@ -122,6 +173,16 @@ export default function AppShell({
       </div>
     </AppContext.Provider>
   );
+}
+
+function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  const buf = new ArrayBuffer(rawData.length);
+  const arr = new Uint8Array(buf);
+  for (let i = 0; i < rawData.length; i++) arr[i] = rawData.charCodeAt(i);
+  return arr;
 }
 
 const s: Record<string, React.CSSProperties> = {
@@ -205,6 +266,19 @@ const s: Record<string, React.CSSProperties> = {
     display: "flex",
     zIndex: 50,
     padding: "4px 6px",
+  },
+  pushBanner: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "10px 16px",
+    background: "rgba(0,229,195,0.06)",
+    border: "none",
+    borderBottom: "1px solid rgba(0,229,195,0.15)",
+    cursor: "pointer",
+    width: "100%",
+    textAlign: "left" as const,
+    color: "#e8e0ff",
   },
   navItem: {
     display: "flex",

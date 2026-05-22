@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-helpers";
 import { createAdminClient } from "@/lib/supabase-server";
 import { sendAdminMessageEmail } from "@/lib/email";
+import { sendPushToAll } from "@/lib/push";
 
 export async function GET() {
   const auth = await requireAdmin();
@@ -56,9 +57,10 @@ export async function POST(req: NextRequest) {
     );
     if (notifError) console.error("Notificatie aanmaken mislukt:", notifError.message);
 
-    await Promise.allSettled(
-      allProfiles.map(p => sendAdminMessageEmail(p.email, p.full_name, title.trim(), msgBody.trim()))
-    );
+    await Promise.allSettled([
+      ...allProfiles.map(p => sendAdminMessageEmail(p.email, p.full_name, title.trim(), msgBody.trim())),
+      sendPushToAll({ title: `📢 ${title.trim()}`, body: msgBody.trim(), url: "/account?tab=notif", tag: "admin_message" }),
+    ]);
   }
 
   return NextResponse.json({ data: message });

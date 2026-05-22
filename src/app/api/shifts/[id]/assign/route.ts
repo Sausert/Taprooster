@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase-server";
 import { sendOpenShiftEmail } from "@/lib/email";
 import { parseLocalDate } from "@/lib/dates";
+import { sendPushToUsers } from "@/lib/push";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -95,7 +96,10 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
         await adminClient.from("notifications").insert(
           eligibleProfiles.map(p => ({ user_id:p.id, type:"open_shift", title:"🔓 Open dienst!", message:`Er is een open plek voor ${shift.title} op ${shiftDate}.`, shift_id:shiftId, read:false }))
         );
-        await Promise.allSettled(eligibleProfiles.map(p => sendOpenShiftEmail(p.email, p.full_name, shift.title, shiftDate, shiftTime, shiftId)));
+        await Promise.allSettled([
+          ...eligibleProfiles.map(p => sendOpenShiftEmail(p.email, p.full_name, shift.title, shiftDate, shiftTime, shiftId)),
+          sendPushToUsers(eligibleProfiles.map(p => p.id), { title: "🔓 Open dienst!", body: `Er is een open plek voor ${shift.title} op ${shiftDate}.`, url: "/rooster", tag: "open_shift" }),
+        ]);
       }
     }
     return NextResponse.json({ data: { declined: true } });
