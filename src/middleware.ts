@@ -37,7 +37,8 @@ export async function middleware(request: NextRequest) {
   // Public pages: accessible without login, but NOT redirected when logged in
   const isPublicPage =
     request.nextUrl.pathname.startsWith("/handleiding") ||
-    request.nextUrl.pathname.startsWith("/kiosk");
+    request.nextUrl.pathname.startsWith("/kiosk") ||
+    request.nextUrl.pathname.startsWith("/embed");
 
   if (!user && !isAuthPage && !isPublicPage) {
     const url = request.nextUrl.clone();
