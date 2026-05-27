@@ -271,7 +271,21 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
             </div>
           </form>
 
-          <button className={sharedStyles.btnSecondary} style={{ marginTop:12, color:"#ff4f6d", borderColor:"#ff4f6d" }} onClick={handleLogout}>Uitloggen</button>
+          <div style={{ display:"flex", flexDirection:"column", gap:8, marginTop:16 }}>
+            <a href="/handleiding/tapper" className={sharedStyles.btnSecondary}>
+              📖 Handleiding tappers
+            </a>
+            {profile.role === "admin" && (
+              <a href="/handleiding/admin" className={sharedStyles.btnSecondary}>
+                📖 Handleiding admins
+              </a>
+            )}
+            <a href="/feedback" className={sharedStyles.btnSecondary}>
+              💬 Feedback geven
+            </a>
+          </div>
+
+          <button className={sharedStyles.btnSecondary} style={{ marginTop:8, color:"#ff4f6d", borderColor:"#ff4f6d" }} onClick={handleLogout}>Uitloggen</button>
         </>
       )}
 

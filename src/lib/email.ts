@@ -299,6 +299,27 @@ export async function sendPasswordResetEmail(to: string, resetLink: string) {
   });
 }
 
+// ── Feedback van tapper ────────────────────────────────────────────────────
+export async function sendFeedbackEmail(fromName: string, userId: string, categoryLabel: string, message: string) {
+  await getResend().emails.send({
+    from: FROM,
+    to: "remi.gommans@gmail.com",
+    subject: `[Feedback Taprooster] ${categoryLabel} — ${fromName}`,
+    html: emailTemplate(
+      `Feedback: ${escHtml(categoryLabel)}`,
+      `
+      <div class="highlight">
+        <p><strong>Van:</strong> ${escHtml(fromName)}</p>
+        <p class="meta">User ID: ${escHtml(userId)}</p>
+      </div>
+      <p><strong>Categorie:</strong> ${escHtml(categoryLabel)}</p>
+      <hr class="divider">
+      <div class="highlight"><p>${escHtmlPreserveNewlines(message)}</p></div>
+      `
+    ),
+  });
+}
+
 // ── Admin bericht ──────────────────────────────────────────────────────────
 export async function sendAdminMessageEmail(to: string, name: string, title: string, body: string) {
   await getResend().emails.send({
