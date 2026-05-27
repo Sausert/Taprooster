@@ -27,15 +27,19 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Auth pages: redirect logged-in users away to dashboard
   const isAuthPage =
     request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/register") ||
     request.nextUrl.pathname.startsWith("/reset-password") ||
-    request.nextUrl.pathname.startsWith("/forgot-password") ||
+    request.nextUrl.pathname.startsWith("/forgot-password");
+
+  // Public pages: accessible without login, but NOT redirected when logged in
+  const isPublicPage =
     request.nextUrl.pathname.startsWith("/handleiding") ||
     request.nextUrl.pathname.startsWith("/kiosk");
 
-  if (!user && !isAuthPage) {
+  if (!user && !isAuthPage && !isPublicPage) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
