@@ -41,9 +41,9 @@ function getDayColor(dayShifts: any[], myShiftIds: string[]): { bg: string; colo
 }
 
 export default function RoosterClient({
-  shifts, myShiftIds, userId, userAssignments, isAdmin,
+  shifts, myShiftIds, userId, isAdmin,
 }: {
-  shifts: any[]; myShiftIds: string[]; userId: string; userAssignments: any[]; isAdmin?: boolean;
+  shifts: any[]; myShiftIds: string[]; userId: string; isAdmin?: boolean;
 }) {
   const [liveShifts, setLiveShifts] = useState<any[]>(shifts);
   const now = new Date();
@@ -52,6 +52,7 @@ export default function RoosterClient({
   const [view, setView] = useState<"cal" | "list">("cal");
   const [selectedShifts, setSelectedShifts] = useState<any[]>([]);
   const [claimModal, setClaimModal] = useState<any | null>(null);
+  const [declineModal, setDeclineModal] = useState<any | null>(null);
   const [claimedIds, setClaimedIds] = useState<string[]>([]);
   const [declinedIds, setDeclinedIds] = useState<string[]>([]);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
@@ -103,11 +104,13 @@ export default function RoosterClient({
 
   function prevMonth() {
     setSelectedShifts([]);
+    setListSearch("");
     if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); }
     else setViewMonth(m => m - 1);
   }
   function nextMonth() {
     setSelectedShifts([]);
+    setListSearch("");
     if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); }
     else setViewMonth(m => m + 1);
   }
@@ -119,6 +122,12 @@ export default function RoosterClient({
     const d = parseLocalDate(s.date);
     return d.getFullYear() === viewYear && d.getMonth() === viewMonth;
   });
+
+  const filteredListShifts = monthShifts.filter(shift =>
+    !listSearch ||
+    shift.title?.toLowerCase().includes(listSearch.toLowerCase()) ||
+    shift.date?.includes(listSearch)
+  );
 
   // Build day map
   const dayMap: Record<number, any[]> = {};
@@ -137,7 +146,7 @@ export default function RoosterClient({
     const assigned = (shift.assignments || []).filter((a: any) => a.status !== "declined").length;
     return assigned < shift.max_tappers;
   };
-  const isMyShift = (shift: any) => myShiftIds.includes(shift.id) || claimedIds.includes(shift.id);
+  const isMyShift = (shift: any) => (myShiftIds.includes(shift.id) || claimedIds.includes(shift.id)) && !declinedIds.includes(shift.id);
 
   async function handleClaim(shift: any) {
     const { ok } = await shiftAction(shift.id, "claim");
@@ -154,6 +163,7 @@ export default function RoosterClient({
   async function handleDecline(shiftId: string) {
     const { ok } = await shiftAction(shiftId, "decline");
     if (ok) setDeclinedIds(p => [...p, shiftId]);
+    setDeclineModal(null);
   }
 
 
@@ -206,7 +216,7 @@ export default function RoosterClient({
             <>
               <div style={{ position:"fixed", inset:0, zIndex:99 }} onClick={() => setShowMonthPicker(false)} />
               <div role="dialog" aria-modal="true" aria-label="Maand selecteren" style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:12, padding:12, zIndex:100, width:240 }}>
-              {[now.getFullYear(), now.getFullYear() + 1].map(year => (
+              {[now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1].map(year => (
                 <div key={year}>
                   <div style={{ fontSize:10, fontWeight:700, color:"#a89ec8", textTransform:"uppercase", letterSpacing:1, marginBottom:6, marginTop: year === now.getFullYear() ? 0 : 10 }}>{year}</div>
                   <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:4 }}>
@@ -262,7 +272,7 @@ export default function RoosterClient({
 
               if (!hasShift) {
                 return (
-                  <div key={day} style={{ aspectRatio:"1", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"#a89ec8", borderRadius:8, outline: today ? "2px solid rgba(0,229,195,0.3)" : "none", position:"relative" }}>
+                  <div key={day} style={{ aspectRatio:"1", minHeight:36, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"#a89ec8", borderRadius:8, outline: today ? "2px solid rgba(0,229,195,0.3)" : "none", position:"relative" }}>
                     {day}
                     {isAdmin && <span style={{ position:"absolute", bottom:1, right:2, fontSize:9, color:"rgba(0,229,195,0.4)" }}>+</span>}
                   </div>
@@ -275,7 +285,7 @@ export default function RoosterClient({
 
               return (
                 <button key={day} type="button" className={sharedStyles.calDay} onClick={() => setSelectedShifts(dayShifts)} aria-label={`${day} ${MONTH_NAMES[viewMonth]}, ${dayShifts.length} dienst${dayShifts.length !== 1 ? "en" : ""}`} style={{
-                  aspectRatio:"1", display:"flex", alignItems:"center", justifyContent:"center",
+                  aspectRatio:"1", minHeight:36, display:"flex", alignItems:"center", justifyContent:"center",
                   fontSize:12, fontWeight:700, borderRadius:8, cursor:"pointer", position:"relative",
                   background: bg, color, borderWidth:1, borderStyle:"solid", borderColor,
                   outline: today ? "2px solid rgba(0,229,195,0.4)" : "none", outlineOffset:2,
@@ -355,8 +365,8 @@ export default function RoosterClient({
                         </button>
                       )}
                       {mine && !declined && (
-                        <button style={{ ...s.declineBtn, flex:1, opacity: loading===shift.id ? 0.5 : 1 }} disabled={loading===shift.id} onClick={() => handleDecline(shift.id)}>
-                          {loading===shift.id ? "..." : "Afmelden"}
+                        <button style={{ ...s.declineBtn, flex:1, opacity: loading===shift.id ? 0.5 : 1 }} disabled={loading===shift.id} onClick={() => setDeclineModal(shift)}>
+                          Afmelden
                         </button>
                       )}
                       <a href={`/api/shifts/${shift.id}/ical`} aria-label="Exporteer naar agenda" onClick={(e) => { e.preventDefault(); openAgenda(shift); }} style={{ ...s.icalBtn, flex: claimable || mine ? 0 : 1, textDecoration:"none", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -372,12 +382,18 @@ export default function RoosterClient({
       ) : (
         /* List view */
         <>
-          <input
-            className={sharedStyles.input}
-            placeholder="Zoek op naam of datum..."
-            value={listSearch}
-            onChange={e => setListSearch(e.target.value)}
-          />
+          <div style={{ position:"relative", marginBottom:12 }}>
+            <input
+              className={sharedStyles.input}
+              style={{ marginBottom:0, paddingRight: listSearch ? 36 : undefined }}
+              placeholder="Zoek op naam of datum..."
+              value={listSearch}
+              onChange={e => setListSearch(e.target.value)}
+            />
+            {listSearch && (
+              <button type="button" onClick={() => setListSearch("")} aria-label="Zoekopdracht wissen" style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:"#a89ec8", fontSize:18, cursor:"pointer", padding:"4px", lineHeight:1 }}>×</button>
+            )}
+          </div>
           {monthShifts.length === 0 ? (
             <div style={{ textAlign:"center", padding:"40px 20px", background:"#1a1730", borderRadius:16, border:"1px solid #2e2a4a" }}>
               <div style={{ display:"flex", justifyContent:"center", marginBottom:12 }}>
@@ -386,19 +402,11 @@ export default function RoosterClient({
               <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff", margin:0 }}>Geen diensten</p>
               <p style={{ fontSize:12, color:"#a89ec8", marginTop:4 }}>Er zijn geen diensten gepland voor deze maand.</p>
             </div>
-          ) : monthShifts.filter(shift =>
-              !listSearch ||
-              shift.title?.toLowerCase().includes(listSearch.toLowerCase()) ||
-              shift.date?.includes(listSearch)
-            ).length === 0 ? (
+          ) : filteredListShifts.length === 0 ? (
             <div style={{ textAlign:"center", padding:"32px 20px", background:"#1a1730", borderRadius:16, border:"1px solid #2e2a4a" }}>
               <p style={{ fontSize:13, color:"#a89ec8", margin:0 }}>Geen diensten gevonden voor "{listSearch}".</p>
             </div>
-          ) : monthShifts.filter(shift =>
-              !listSearch ||
-              shift.title?.toLowerCase().includes(listSearch.toLowerCase()) ||
-              shift.date?.includes(listSearch)
-            ).map(shift => {
+          ) : filteredListShifts.map(shift => {
             const mine = isMyShift(shift);
             const isParty = shift.type === "feestje";
             const assignedFiltered = (shift.assignments || []).filter((a: any) => a.status !== "declined");
@@ -415,7 +423,7 @@ export default function RoosterClient({
                     <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:4, flexWrap:"wrap" }}>
                       <p style={{ fontSize:14, fontWeight:700, color:"#f0eeff" }}>{shift.title}</p>
                       {mine && <span className={`${sharedStyles.badge} ${sharedStyles.badgeViolet}`}>Jij</span>}
-                      {isParty && <span style={s.warnBadge}>Feestje</span>}
+                      {isParty && <span className={`${sharedStyles.badge} ${sharedStyles.badgeParty}`}>Feestje</span>}
                       {isPast && <span style={{ fontSize:10, padding:"1px 6px", borderRadius:8, background:"rgba(255,255,255,0.05)", color:"#a89ec8", border:"1px solid #2e2a4a" }}>Verstreken</span>}
                     </div>
                     <p style={{ fontSize:12, color:"#a89ec8" }}>{formatDateShort(shift.date)} · {formatTime(shift.start_time)}–{formatTime(shift.end_time)}</p>
@@ -433,7 +441,7 @@ export default function RoosterClient({
                       <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                     </a>
                     {canClaim(shift) && <button className={sharedStyles.btnPrimaryCompact} style={{ fontSize:12, padding:"8px 12px", minHeight:44 }} onClick={() => setClaimModal(shift)}>Inschrijven</button>}
-                    {mine && <button style={s.declineBtnSm} onClick={() => handleDecline(shift.id)}>Afmelden</button>}
+                    {mine && <button style={{ ...s.declineBtnSm, opacity: loading===shift.id ? 0.5 : 1 }} disabled={loading===shift.id} onClick={() => setDeclineModal(shift)}>Afmelden</button>}
                   </div>
                 </div>
               </div>
@@ -483,6 +491,32 @@ export default function RoosterClient({
               {loading===claimModal.id ? "Bezig..." : "Ja, ik schrijf me in!"}
             </button>
             <button className={sharedStyles.btnSecondary} style={{ marginTop:8 }} onClick={() => setClaimModal(null)}>Annuleren</button>
+          </div>
+        </div>
+      )}
+
+      {/* Decline modal */}
+      {declineModal && (
+        <div className={sharedStyles.overlay} onClick={() => setDeclineModal(null)}>
+          <div className={sharedStyles.sheet} role="dialog" aria-modal="true" aria-labelledby="rooster-decline-title" tabIndex={-1} onClick={e => e.stopPropagation()} onKeyDown={(e) => { if (e.key === "Escape") setDeclineModal(null); }}>
+            <div className={sharedStyles.sheetHandle} />
+            <h3 className={sharedStyles.sheetTitle} id="rooster-decline-title">Afmelden</h3>
+            <p style={{ fontSize:13, color:"#a89ec8", marginBottom:16 }}>
+              Alle andere tappers worden genotificeerd dat er een open plek is.
+            </p>
+            <div style={{ background:"#221f38", borderRadius:12, padding:"12px 14px", marginBottom:16 }}>
+              <p style={{ fontSize:15, fontWeight:700, color:"#f0eeff" }}>{declineModal.title}</p>
+              <p style={{ fontSize:13, color:"#a89ec8", marginTop:4 }}>{formatDate(declineModal.date)} · {formatTime(declineModal.start_time)}–{formatTime(declineModal.end_time)}</p>
+            </div>
+            <button
+              className={sharedStyles.btnPrimary}
+              style={{ background:"linear-gradient(135deg,#ff4f6d,#cc3355)", boxShadow:"0 4px 20px rgba(255,79,109,0.3)" }}
+              disabled={loading===declineModal.id}
+              onClick={() => handleDecline(declineModal.id)}
+            >
+              {loading===declineModal.id ? "Bezig..." : "Ja, ik meld me af"}
+            </button>
+            <button className={sharedStyles.btnSecondary} style={{ marginTop:8 }} onClick={() => setDeclineModal(null)}>Toch niet</button>
           </div>
         </div>
       )}

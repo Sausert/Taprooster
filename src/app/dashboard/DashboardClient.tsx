@@ -146,6 +146,7 @@ export default function DashboardClient({
         ? { ...(data as unknown as ShiftAssignment), shift: { ...shift } }
         : { id: "", user_id: profile?.id ?? "", created_at: new Date().toISOString(), shift_id: shift.id, status: "assigned" as const, shift: { ...shift } };
       setUpcoming(u => [...u, assignment].sort((a,b) => a.shift!.date.localeCompare(b.shift!.date)));
+      setHeroIndex(0);
       // Navigate month view to the claimed shift's month
       const shiftDate = parseLocalDate(shift.date);
       setMyMonth(shiftDate.getMonth());
@@ -198,7 +199,7 @@ export default function DashboardClient({
         </div>
       )}
       {claimSuccess && (
-        <div className={sharedStyles.bannerIn} style={{background:"rgba(0,229,195,0.1)", border:"1px solid #00e5c3", borderRadius:12, padding:"10px 14px", fontSize:13, color:"#00e5c3", fontWeight:700, marginBottom:14, display:"flex", alignItems:"center", gap:8}}>
+        <div className={sharedStyles.bannerIn} style={{position:"fixed", top:72, left:"50%", transform:"translateX(-50%)", background:"rgba(0,229,195,0.97)", borderRadius:12, padding:"12px 20px", fontSize:13, color:"#0f0d1a", fontWeight:700, zIndex:200, display:"flex", alignItems:"center", gap:8, boxShadow:"0 4px 20px rgba(0,229,195,0.4)", maxWidth:398, width:"calc(100% - 32px)", justifyContent:"center"}}>
           <CheckIcon size={14} /> Ingeschreven voor {claimSuccess}!
         </div>
       )}
@@ -429,7 +430,7 @@ export default function DashboardClient({
           <div ref={openDienstenRef} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", margin:"20px 0 8px" }}>
             <div style={{ display:"flex", alignItems:"center", gap:8, margin:0 }}>
               <p className={sharedStyles.sectionTitle} style={{ margin:0 }}>Open diensten</p>
-              <span className={`${sharedStyles.badge} ${sharedStyles.badgeMuted}`}>{claimable.length}</span>
+              <span className={`${sharedStyles.badge} ${sharedStyles.badgeMuted}`}>{filteredClaimable.length}</span>
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
               <button onClick={prevOpenMonth} className={sharedStyles.navArrow}>‹</button>

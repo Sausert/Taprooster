@@ -147,11 +147,11 @@ export default function AppShell({
           {NAV_ITEMS.map(item => {
             const active = pathname.startsWith(item.path);
             return (
-              <button
+              <a
                 key={item.path}
+                href={item.path}
                 aria-current={active ? "page" : undefined}
-                style={{ ...s.navItem, background: active ? "rgba(0,229,195,0.08)" : "none" }}
-                onClick={() => router.push(item.path)}
+                style={{ ...s.navItem, background: active ? "rgba(0,229,195,0.08)" : "none", textDecoration:"none" }}
               >
                 <span style={{ display:"flex", alignItems:"center", justifyContent:"center", color: active ? "#00e5c3" : "#b8b0d4", filter: active ? "drop-shadow(0 0 6px #00e5c3)" : "none", transition:"filter 0.2s, color 0.15s" }}>
                   {item.icon}
@@ -166,7 +166,7 @@ export default function AppShell({
                 }}>
                   {item.label}
                 </span>
-              </button>
+              </a>
             );
           })}
         </nav>
