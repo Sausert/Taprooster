@@ -86,9 +86,9 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ data: { valid: true } });
 }
 
-// PATCH /api/invite — markeer token als gebruikt (vereist authenticatie)
+// PATCH /api/invite — markeer token als gebruikt (vereist admin)
 export async function PATCH(req: NextRequest) {
-  const auth = await requireAuth();
+  const auth = await requireAdmin();
   if ("error" in auth) return auth.error;
   const { supabase } = auth;
 
