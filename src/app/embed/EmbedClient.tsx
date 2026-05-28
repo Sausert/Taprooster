@@ -119,6 +119,7 @@ export default function EmbedClient({ shifts }: { shifts: Shift[] }) {
               <button
                 key={v}
                 onClick={() => setView(v)}
+                aria-pressed={view === v}
                 style={{
                   ...s.toggleBtn,
                   background:   view === v ? "#00e5c3"           : "transparent",
@@ -293,7 +294,7 @@ function AgendaView({
                   );
                 })}
                 {dayShifts.length > 2 && (
-                  <span style={{ fontSize: 9, color: "#b8b0d4", paddingLeft: 2 }}>
+                  <span style={{ fontSize: 10, color: "#b8b0d4", paddingLeft: 2 }}>
                     +{dayShifts.length - 2} meer
                   </span>
                 )}
@@ -348,9 +349,9 @@ const s: Record<string, React.CSSProperties> = {
   headerTop:    { display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 },
   logo:         { display:"flex", alignItems:"center", gap:7 },
   logoText:     { fontWeight:900, fontSize:15, color:"#00e5c3", letterSpacing:"0.12em" },
-  orgName:      { fontSize:11, color:"#6a6490", letterSpacing:"0.05em" },
-  toggle:       { display:"flex", borderRadius:8, overflow:"hidden", border:"1px solid #2e2a4a" },
-  toggleBtn:    { padding:"5px 12px", border:"none", borderLeft:"1px solid #2e2a4a", fontSize:11, cursor:"pointer", fontFamily:"inherit", letterSpacing:"0.04em", transition:"background 0.15s,color 0.15s" },
+  orgName:      { fontSize:11, color:"#a89ec8", letterSpacing:"0.05em" },
+  toggle:       { display:"flex", borderRadius:10, overflow:"hidden", border:"1px solid #2e2a4a" },
+  toggleBtn:    { padding:"10px 14px", minHeight:44, border:"none", borderLeft:"1px solid #2e2a4a", fontSize:13, cursor:"pointer", fontFamily:"inherit", letterSpacing:"0.04em", transition:"background 0.15s,color 0.15s" },
   legend:       { display:"flex", gap:12, flexWrap:"wrap" as const },
   legendItem:   { display:"flex", alignItems:"center", gap:5 },
   legendDot:    { width:7, height:7, borderRadius:"50%", flexShrink:0 },
@@ -368,17 +369,17 @@ const s: Record<string, React.CSSProperties> = {
   badge:        { fontSize:10, fontWeight:700, padding:"2px 7px", borderRadius:20, border:"1px solid", letterSpacing:"0.04em" },
   // Calendar
   calNav:       { display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 },
-  calMonthTitle:{ fontSize:14, fontWeight:700, color:"#f0eeff", letterSpacing:"0.04em" },
-  navBtn:       { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:8, color:"#e8e0ff", fontSize:18, width:34, height:34, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 },
+  calMonthTitle:{ fontSize:17, fontWeight:800, color:"#f0eeff", letterSpacing:"0.04em" },
+  navBtn:       { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:8, color:"#e8e0ff", fontSize:18, width:44, height:44, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 },
   calGrid:      { display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3 },
-  dayHeader:    { textAlign:"center" as const, fontSize:10, fontWeight:700, color:"#6a6490", letterSpacing:"0.08em", paddingBottom:4 },
+  dayHeader:    { textAlign:"center" as const, fontSize:10, fontWeight:700, color:"#a89ec8", letterSpacing:"0.08em", paddingBottom:4 },
   cell:         { borderRadius:8, padding:"5px 4px 4px", minHeight:58 },
   cellEmpty:    { borderRadius:8, minHeight:58 },
   dayNum:       { fontSize:12, display:"block", textAlign:"center" as const, marginBottom:3 },
   calPill:      { display:"flex", alignItems:"center", gap:2, borderRadius:4, border:"1px solid", padding:"1px 3px", overflow:"hidden" },
   calPillDot:   { width:4, height:4, borderRadius:"50%", flexShrink:0 },
-  calPillText:  { fontSize:9, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" as const },
+  calPillText:  { fontSize:10, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" as const },
   detail:       { marginTop:14, padding:"12px 14px", background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:12 },
   detailTitle:  { fontSize:12, fontWeight:700, color:"#b8b0d4", letterSpacing:"0.06em", marginBottom:10 },
-  footer:       { textAlign:"center" as const, fontSize:10, color:"#4a4470", padding:"0 0 16px", letterSpacing:"0.04em" },
+  footer:       { textAlign:"center" as const, fontSize:10, color:"#6a6490", padding:"0 0 16px", letterSpacing:"0.04em" },
 };

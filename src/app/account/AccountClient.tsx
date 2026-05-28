@@ -218,10 +218,10 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
               onClick={() => setTab(t.id as any)}
               aria-label={t.id === "notif" && unreadNotifCount > 0 ? `Notificaties (${unreadNotifCount} ongelezen)` : t.label}
               aria-current={tab === t.id ? "true" : undefined}
-              style={{ ...s.tab, color: tab===t.id?"#00e5c3":"#a89ec8", borderBottom:`2px solid ${tab===t.id?"#00e5c3":"transparent"}`, fontWeight: tab===t.id ? 900 : 600, position:"relative" }}>
+              style={{ ...s.tab, color: tab===t.id?"#00e5c3":"#a89ec8", borderBottom:`2px solid ${tab===t.id?"#00e5c3":"transparent"}`, fontWeight: tab===t.id ? 900 : 600, position:"relative", ...(t.id === "notif" && unreadNotifCount > 0 ? { paddingRight:"12px" } : {}) }}>
               {t.label}
               {t.id === "notif" && unreadNotifCount > 0 && (
-                <span aria-hidden="true" style={{ position:"absolute", top:4, right:2, width:10, height:10, borderRadius:"50%", background:"#ff4f6d", display:"block" }} />
+                <span aria-hidden="true" style={{ position:"absolute", top:6, right:-2, width:8, height:8, borderRadius:"50%", background:"#ff4f6d", display:"block" }} />
               )}
             </button>
           ))}
@@ -272,16 +272,25 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
           </form>
 
           <div style={{ display:"flex", flexDirection:"column", gap:8, marginTop:16 }}>
-            <a href="/handleiding/tapper" className={sharedStyles.btnSecondary}>
-              📖 Handleiding tappers
+            <a href="/handleiding/tapper" className={sharedStyles.btnSecondary} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+              </svg>
+              Handleiding tappers
             </a>
             {profile.role === "admin" && (
-              <a href="/handleiding/admin" className={sharedStyles.btnSecondary}>
-                📖 Handleiding admins
+              <a href="/handleiding/admin" className={sharedStyles.btnSecondary} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+                </svg>
+                Handleiding admins
               </a>
             )}
-            <a href="/feedback" className={sharedStyles.btnSecondary}>
-              💬 Feedback geven
+            <a href="/feedback" className={sharedStyles.btnSecondary} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+              </svg>
+              Feedback geven
             </a>
           </div>
 
@@ -469,13 +478,13 @@ export default function AccountClient({ profile: initialProfile, leaderboard, no
 }
 
 const s: Record<string, React.CSSProperties> = {
-  page: { padding:"16px 16px 100px" },
+  page: { padding:"16px 16px 24px" },
   profileHeader: { display:"flex", gap:14, alignItems:"center", marginBottom:16, padding:16, background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:16 },
   avatar: { width:56, height:56, borderRadius:12, background:"linear-gradient(135deg, #3b2f6e, #5a4a9e)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:20, color:"#00e5c3", flexShrink:0 },
   name: { fontSize:17, fontWeight:700, color:"#f0eeff", fontFamily:"'Exo 2', sans-serif" },
   emailTxt: { fontSize:12, color:"#a89ec8", marginTop:2 },
   tabBar: { display:"flex", borderBottom:"1px solid #2e2a4a", marginBottom:16, marginTop:8, overflowX:"auto" },
-  tab: { flex:1, minWidth:70, padding:"10px 4px", background:"none", border:"none", fontFamily:"'Exo 2', sans-serif", fontWeight:700, fontSize:11, cursor:"pointer", textAlign:"center", whiteSpace:"nowrap" },
+  tab: { flex:1, minWidth:70, padding:"12px 4px", minHeight:44, background:"none", border:"none", fontFamily:"'Exo 2', sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", textAlign:"center", whiteSpace:"nowrap" },
   savedBanner: { background:"rgba(0,229,195,0.08)", border:"1px solid #00e5c3", borderRadius:10, padding:"10px 14px", fontSize:13, color:"#00e5c3", fontWeight:700, textAlign:"center", marginBottom:12 },
   statGrid: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 },
   statCard: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:16, padding:16, textAlign:"center" },

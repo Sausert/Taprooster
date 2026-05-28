@@ -6,6 +6,20 @@
   :root {
     --font-exo2: 'Exo 2', sans-serif;
     --font-mono: 'Space Mono', monospace;
+
+    /* Type scale */
+    --text-xs:   10px;
+    --text-sm:   12px;
+    --text-base: 14px;
+    --text-lg:   18px;
+    --text-xl:   22px;
+    --text-2xl:  28px;
+
+    /* Border-radius scale */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
   }
 
   * {

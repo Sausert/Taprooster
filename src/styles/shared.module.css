@@ -1,6 +1,11 @@
 /* Shared design primitives used across all pages.
    Import: import styles from "@/styles/shared.module.css" */
 
+/*
+ * Design tokens (defined in globals.css :root — use as var(--text-xs) etc.):
+ * --text-xs:10px  --text-sm:12px  --text-base:14px  --text-lg:18px  --text-xl:22px  --text-2xl:28px
+ * --radius-sm:8px  --radius-md:12px  --radius-lg:16px  --radius-xl:20px
+ */
 
 .card {
   background: #1a1730;

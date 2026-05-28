@@ -208,8 +208,12 @@ export default function DashboardClient({
         <p style={{ fontSize:13, color:"#a89ec8", marginBottom:4 }}>Welkom terug,</p>
         <h1 style={s.greeting}>
           {firstName} <span aria-hidden="true">👋</span>
-          {profile?.role === "admin" && <span className={`${sharedStyles.badge} ${sharedStyles.badgeMint}`} style={{ fontSize:11, padding:"2px 10px" }}>⚡ Admin</span>}
         </h1>
+        {profile?.role === "admin" && (
+          <div style={{ marginTop: 6 }}>
+            <span className={`${sharedStyles.badge} ${sharedStyles.badgeMint}`}>⚡ Admin</span>
+          </div>
+        )}
       </div>
 
       {/* Mijn diensten hero */}
@@ -536,7 +540,7 @@ export default function DashboardClient({
 }
 
 const s: Record<string, React.CSSProperties> = {
-  page: { padding:"16px 16px 100px" },
+  page: { padding:"16px 16px 24px" },
   errorBanner: { background:"rgba(255,79,109,0.1)", border:"1px solid #ff4f6d", borderRadius:12, padding:"10px 14px", fontSize:13, color:"#ff4f6d", marginBottom:14, display:"flex", alignItems:"center", gap:8 },
   greeting: { fontSize:26, fontWeight:900, color:"#f0eeff", fontFamily:"'Exo 2',sans-serif", display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" },
   heroCard: { background:"#161326", border:"1px solid rgba(0,229,195,.15)", borderRadius:16, overflow:"hidden", boxShadow:"0 4px 24px rgba(0,0,0,.3)", marginBottom:12 },
@@ -545,8 +549,8 @@ const s: Record<string, React.CSSProperties> = {
   heroDaysBadge: { background:"rgba(0,229,195,.08)", border:"1px solid rgba(0,229,195,.25)", borderRadius:20, padding:"4px 12px", fontSize:11, fontWeight:700, color:"#00e5c3", flexShrink:0 as unknown as number },
   heroTitle: { fontSize:22, fontWeight:900, color:"#fff", marginBottom:4, letterSpacing:"-.01em" },
   heroTimePill: { fontSize:13, color:"#a89ec8", fontFamily:"'Exo 2',sans-serif" },
-  heroYes: { flex:1, padding:"10px", borderRadius:8, background:"rgba(0,229,195,.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 },
-  heroNo: { flex:1, padding:"10px", borderRadius:8, background:"rgba(255,79,109,.06)", border:"1px solid rgba(255,79,109,.3)", color:"#ff4f6d", fontFamily:"'Exo 2',sans-serif", fontSize:12, cursor:"pointer" },
+  heroYes: { flex:1, padding:"12px", borderRadius:8, background:"rgba(0,229,195,.1)", border:"1px solid #00e5c3", color:"#00e5c3", fontFamily:"'Exo 2',sans-serif", fontWeight:700, fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 },
+  heroNo: { flex:1, padding:"12px", borderRadius:8, background:"rgba(255,79,109,.06)", border:"1px solid rgba(255,79,109,.3)", color:"#ff4f6d", fontFamily:"'Exo 2',sans-serif", fontSize:12, cursor:"pointer" },
   statRow: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 },
   statCard: { background:"#1a1730", border:"1px solid #2e2a4a", borderRadius:16, padding:16, textAlign:"center" },
   statVal: { fontFamily:"monospace", fontSize:28, fontWeight:700, color:"#00e5c3", margin:0 },
