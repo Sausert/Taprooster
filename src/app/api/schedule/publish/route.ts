@@ -94,6 +94,17 @@ export async function POST(req: NextRequest) {
     rangeEnd = allDates[allDates.length - 1].end;
   }
 
+  // Haal de shifts op die zojuist van concept → published zijn gegaan
+  const { data: justPublishedShifts } = await supabase
+    .from("shifts")
+    .select("id, type")
+    .eq("status", "concept")
+    .gte("date", rangeStart).lte("date", rangeEnd);
+
+  // Sla op welke shift-IDs net gepubliceerd worden (voor feestje-detectie)
+  const justPublishedIds = (justPublishedShifts || []).map(s => s.id);
+  const hasNewFeestjes = (justPublishedShifts || []).some(s => s.type === "feestje");
+
   const { error: publishError } = await supabase.from("shifts")
     .update({ status: "published" })
     .eq("status", "concept")
@@ -101,64 +112,81 @@ export async function POST(req: NextRequest) {
 
   if (publishError) return NextResponse.json({ error: "Publiceren mislukt" }, { status: 500 });
 
-  // Maak periode label van rangeStart/rangeEnd
-  const startParts = rangeStart.split("-");
-  const endParts = rangeEnd.split("-");
-  const periodLabel = (startParts[0] === endParts[0] && startParts[1] === endParts[1])
-    ? `${getMonthName(startParts[1])} ${startParts[0]}`
-    : `${getMonthName(startParts[1])} ${startParts[0]} t/m ${getMonthName(endParts[1])} ${endParts[0]}`;
-
-  const notifMessage = message || `Het rooster voor ${periodLabel} staat live. Bekijk jouw ingeplande diensten.`;
-
-  if (allProfiles && allProfiles.length > 0) {
-    const { error: notifError } = await adminClient.from("notifications").insert(
-      allProfiles.map(p => ({
-        user_id: p.id,
-        type: "roster_published",
-        title: "📅 Rooster gepubliceerd!",
-        message: notifMessage,
-        read: false,
-      }))
-    );
-    if (notifError) { /* notif insert failure is non-fatal */ }
-  }
-
   const { data: publishedShifts } = await supabase
     .from("shifts")
     .select("*, assignments:shift_assignments(user_id, profile:profiles(email, full_name))")
     .eq("status", "published")
     .gte("date", rangeStart).lte("date", rangeEnd);
 
-  if (publishedShifts && publishedShifts.length > 0) {
+  // Splits: alleen tapavonden krijgen roster + assignment notificaties
+  const tapavondShifts = (publishedShifts || []).filter(s => s.type === "tapavond");
+  const feestjeShifts = (publishedShifts || []).filter(
+    s => s.type === "feestje" && justPublishedIds.includes(s.id)
+  );
+
+  // ── Tapavond-notificaties ──────────────────────────────────────────────────
+  if (tapavondShifts.length > 0 && allProfiles && allProfiles.length > 0) {
+    const startParts = rangeStart.split("-");
+    const endParts = rangeEnd.split("-");
+    const periodLabel = (startParts[0] === endParts[0] && startParts[1] === endParts[1])
+      ? `${getMonthName(startParts[1])} ${startParts[0]}`
+      : `${getMonthName(startParts[1])} ${startParts[0]} t/m ${getMonthName(endParts[1])} ${endParts[0]}`;
+    const notifMessage = message || `Het rooster voor ${periodLabel} staat live. Bekijk jouw ingeplande diensten.`;
+
+    await adminClient.from("notifications").insert(
+      allProfiles.map(p => ({
+        user_id: p.id, type: "roster_published",
+        title: "📅 Rooster gepubliceerd!", message: notifMessage, read: false,
+      }))
+    );
+
     const shiftNotifs: { user_id: string; type: string; title: string; message: string; shift_id: string; read: boolean }[] = [];
-    for (const shift of publishedShifts) {
+    for (const shift of tapavondShifts) {
       for (const assignment of (shift.assignments || [])) {
         shiftNotifs.push({
-          user_id: assignment.user_id,
-          type: "shift_assigned",
+          user_id: assignment.user_id, type: "shift_assigned",
           title: "🍺 Jij staat ingepland!",
           message: `${shift.title} op ${parseLocalDate(shift.date).toLocaleDateString("nl-NL", { weekday:"long", day:"numeric", month:"long" })} · ${shift.start_time}–${shift.end_time}`,
-          shift_id: shift.id,
-          read: false,
+          shift_id: shift.id, read: false,
         });
       }
     }
-    if (shiftNotifs.length > 0) {
-      await adminClient.from("notifications").insert(shiftNotifs);
-    }
-  }
+    if (shiftNotifs.length > 0) await adminClient.from("notifications").insert(shiftNotifs);
 
-  if (allProfiles) {
-    const assignedUserIds = (publishedShifts || [])
-      .flatMap(s => (s.assignments || []).map((a: { user_id: string }) => a.user_id));
-    const uniqueAssignedIds = [...new Set(assignedUserIds)];
+    const uniqueAssignedIds = [...new Set(
+      tapavondShifts.flatMap(s => (s.assignments || []).map((a: { user_id: string }) => a.user_id))
+    )];
     await Promise.allSettled([
-      ...allProfiles.map(p => sendRosterPublishedEmail(p.email, p.full_name, message)),
+      ...allProfiles.map(p => sendRosterPublishedEmail(p.email, p.full_name, message, periodLabel)),
       sendPushToAll({ title: "📅 Rooster gepubliceerd!", body: notifMessage, url: "/dashboard", tag: "roster_published" }),
       uniqueAssignedIds.length > 0
-        ? sendPushToUsers(uniqueAssignedIds, { title: "🍺 Jij staat ingepland!", body: `Bekijk jouw diensten in het dashboard.`, url: "/dashboard", tag: "shift_assigned" })
+        ? sendPushToUsers(uniqueAssignedIds, { title: "🍺 Jij staat ingepland!", body: "Bekijk jouw diensten in het dashboard.", url: "/dashboard", tag: "shift_assigned" })
         : Promise.resolve(),
     ]);
+  }
+
+  // ── Feestje-notificaties (geen assignment-notificaties!) ──────────────────
+  if (feestjeShifts.length > 0 && allProfiles && allProfiles.length > 0) {
+    const firstFeestje = feestjeShifts[0];
+    const feestjeName = firstFeestje.title?.replace(/ \(.*\)$/, "") || "feestje";
+    const feestjeDate = parseLocalDate(firstFeestje.date).toLocaleDateString("nl-NL", { weekday:"long", day:"numeric", month:"long" });
+    const feestjeNotifMsg = `${feestjeName} op ${feestjeDate}. Meld je aan via het rooster!`;
+
+    await adminClient.from("notifications").insert(
+      allProfiles.map(p => ({
+        user_id: p.id, type: "roster_published",
+        title: "🎉 Nieuw feestje gepubliceerd!", message: feestjeNotifMsg, read: false,
+      }))
+    );
+    await Promise.allSettled([
+      ...allProfiles.map(p => sendPartyPublishedEmail(p.email, p.full_name, feestjeName, feestjeDate, undefined)),
+      sendPushToAll({ title: "🎉 Nieuw feestje gepubliceerd!", body: feestjeNotifMsg, url: "/rooster", tag: "roster_published" }),
+    ]);
+  }
+
+  // Als er helemaal niets gepubliceerd is (range leeg of al published)
+  if (!hasNewFeestjes && tapavondShifts.length === 0) {
+    return NextResponse.json({ data: { published: true, notified: 0 } });
   }
 
   return NextResponse.json({ data: { published: true, notified: allProfiles?.length || 0 } });
