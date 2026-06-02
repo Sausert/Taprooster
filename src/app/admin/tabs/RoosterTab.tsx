@@ -254,8 +254,8 @@ export function RoosterTab() {
             <p className={styles.actionHeader}>Tapavonden genereren</p>
             <div className={styles.card} style={{ marginBottom:12 }}>
               <div style={{ display:"flex", gap:10, marginBottom:14 }}>
-                <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Van</label><input type="date" className={styles.input} min={new Date().toISOString().slice(0,10)} value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></div>
-                <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Tot en met</label><input type="date" className={styles.input} min={dateFrom || new Date().toISOString().slice(0,10)} value={dateTo} onChange={e => setDateTo(e.target.value)} /></div>
+                <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Van</label><input type="date" className={styles.input} style={{ fontSize:14, padding:"8px 10px", height:40, minWidth:0, width:"100%", boxSizing:"border-box" }} min={new Date().toISOString().slice(0,10)} value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></div>
+                <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Tot en met</label><input type="date" className={styles.input} style={{ fontSize:14, padding:"8px 10px", height:40, minWidth:0, width:"100%", boxSizing:"border-box" }} min={dateFrom || new Date().toISOString().slice(0,10)} value={dateTo} onChange={e => setDateTo(e.target.value)} /></div>
               </div>
               {generatorError && (
                 <div style={{ background:"rgba(255,79,109,0.1)", border:"1px solid #ff4f6d", borderRadius:8, padding:"8px 12px", fontSize:12, color:"#ff4f6d", marginBottom:8 }}>
