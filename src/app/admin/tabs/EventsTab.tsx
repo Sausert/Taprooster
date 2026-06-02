@@ -113,7 +113,7 @@ export function EventsTab() {
           <label className={styles.label}>Naam</label>
           <input className={styles.input} value={eventForm.title} onChange={e => setEventForm(f => ({ ...f, title: e.target.value }))} placeholder="Bijv. Oud & Nieuw..." required />
           <label className={styles.label}>Datum</label>
-          <input className={styles.input} type="date" style={{ fontSize:14, padding:"8px 10px", height:40, width:"100%", boxSizing:"border-box" }} value={eventForm.date} onChange={e => setEventForm(f => ({ ...f, date: e.target.value }))} required />
+          <input className={styles.input} type="date" style={{ fontSize:16, padding:"8px 10px", height:40, lineHeight:1, width:"100%", boxSizing:"border-box", marginBottom:0, WebkitAppearance:"none", appearance:"none" }} value={eventForm.date} onChange={e => setEventForm(f => ({ ...f, date: e.target.value }))} required />
         </div>
 
         <p className={styles.sectionTitle}>Diensten</p>
