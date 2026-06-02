@@ -1,7 +1,7 @@
 // lib/scheduler.ts — Strict availability + rotation scheduler
 import type { Profile, Shift, ShiftAssignment } from "@/types";
 import { APP_CONFIG } from "@/lib/config";
-import { parseLocalDate } from "@/lib/dates";
+import { parseLocalDate, toLocalDateStr } from "@/lib/dates";
 
 type DayOfWeek = "wednesday" | "friday" | "saturday";
 
@@ -9,6 +9,11 @@ export interface AssignmentSuggestion {
   shiftId: string;
   userId: string;
   score: number;
+  reasons: string[];
+}
+
+export interface SkippedProfile {
+  userId: string;
   reasons: string[];
 }
 
@@ -139,11 +144,13 @@ function isUserEligible(
     return { eligible: false, reason: "Geen bonnenkassa voorkeur" };
   }
 
-  // 5. Quarterly frequency limit — HARD CAP (most important!)
+  // 5. Quarterly frequency limit — HARD CAP
+  // Guard against preferred_frequency = 0 (treat as 1 to avoid immediate exclusion)
+  const effectiveFrequency = Math.max(1, user.preferred_frequency || 1);
   const quarterKey = getQuarterKey(shift.date);
   const shiftsThisQuarter = countUserShiftsInQuarter(user.id, quarterKey, allAssignments, allShifts);
-  if (shiftsThisQuarter >= user.preferred_frequency) {
-    return { eligible: false, reason: `Kwartaallimiet bereikt: ${shiftsThisQuarter}/${user.preferred_frequency}` };
+  if (shiftsThisQuarter >= effectiveFrequency) {
+    return { eligible: false, reason: `Kwartaallimiet bereikt: ${shiftsThisQuarter}/${effectiveFrequency}` };
   }
 
   // 6. No double-booking on same day
@@ -154,6 +161,38 @@ function isUserEligible(
   });
   if (alreadyThatDay) {
     return { eligible: false, reason: "Al ingepland op deze dag" };
+  }
+
+  // 7. No consecutive calendar days
+  const shiftDateObj = parseLocalDate(shift.date);
+  const prevDate = new Date(shiftDateObj.getFullYear(), shiftDateObj.getMonth(), shiftDateObj.getDate() - 1);
+  const nextDate = new Date(shiftDateObj.getFullYear(), shiftDateObj.getMonth(), shiftDateObj.getDate() + 1);
+  const prevDateStr = toLocalDateStr(prevDate);
+  const nextDateStr = toLocalDateStr(nextDate);
+  const hasAdjacentDay = allAssignments.some(a => {
+    if (a.user_id !== user.id || a.status === "declined") return false;
+    const s = allShifts.find(x => x.id === a.shift_id);
+    return s?.date === prevDateStr || s?.date === nextDateStr;
+  });
+  if (hasAdjacentDay) {
+    return { eligible: false, reason: "Al ingepland op aangrenzende dag" };
+  }
+
+  // 8. No consecutive weekends (Fri or Sat in adjacent ISO weeks)
+  const shiftJsDay = shiftDateObj.getDay(); // 5=Fri, 6=Sat
+  if (shiftJsDay === 5 || shiftJsDay === 6) {
+    const shiftWeek = getWeekNumber(shift.date);
+    const hasAdjacentWeekend = allAssignments.some(a => {
+      if (a.user_id !== user.id || a.status === "declined") return false;
+      const s = allShifts.find(x => x.id === a.shift_id);
+      if (!s) return false;
+      const sJsDay = parseLocalDate(s.date).getDay();
+      if (sJsDay !== 5 && sJsDay !== 6) return false;
+      return Math.abs(getWeekNumber(s.date) - shiftWeek) === 1;
+    });
+    if (hasAdjacentWeekend) {
+      return { eligible: false, reason: "Al ingepland op aangrenzend weekend" };
+    }
   }
 
   return { eligible: true, reason: "" };
@@ -170,8 +209,9 @@ function scoreUser(
 
   // Fairness: users with more remaining quota get priority
   const quarterKey = getQuarterKey(shift.date);
+  const effectiveFrequency = Math.max(1, user.preferred_frequency || 1);
   const shiftsThisQuarter = countUserShiftsInQuarter(user.id, quarterKey, allAssignments, allShifts);
-  const remaining = user.preferred_frequency - shiftsThisQuarter;
+  const remaining = effectiveFrequency - shiftsThisQuarter;
   score += remaining * 15; // More remaining = higher priority
 
   // Fairness: users who have tapped less this year get priority
@@ -195,7 +235,7 @@ function scoreUser(
   return score;
 }
 
-export function generateSchedule(input: ScheduleInput): AssignmentSuggestion[] {
+export function generateSchedule(input: ScheduleInput): { suggestions: AssignmentSuggestion[]; skippedProfiles: SkippedProfile[] } {
   const { profiles, shifts, existingAssignments } = input;
   // Use contextShifts for quota counting so cross-period assignments are included
   const allShiftsForContext = input.contextShifts
@@ -203,6 +243,9 @@ export function generateSchedule(input: ScheduleInput): AssignmentSuggestion[] {
     : shifts;
   const suggestions: AssignmentSuggestion[] = [];
   const tempAssignments = [...existingAssignments];
+
+  // Track exclusion reasons per profile across all shifts
+  const exclusionMap = new Map<string, Set<string>>();
 
   const sortedShifts = [...shifts].sort(
     (a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime()
@@ -220,7 +263,11 @@ export function generateSchedule(input: ScheduleInput): AssignmentSuggestion[] {
       .filter(p => !tempAssignments.some(a => a.shift_id === shift.id && a.user_id === p.id))
       .map(p => {
         const { eligible, reason } = isUserEligible(p, shift, allShiftsForContext, tempAssignments);
-        if (!eligible) return null;
+        if (!eligible) {
+          if (!exclusionMap.has(p.id)) exclusionMap.set(p.id, new Set());
+          exclusionMap.get(p.id)!.add(reason);
+          return null;
+        }
         const score = scoreUser(p, shift, allShiftsForContext, tempAssignments);
         return { userId: p.id, score };
       })
@@ -242,7 +289,13 @@ export function generateSchedule(input: ScheduleInput): AssignmentSuggestion[] {
     }
   }
 
-  return suggestions;
+  // Only report profiles that were never selected for any shift
+  const selectedIds = new Set(suggestions.map(s => s.userId));
+  const skippedProfiles: SkippedProfile[] = Array.from(exclusionMap.entries())
+    .filter(([userId]) => !selectedIds.has(userId))
+    .map(([userId, reasonSet]) => ({ userId, reasons: Array.from(reasonSet) }));
+
+  return { suggestions, skippedProfiles };
 }
 
 export function generateICalEvent(shift: Shift): string {

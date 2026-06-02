@@ -82,6 +82,7 @@ export function RoosterTab() {
   const [publishing, setPublishing] = useState(false);
   const [publishResult, setPublishResult] = useState<{ ok: boolean; text: string } | null>(null);
   const [generatorError, setGeneratorError] = useState<string | null>(null);
+  const [skippedProfiles, setSkippedProfiles] = useState<{ name: string; reasons: string[] }[]>([]);
 
   async function handleGenerate() {
     setGeneratorError(null);
@@ -93,6 +94,7 @@ export function RoosterTab() {
     if (data.error) { setGeneratorError(data.error); setGenerating(false); return; }
     if (data.data?.shifts) {
       setConceptShifts(data.data.shifts);
+      setSkippedProfiles(data.data.skippedProfiles || []);
     } else {
       setGeneratorError("Geen nieuwe diensten aangemaakt.");
     }
@@ -193,6 +195,16 @@ export function RoosterTab() {
           {conceptShifts.length > 0 && (
             <>
               <p className={styles.sectionTitle}>Conceptrooster ({conceptShifts.length} diensten)</p>
+              {skippedProfiles.length > 0 && (
+                <div style={{ background:"rgba(255,181,71,0.07)", border:"1px solid rgba(255,181,71,0.3)", borderRadius:12, padding:"10px 14px", marginBottom:12 }}>
+                  <p style={{ fontSize:12, fontWeight:700, color:"#ffb547", marginBottom:6 }}>⚠️ {skippedProfiles.length} tapper{skippedProfiles.length !== 1 ? "s" : ""} niet ingepland:</p>
+                  {skippedProfiles.map(p => (
+                    <p key={p.name} style={{ fontSize:11, color:"#b8b0d4", marginBottom:2 }}>
+                      <strong style={{ color:"#e8e0ff" }}>{p.name}</strong> — {p.reasons.join("; ")}
+                    </p>
+                  ))}
+                </div>
+              )}
               {conceptShifts.map(shift => <AdminShiftCard key={shift.id} shift={shift as any} source="concept" />)}
 
               <div className={styles.card} style={{ borderColor:"#00e5c3", marginTop:8, marginBottom:16 }}>
