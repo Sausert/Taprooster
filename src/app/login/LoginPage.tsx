@@ -22,7 +22,6 @@ export default function LoginPage() {
     if (error) {
       setError("Onjuist e-mailadres of wachtwoord.");
     } else {
-      router.refresh();
       router.push("/dashboard");
     }
     setLoading(false);
@@ -57,7 +56,7 @@ export default function LoginPage() {
 
             {error && <div style={s.errorBox}>{error}</div>}
 
-            <label htmlFor="login-email" style={s.label}>E-mailadres</label>
+            <label htmlFor="login-email" className={sharedStyles.label}>E-mailadres</label>
             <input
               id="login-email"
               className={sharedStyles.input}
@@ -69,7 +68,7 @@ export default function LoginPage() {
               autoComplete="email"
             />
 
-            <label htmlFor="login-password" style={s.label}>Wachtwoord</label>
+            <label htmlFor="login-password" className={sharedStyles.label}>Wachtwoord</label>
             <input
               id="login-password"
               className={sharedStyles.input}
@@ -100,7 +99,7 @@ export default function LoginPage() {
             {error && <div style={s.errorBox}>{error}</div>}
             {success && <div style={s.successBox}>{success}</div>}
 
-            <label htmlFor="forgot-email" style={s.label}>E-mailadres</label>
+            <label htmlFor="forgot-email" className={sharedStyles.label}>E-mailadres</label>
             <input
               id="forgot-email"
               className={sharedStyles.input}
@@ -167,7 +166,7 @@ const s: Record<string, React.CSSProperties> = {
     height: 80,
     background: "rgba(0,229,195,0.1)",
     border: "2px solid #00e5c3",
-    borderRadius: 22,
+    borderRadius: 20,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -179,7 +178,7 @@ const s: Record<string, React.CSSProperties> = {
     fontFamily: "'Exo 2', sans-serif",
     fontWeight: 900,
     fontSize: 34,
-    letterSpacing: 4,
+    letterSpacing: "0.12em",
     textTransform: "uppercase",
     color: "#f0eeff",
     marginBottom: 4,
@@ -214,7 +213,7 @@ const s: Record<string, React.CSSProperties> = {
     display: "block",
     fontSize: 11,
     fontWeight: 700,
-    letterSpacing: 1,
+    letterSpacing: "0.08em",
     textTransform: "uppercase",
     color: "#a89ec8",
     marginBottom: 6,

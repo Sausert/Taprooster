@@ -58,7 +58,8 @@ export function TappersTab() {
   async function saveTapper() {
     if (!editingTapper) return;
     setSavingTapper(true);
-    const saveData = { ...editForm, full_name: `${editForm.first_name} ${editForm.last_name}`.trim() };
+    const { first_name, last_name, ...rest } = editForm;
+    const saveData = { ...rest, full_name: `${first_name} ${last_name}`.trim() };
     const res = await fetch(`/api/admin/tappers/${editingTapper.id}`, { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(saveData) });
     const data = await res.json();
     if (!res.ok) {

@@ -37,7 +37,6 @@ export default async function RoosterPage() {
       shifts={shifts || []}
       myShiftIds={myShiftIds}
       userId={user.id}
-      userAssignments={myAssignments || []}
       isAdmin={profile?.role === "admin"}
     />
   );

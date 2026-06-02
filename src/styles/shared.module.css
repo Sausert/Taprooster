@@ -1,6 +1,11 @@
 /* Shared design primitives used across all pages.
    Import: import styles from "@/styles/shared.module.css" */
 
+/*
+ * Design tokens (defined in globals.css :root — use as var(--text-xs) etc.):
+ * --text-xs:10px  --text-sm:12px  --text-base:14px  --text-lg:18px  --text-xl:22px  --text-2xl:28px
+ * --radius-sm:8px  --radius-md:12px  --radius-lg:16px  --radius-xl:20px
+ */
 
 .card {
   background: #1a1730;
@@ -133,9 +138,16 @@
   min-width: 0;
   padding-left: 12px;
   padding-right: 10px;
+  font-size: 14px;
+}
+.input[type="date"]::-webkit-datetime-edit {
+  font-size: 14px;
+  padding: 0;
 }
 .input[type="date"]::-webkit-date-and-time-value {
   text-align: left;
+  font-size: 14px;
+  margin: 0;
 }
 .input[type="date"]::-webkit-calendar-picker-indicator {
   margin-left: 4px;

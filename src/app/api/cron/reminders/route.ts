@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
 import { sendShiftReminderEmail } from "@/lib/email";
 import { parseLocalDate, toLocalDateStr, addDays } from "@/lib/dates";
+import { sendPushToUser } from "@/lib/push";
 
 export async function GET(req: NextRequest) {
   // Vercel sends: Authorization: Bearer <CRON_SECRET>
@@ -51,10 +52,16 @@ export async function GET(req: NextRequest) {
           shift_id: shift.id, read: false,
         });
 
-        try {
-          await sendShiftReminderEmail(a.profile.email, a.profile.full_name, shift.title, dateLabel, timeLabel, weeks, shift.id);
-          sent++;
-        } catch { /* email failure is non-fatal */ }
+        await Promise.allSettled([
+          sendShiftReminderEmail(a.profile.email, a.profile.full_name, shift.title, dateLabel, timeLabel, weeks, shift.id),
+          sendPushToUser(a.user_id, {
+            title: `⏰ Dienst over ${weeks === 2 ? "2 weken" : "1 week"}`,
+            body: `${shift.title} op ${dateLabel} · ${timeLabel}`,
+            url: "/dashboard",
+            tag: type,
+          }),
+        ]);
+        sent++;
       }
     }
   }
@@ -84,11 +91,17 @@ export async function GET(req: NextRequest) {
         message: `Je hebt nog niet bevestigd voor ${shift.title} op ${dateLabel}.`,
         shift_id: shift.id, read: false,
       });
-      if (a.profile?.email) {
-        try {
-          await sendShiftReminderEmail(a.profile.email, a.profile.full_name, shift.title, dateLabel, timeLabel, 1, shift.id);
-        } catch { /* email failure is non-fatal */ }
-      }
+      await Promise.allSettled([
+        a.profile?.email
+          ? sendShiftReminderEmail(a.profile.email, a.profile.full_name, shift.title, dateLabel, timeLabel, 1, shift.id)
+          : Promise.resolve(),
+        sendPushToUser(a.user_id, {
+          title: "❗ Bevestig jouw dienst",
+          body: `Jij staat nog niet bevestigd voor ${shift.title} op ${dateLabel}.`,
+          url: "/dashboard",
+          tag: "unconfirmed_reminder",
+        }),
+      ]);
       sent++;
     }
   }

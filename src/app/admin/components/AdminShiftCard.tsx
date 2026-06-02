@@ -1,6 +1,6 @@
 "use client";
 import type { Shift } from "@/types";
-import { formatDateShort as formatDate } from "@/lib/dates";
+import { formatDateShort as formatDate, formatTime } from "@/lib/dates";
 import { useAdminShell } from "../AdminShellContext";
 import { TimeSelect } from "./TimeSelect";
 import styles from "@/styles/shared.module.css";
@@ -55,7 +55,7 @@ export function AdminShiftCard({ shift, source }: { shift: Shift & Record<string
               {shift.role === "bonnenkassa" && <span className={`${styles.badge} ${styles.badgeViolet}`}>Kassa</span>}
               {source === "concept" && <span className={`${styles.badge} ${styles.badgeMuted}`}>Concept</span>}
             </div>
-            <p style={{ fontSize:12, color:"#b8b0d4", lineHeight:1.5 }}>{formatDate(shift.date)} · {shift.start_time}–{shift.end_time}</p>
+            <p style={{ fontSize:12, color:"#b8b0d4", lineHeight:1.5 }}>{formatDate(shift.date)} · {formatTime(shift.start_time)}–{formatTime(shift.end_time)}</p>
             <p style={{ fontSize:12, fontWeight:700, color:open > 0 ? "#ffb547" : "#00e5c3", marginTop:2 }}>{assigned.length}/{shift.max_tappers}{open > 0 ? ` · ${open} open` : ""}</p>
             <div style={{ display:"flex", gap:4, marginTop:8, flexWrap:"wrap" }}>
               {assigned.map((a: any) => (

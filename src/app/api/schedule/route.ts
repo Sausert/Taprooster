@@ -114,6 +114,8 @@ export async function POST(req: NextRequest) {
     s.type === "tapavond" && autoAssignDates.has(s.date)
   );
 
+  let skippedProfiles: { name: string; reasons: string[] }[] = [];
+
   if (shiftsForAutoAssign.length > 0) {
     const { data: profiles } = await supabase.from("profiles").select("*");
     const { data: existingAssignments } = await supabase.from("shift_assignments").select("*");
@@ -126,20 +128,28 @@ export async function POST(req: NextRequest) {
       .gte("date", yearStart)
       .lte("date", yearEnd);
 
-    const suggestions = generateSchedule({
+    const result = generateSchedule({
       profiles: profiles || [],
       shifts: shiftsForAutoAssign,
       existingAssignments: existingAssignments || [],
       contextShifts: publishedShiftsForContext || [],
     });
 
-    if (suggestions.length > 0) {
+    if (result.suggestions.length > 0) {
       const { error: upsertError } = await supabase.from("shift_assignments").upsert(
-        suggestions.map(s => ({ shift_id: s.shiftId, user_id: s.userId, status: "assigned" })),
+        result.suggestions.map(s => ({ shift_id: s.shiftId, user_id: s.userId, status: "assigned" })),
         { onConflict: "shift_id,user_id" }
       );
       if (upsertError) return NextResponse.json({ error: "Inplannen mislukt" }, { status: 500 });
     }
+
+    // Build diagnostic output: who was skipped and why
+    const profileNameMap: Record<string, string> = {};
+    (profiles || []).forEach((p: any) => { profileNameMap[p.id] = p.full_name; });
+    skippedProfiles = result.skippedProfiles.map(e => ({
+      name: profileNameMap[e.userId] || e.userId,
+      reasons: e.reasons,
+    }));
   }
 
   const { data: updatedShifts } = await supabase
@@ -156,6 +166,7 @@ export async function POST(req: NextRequest) {
       shifts: updatedShifts || [],
       rangeStart: rangeStartStr,
       rangeEnd: rangeEndStr,
+      skippedProfiles,
     }
   });
 }

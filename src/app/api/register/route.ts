@@ -2,6 +2,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase-server";
+import { sendEmailVerificationEmail } from "@/lib/email";
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 const RegisterSchema = z.object({
   email: z.string().email("Ongeldig e-mailadres"),
@@ -88,6 +91,18 @@ export async function POST(req: NextRequest) {
     .update({ status: "used", used_at: new Date().toISOString() })
     .eq("id", invite.id)
     .eq("status", "pending");
+
+  // Generate a magic link and send it via Resend — serves as email verification + first login
+  const { data: linkData } = await adminClient.auth.admin.generateLink({
+    type: "magiclink",
+    email,
+    options: { redirectTo: `${APP_URL}/dashboard` },
+  });
+  if (linkData?.properties?.action_link) {
+    try {
+      await sendEmailVerificationEmail(email, fullName, linkData.properties.action_link);
+    } catch { /* email failure is non-fatal */ }
+  }
 
   return NextResponse.json({ data: { registered: true, userId: newUser.user?.id } });
 }

@@ -11,11 +11,10 @@ jobs:
     steps:
       - name: Roep reminder endpoint aan
         run: |
-          response=$(curl -s -o body.txt -w "%{http_code}" --location-trusted \
+          response=$(curl -s -o /dev/null -w "%{http_code}" -L \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             https://remigommans.nl/api/cron/reminders)
           echo "HTTP status: $response"
-          echo "Response body: $(cat body.txt)"
           if [ "$response" != "200" ]; then
             echo "Fout: endpoint gaf status $response terug"
             exit 1

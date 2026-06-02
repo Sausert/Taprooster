@@ -82,6 +82,7 @@ export function RoosterTab() {
   const [publishing, setPublishing] = useState(false);
   const [publishResult, setPublishResult] = useState<{ ok: boolean; text: string } | null>(null);
   const [generatorError, setGeneratorError] = useState<string | null>(null);
+  const [skippedProfiles, setSkippedProfiles] = useState<{ name: string; reasons: string[] }[]>([]);
 
   async function handleGenerate() {
     setGeneratorError(null);
@@ -93,6 +94,7 @@ export function RoosterTab() {
     if (data.error) { setGeneratorError(data.error); setGenerating(false); return; }
     if (data.data?.shifts) {
       setConceptShifts(data.data.shifts);
+      setSkippedProfiles(data.data.skippedProfiles || []);
     } else {
       setGeneratorError("Geen nieuwe diensten aangemaakt.");
     }
@@ -193,6 +195,16 @@ export function RoosterTab() {
           {conceptShifts.length > 0 && (
             <>
               <p className={styles.sectionTitle}>Conceptrooster ({conceptShifts.length} diensten)</p>
+              {skippedProfiles.length > 0 && (
+                <div style={{ background:"rgba(255,181,71,0.07)", border:"1px solid rgba(255,181,71,0.3)", borderRadius:12, padding:"10px 14px", marginBottom:12 }}>
+                  <p style={{ fontSize:12, fontWeight:700, color:"#ffb547", marginBottom:6 }}>⚠️ {skippedProfiles.length} tapper{skippedProfiles.length !== 1 ? "s" : ""} niet ingepland:</p>
+                  {skippedProfiles.map(p => (
+                    <p key={p.name} style={{ fontSize:11, color:"#b8b0d4", marginBottom:2 }}>
+                      <strong style={{ color:"#e8e0ff" }}>{p.name}</strong> — {p.reasons.join("; ")}
+                    </p>
+                  ))}
+                </div>
+              )}
               {conceptShifts.map(shift => <AdminShiftCard key={shift.id} shift={shift as any} source="concept" />)}
 
               <div className={styles.card} style={{ borderColor:"#00e5c3", marginTop:8, marginBottom:16 }}>
@@ -242,8 +254,8 @@ export function RoosterTab() {
             <p className={styles.actionHeader}>Tapavonden genereren</p>
             <div className={styles.card} style={{ marginBottom:12 }}>
               <div style={{ display:"flex", gap:10, marginBottom:14 }}>
-                <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Van</label><input type="date" className={styles.input} min={new Date().toISOString().slice(0,10)} value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></div>
-                <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Tot en met</label><input type="date" className={styles.input} min={dateFrom || new Date().toISOString().slice(0,10)} value={dateTo} onChange={e => setDateTo(e.target.value)} /></div>
+                <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Van</label><input type="date" className={styles.input} style={{ fontSize:16, padding:"8px 10px", height:40, lineHeight:1, minWidth:0, width:"100%", boxSizing:"border-box", marginBottom:0, WebkitAppearance:"none", appearance:"none" }} min={new Date().toISOString().slice(0,10)} value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></div>
+                <div style={{ flex:1, minWidth:0 }}><label className={styles.label}>Tot en met</label><input type="date" className={styles.input} style={{ fontSize:16, padding:"8px 10px", height:40, lineHeight:1, minWidth:0, width:"100%", boxSizing:"border-box", marginBottom:0, WebkitAppearance:"none", appearance:"none" }} min={dateFrom || new Date().toISOString().slice(0,10)} value={dateTo} onChange={e => setDateTo(e.target.value)} /></div>
               </div>
               {generatorError && (
                 <div style={{ background:"rgba(255,79,109,0.1)", border:"1px solid #ff4f6d", borderRadius:8, padding:"8px 12px", fontSize:12, color:"#ff4f6d", marginBottom:8 }}>
