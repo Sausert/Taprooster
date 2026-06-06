@@ -210,6 +210,37 @@ export async function sendShiftReminderEmail(
   });
 }
 
+// ── Bevestiging gevraagd ───────────────────────────────────────────────────
+export async function sendUnconfirmedReminderEmail(
+  to: string,
+  name: string,
+  shiftTitle: string,
+  shiftDate: string,
+  shiftTime: string,
+  shiftId: string
+) {
+  await getResend().emails.send({
+    from: FROM,
+    to,
+    subject: `❗ Bevestig jouw dienst: ${shiftTitle}`,
+    html: emailTemplate(
+      "Bevestig jouw dienst",
+      `
+      <p>Hey ${escHtml(name)},</p>
+      <p>Je staat ingepland voor een dienst, maar hebt dit nog niet bevestigd. Open de app om te bevestigen of je erbij bent.</p>
+      <div class="highlight">
+        <p><strong>${escHtml(shiftTitle)}</strong></p>
+        <p class="meta">📅 ${escHtml(shiftDate)}<br>🕐 ${escHtml(shiftTime)}<br>📍 ${escHtml(APP_CONFIG.location)}</p>
+      </div>
+      <a href="${APP_URL}/dashboard" class="btn">Bevestig in de app →</a>
+      <div class="warning">
+        <p>⚠️ Als je niet kunt, meld je dan tijdig af zodat iemand anders kan invallen.</p>
+      </div>
+      `
+    ),
+  });
+}
+
 // ── Open dienst notificatie ────────────────────────────────────────────────
 export async function sendOpenShiftEmail(
   to: string,

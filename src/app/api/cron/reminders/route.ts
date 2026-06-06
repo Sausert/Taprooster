@@ -2,7 +2,7 @@
 // Aanroepen dagelijks via Vercel Cron (zie vercel.json)
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
-import { sendShiftReminderEmail } from "@/lib/email";
+import { sendShiftReminderEmail, sendUnconfirmedReminderEmail } from "@/lib/email";
 import { parseLocalDate, toLocalDateStr, addDays } from "@/lib/dates";
 import { sendPushToUser } from "@/lib/push";
 
@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
       });
       await Promise.allSettled([
         a.profile?.email
-          ? sendShiftReminderEmail(a.profile.email, a.profile.full_name, shift.title, dateLabel, timeLabel, 1, shift.id)
+          ? sendUnconfirmedReminderEmail(a.profile.email, a.profile.full_name, shift.title, dateLabel, timeLabel, shift.id)
           : Promise.resolve(),
         sendPushToUser(a.user_id, {
           title: "❗ Bevestig jouw dienst",
