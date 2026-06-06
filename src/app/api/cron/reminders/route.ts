@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
       const timeLabel = `${shift.start_time}–${shift.end_time}`;
 
       for (const a of (shift.assignments || [])) {
-        if (a.status !== "confirmed") continue;
+        if (a.status === "declined") continue;  // alleen ingeplande + bevestigde tappers
         if (!a.profile?.email) continue;
         if (await alreadySent(a.user_id, type, shift.id)) continue;
 
