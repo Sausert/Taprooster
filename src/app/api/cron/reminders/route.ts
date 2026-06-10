@@ -19,7 +19,6 @@ export async function GET(req: NextRequest) {
   const todayStr = toLocalDateStr(today);
   const in14 = toLocalDateStr(addDays(today, 14));
   const in7  = toLocalDateStr(addDays(today, 7));
-  const in30 = toLocalDateStr(addDays(today, 30));
   let sent = 0;
 
   async function alreadySent(userId: string, type: string, shiftId: string): Promise<boolean> {
@@ -72,12 +71,13 @@ export async function GET(req: NextRequest) {
   // 2. Reminder 1 week
   await processShifts(in7, "reminder_1week", 1);
 
-  // 3. Onbevestigde diensten binnen 30 dagen
+  // 3. Onbevestigde diensten — alleen op exact 14, 7 en 3 dagen voor de dienst
+  const in3 = toLocalDateStr(addDays(today, 3));
   const { data: upcoming } = await supabase
     .from("shifts")
     .select("*, assignments:shift_assignments(user_id, status, profile:profiles(email, full_name))")
     .eq("status", "published")
-    .gte("date", todayStr).lte("date", in30);
+    .in("date", [in14, in7, in3]);
 
   for (const shift of upcoming || []) {
     const dateLabel = parseLocalDate(shift.date).toLocaleDateString("nl-NL",{weekday:"long",day:"numeric",month:"long"});

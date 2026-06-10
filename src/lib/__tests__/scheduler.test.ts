@@ -37,22 +37,22 @@ function makeShift(overrides: Partial<Shift> = {}): Shift {
 
 describe("generateSchedule", () => {
   it("returns empty array when no shifts", () => {
-    const result = generateSchedule({ profiles: [makeProfile()], shifts: [], existingAssignments: [] });
-    expect(result).toEqual([]);
+    const { suggestions } = generateSchedule({ profiles: [makeProfile()], shifts: [], existingAssignments: [] });
+    expect(suggestions).toEqual([]);
   });
 
   it("returns empty array when no profiles", () => {
-    const result = generateSchedule({ profiles: [], shifts: [makeShift()], existingAssignments: [] });
-    expect(result).toEqual([]);
+    const { suggestions } = generateSchedule({ profiles: [], shifts: [makeShift()], existingAssignments: [] });
+    expect(suggestions).toEqual([]);
   });
 
   it("assigns an eligible user to an open shift", () => {
     const profile = makeProfile({ id: "user-1" });
     const shift = makeShift({ id: "shift-1", max_tappers: 1 });
-    const result = generateSchedule({ profiles: [profile], shifts: [shift], existingAssignments: [] });
-    expect(result).toHaveLength(1);
-    expect(result[0].shiftId).toBe("shift-1");
-    expect(result[0].userId).toBe("user-1");
+    const { suggestions } = generateSchedule({ profiles: [profile], shifts: [shift], existingAssignments: [] });
+    expect(suggestions).toHaveLength(1);
+    expect(suggestions[0].shiftId).toBe("shift-1");
+    expect(suggestions[0].userId).toBe("user-1");
   });
 
   it("does not exceed max_tappers", () => {
@@ -62,16 +62,16 @@ describe("generateSchedule", () => {
       makeProfile({ id: "user-3", email: "user3@test.com" }),
     ];
     const shift = makeShift({ id: "shift-1", max_tappers: 2 });
-    const result = generateSchedule({ profiles, shifts: [shift], existingAssignments: [] });
-    expect(result.length).toBeLessThanOrEqual(2);
+    const { suggestions } = generateSchedule({ profiles, shifts: [shift], existingAssignments: [] });
+    expect(suggestions.length).toBeLessThanOrEqual(2);
   });
 
   it("does not double-book a user on the same day", () => {
     const profile = makeProfile({ id: "user-1" });
     const shift1 = makeShift({ id: "shift-1", date: "2025-05-16", max_tappers: 1 });
     const shift2 = makeShift({ id: "shift-2", date: "2025-05-16", max_tappers: 1 });
-    const result = generateSchedule({ profiles: [profile], shifts: [shift1, shift2], existingAssignments: [] });
-    const userAssignments = result.filter(r => r.userId === "user-1");
+    const { suggestions } = generateSchedule({ profiles: [profile], shifts: [shift1, shift2], existingAssignments: [] });
+    const userAssignments = suggestions.filter(r => r.userId === "user-1");
     expect(userAssignments.length).toBeLessThanOrEqual(1);
   });
 
@@ -79,23 +79,23 @@ describe("generateSchedule", () => {
     // Friday = day 5 in JS, our enum = "friday"
     const profile = makeProfile({ id: "user-1", preferred_days: ["wednesday"] });
     const shift = makeShift({ id: "shift-1", date: "2025-05-16", max_tappers: 1 }); // May 16 = Friday
-    const result = generateSchedule({ profiles: [profile], shifts: [shift], existingAssignments: [] });
-    expect(result.filter(r => r.userId === "user-1")).toHaveLength(0);
+    const { suggestions } = generateSchedule({ profiles: [profile], shifts: [shift], existingAssignments: [] });
+    expect(suggestions.filter(r => r.userId === "user-1")).toHaveLength(0);
   });
 
   it("assigns user when preferred_days is empty (no restriction)", () => {
     const profile = makeProfile({ id: "user-1", preferred_days: [] });
     const shift = makeShift({ id: "shift-1", date: "2025-05-16", max_tappers: 1 }); // Friday
-    const result = generateSchedule({ profiles: [profile], shifts: [shift], existingAssignments: [] });
-    expect(result.filter(r => r.userId === "user-1")).toHaveLength(1);
+    const { suggestions } = generateSchedule({ profiles: [profile], shifts: [shift], existingAssignments: [] });
+    expect(suggestions.filter(r => r.userId === "user-1")).toHaveLength(1);
   });
 
   it("respects unavailable_months", () => {
     // May = month index 4
     const profile = makeProfile({ id: "user-1", unavailable_months: [4] });
     const shift = makeShift({ id: "shift-1", date: "2025-05-16", max_tappers: 1 });
-    const result = generateSchedule({ profiles: [profile], shifts: [shift], existingAssignments: [] });
-    expect(result.filter(r => r.userId === "user-1")).toHaveLength(0);
+    const { suggestions } = generateSchedule({ profiles: [profile], shifts: [shift], existingAssignments: [] });
+    expect(suggestions.filter(r => r.userId === "user-1")).toHaveLength(0);
   });
 
   it("respects quarterly frequency limit", () => {
@@ -110,7 +110,7 @@ describe("generateSchedule", () => {
     };
     // New shift in same quarter (Q2: Apr-Jun)
     const newShift = makeShift({ id: "shift-1", date: "2025-05-16", max_tappers: 1 });
-    const result = generateSchedule({
+    const { suggestions } = generateSchedule({
       profiles: [profile],
       shifts: [newShift],
       existingAssignments: [existingAssignment],
@@ -118,14 +118,14 @@ describe("generateSchedule", () => {
       contextShifts: [existingShift],
     });
     // User already at frequency limit for Q2, should not be assigned
-    expect(result.filter(r => r.userId === "user-1")).toHaveLength(0);
+    expect(suggestions.filter(r => r.userId === "user-1")).toHaveLength(0);
   });
 
   it("does not assign user to feestje if wants_parties is false", () => {
     const profile = makeProfile({ id: "user-1", wants_parties: false });
     const shift = makeShift({ id: "shift-1", type: "feestje", max_tappers: 1 });
-    const result = generateSchedule({ profiles: [profile], shifts: [shift], existingAssignments: [] });
-    expect(result.filter(r => r.userId === "user-1")).toHaveLength(0);
+    const { suggestions } = generateSchedule({ profiles: [profile], shifts: [shift], existingAssignments: [] });
+    expect(suggestions.filter(r => r.userId === "user-1")).toHaveLength(0);
   });
 
   it("skips shift if already fully assigned", () => {
@@ -138,11 +138,11 @@ describe("generateSchedule", () => {
       status: "assigned",
       created_at: "2025-01-01T00:00:00Z",
     };
-    const result = generateSchedule({
+    const { suggestions } = generateSchedule({
       profiles: [profile],
       shifts: [shift],
       existingAssignments: [existingAssignment],
     });
-    expect(result).toHaveLength(0);
+    expect(suggestions).toHaveLength(0);
   });
 });
