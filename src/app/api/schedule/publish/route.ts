@@ -156,13 +156,16 @@ export async function POST(req: NextRequest) {
     const uniqueAssignedIds = [...new Set(
       tapavondShifts.flatMap(s => (s.assignments || []).map((a: { user_id: string }) => a.user_id))
     )];
-    await Promise.allSettled([
+    const publishResults = await Promise.allSettled([
       ...allProfiles.map(p => sendRosterPublishedEmail(p.email, p.full_name, message, periodLabel)),
       sendPushToAll({ title: "📅 Rooster gepubliceerd!", body: notifMessage, url: "/dashboard", tag: "roster_published" }),
       uniqueAssignedIds.length > 0
         ? sendPushToUsers(uniqueAssignedIds, { title: "🍺 Jij staat ingepland!", body: "Bekijk jouw diensten in het dashboard.", url: "/dashboard", tag: "shift_assigned" })
         : Promise.resolve(),
     ]);
+    publishResults.forEach((r, i) => {
+      if (r.status === "rejected") console.error(`[publish/tapavond] side-effect ${i} failed:`, r.reason);
+    });
   }
 
   // ── Feestje-notificaties (geen assignment-notificaties!) ──────────────────
@@ -178,10 +181,13 @@ export async function POST(req: NextRequest) {
         title: "🎉 Nieuw feestje gepubliceerd!", message: feestjeNotifMsg, read: false,
       }))
     );
-    await Promise.allSettled([
+    const partyResults = await Promise.allSettled([
       ...allProfiles.map(p => sendPartyPublishedEmail(p.email, p.full_name, feestjeName, feestjeDate, undefined)),
       sendPushToAll({ title: "🎉 Nieuw feestje gepubliceerd!", body: feestjeNotifMsg, url: "/rooster", tag: "roster_published" }),
     ]);
+    partyResults.forEach((r, i) => {
+      if (r.status === "rejected") console.error(`[publish/feestje] side-effect ${i} failed:`, r.reason);
+    });
   }
 
   // Als er helemaal niets gepubliceerd is (range leeg of al published)

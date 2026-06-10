@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
           shift_id: shift.id, read: false,
         });
 
-        await Promise.allSettled([
+        const reminderResults = await Promise.allSettled([
           sendShiftReminderEmail(a.profile.email, a.profile.full_name, shift.title, dateLabel, timeLabel, weeks, shift.id),
           sendPushToUser(a.user_id, {
             title: `⏰ Dienst over ${weeks === 2 ? "2 weken" : "1 week"}`,
@@ -60,6 +60,9 @@ export async function GET(req: NextRequest) {
             tag: type,
           }),
         ]);
+        reminderResults.forEach((r, i) => {
+          if (r.status === "rejected") console.error(`[reminders/${type}] side-effect ${i} failed:`, r.reason);
+        });
         sent++;
       }
     }
@@ -91,7 +94,7 @@ export async function GET(req: NextRequest) {
         message: `Je hebt nog niet bevestigd voor ${shift.title} op ${dateLabel}.`,
         shift_id: shift.id, read: false,
       });
-      await Promise.allSettled([
+      const unconfirmedResults = await Promise.allSettled([
         a.profile?.email
           ? sendUnconfirmedReminderEmail(a.profile.email, a.profile.full_name, shift.title, dateLabel, timeLabel, shift.id)
           : Promise.resolve(),
@@ -102,6 +105,9 @@ export async function GET(req: NextRequest) {
           tag: "unconfirmed_reminder",
         }),
       ]);
+      unconfirmedResults.forEach((r, i) => {
+        if (r.status === "rejected") console.error(`[reminders/unconfirmed] side-effect ${i} failed:`, r.reason);
+      });
       sent++;
     }
   }

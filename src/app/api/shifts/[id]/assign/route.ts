@@ -96,10 +96,13 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
         await adminClient.from("notifications").insert(
           eligibleProfiles.map(p => ({ user_id:p.id, type:"open_shift", title:"🔓 Open dienst!", message:`Er is een open plek voor ${shift.title} op ${shiftDate}.`, shift_id:shiftId, read:false }))
         );
-        await Promise.allSettled([
+        const assignResults = await Promise.allSettled([
           ...eligibleProfiles.map(p => sendOpenShiftEmail(p.email, p.full_name, shift.title, shiftDate, shiftTime, shiftId)),
           sendPushToUsers(eligibleProfiles.map(p => p.id), { title: "🔓 Open dienst!", body: `Er is een open plek voor ${shift.title} op ${shiftDate}.`, url: "/rooster", tag: "open_shift" }),
         ]);
+        assignResults.forEach((r, i) => {
+          if (r.status === "rejected") console.error(`[assign/decline] side-effect ${i} failed:`, r.reason);
+        });
       }
     }
     return NextResponse.json({ data: { declined: true } });

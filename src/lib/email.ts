@@ -334,7 +334,7 @@ export async function sendPasswordResetEmail(to: string, resetLink: string) {
 export async function sendFeedbackEmail(fromName: string, userId: string, categoryLabel: string, message: string) {
   await getResend().emails.send({
     from: FROM,
-    to: "remi.gommans@gmail.com",
+    to: process.env.ADMIN_EMAIL ?? "remi.gommans@gmail.com",
     subject: `[Feedback Taprooster] ${categoryLabel} — ${fromName}`,
     html: emailTemplate(
       `Feedback: ${escHtml(categoryLabel)}`,
