@@ -2,11 +2,19 @@ import webpush from "web-push";
 import { createAdminClient } from "@/lib/supabase-server";
 
 function initWebPush() {
-  if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY || !process.env.VAPID_EMAIL) return false;
+  const missing = [
+    !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && "NEXT_PUBLIC_VAPID_PUBLIC_KEY",
+    !process.env.VAPID_PRIVATE_KEY && "VAPID_PRIVATE_KEY",
+    !process.env.VAPID_EMAIL && "VAPID_EMAIL",
+  ].filter(Boolean);
+  if (missing.length > 0) {
+    console.error(`[push] Web Push uitgeschakeld — ontbrekende env vars: ${missing.join(", ")}`);
+    return false;
+  }
   webpush.setVapidDetails(
     `mailto:${process.env.VAPID_EMAIL}`,
-    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+    process.env.VAPID_PRIVATE_KEY!
   );
   return true;
 }
@@ -28,8 +36,14 @@ async function dispatchPush(sub: PushSub, payload: PushPayload): Promise<{ expir
     );
     return { expired: false };
   } catch (err) {
-    const status = (err as { statusCode?: number }).statusCode;
-    return { expired: status === 410 || status === 404 };
+    const e = err as { statusCode?: number; body?: string };
+    const status = e.statusCode;
+    const expired = status === 410 || status === 404;
+    if (!expired) {
+      // 401/403 = VAPID-keys matchen niet of zijn ongeldig; iets anders = onverwacht
+      console.error(`[push] aflevering mislukt (status ${status ?? "?"}): ${e.body ?? (err as Error).message}`);
+    }
+    return { expired };
   }
 }
 
