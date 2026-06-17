@@ -83,13 +83,17 @@ export default function AppShell({
         applicationServerKey: urlBase64ToUint8Array(vapidKey),
       });
       const json = sub.toJSON();
-      await fetch("/api/push/subscribe", {
+      const res = await fetch("/api/push/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ endpoint: sub.endpoint, keys: json.keys }),
       });
+      if (!res.ok) {
+        console.error("[push] subscription opslaan mislukt:", res.status, await res.text().catch(() => ""));
+        return;
+      }
       setPushStatus("granted");
-    } catch { setPushStatus("denied"); }
+    } catch (err) { console.error("[push] subscribe mislukt:", err); setPushStatus("denied"); }
   }
 
   async function handleEnablePush() {

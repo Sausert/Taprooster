@@ -9,8 +9,14 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   p256dh      TEXT NOT NULL,
   auth        TEXT NOT NULL,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(endpoint)
 );
+
+-- Reconcile: zorg dat een eerder handmatig aangemaakte tabel de updated_at-kolom heeft.
+-- De /api/push/subscribe upsert schrijft dit veld; zonder de kolom faalt elke opslag.
+ALTER TABLE push_subscriptions
+  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
 
 CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON push_subscriptions(user_id);
 
